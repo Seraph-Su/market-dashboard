@@ -133,12 +133,16 @@ BADGE = {
 VAL_CLASS = {'green':'val-green','yellow':'val-yellow','red':'val-red','neutral':'val-neutral'}
 
 
+def hex_to_rgba(hex_color, alpha=0.13):
+    h = hex_color.lstrip('#')
+    r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+    return f'rgba({r},{g},{b},{alpha})'
+
 def sparkline(series, color, height=55):
-    clean = [v for v in series if v is not None]
     fig = go.Figure(go.Scatter(
         y=series, mode='lines',
         line=dict(color=color, width=1.5),
-        fill='tozeroy', fillcolor=color+'22',
+        fill='tozeroy', fillcolor=hex_to_rgba(color),
     ))
     fig.update_layout(
         height=height, margin=dict(l=0,r=0,t=0,b=0),
