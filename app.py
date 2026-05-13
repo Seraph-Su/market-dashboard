@@ -188,13 +188,13 @@ D = fetch_data()
 st_cme  = status('cme',   D['cme_excess_10d'])
 st_hyg  = status('hyg',   D['hyg_iei_20d'])
 st_iwm  = status('iwm',   D['iwm_spy_60d'])
-st_gv   = status('gv',    D['growth_value_20d'])
 st_vixr = status('vixr',  D['vix_ratio'])
 st_xlp  = status('xlp',   D['xlp_xly_20d'])
 st_rsp  = status('rsp',   D['rsp_spy_60d'])
 st_br   = status('brdth', D['sector_breadth'])
 
-core_statuses = [st_cme, st_hyg, st_iwm, st_gv]
+# IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
+core_statuses = [st_cme, st_hyg, st_iwm]
 n_red    = core_statuses.count('red')
 n_yellow = core_statuses.count('yellow')
 overall  = 'red' if n_red>=2 else 'yellow' if n_red>=1 or n_yellow>=2 else 'green'
@@ -237,9 +237,9 @@ st.markdown(f"""
 st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
 
 combos = [
-    (combo1, "66.7%", "2.99x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，歷史下跌>5%機率 66.7%（n=45）"),
-    (combo2, "54.3%", "2.43x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
-    (combo3, "48.4%", "2.17x", "CME +5~8%  ＋  信用利差惡化 <−1%", "信用市場確認壓力，接近五成下跌機率（n=93）"),
+    (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
+    (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
+    (combo3, "48.4%", "2.23x", "CME +5~8%  ＋  信用利差惡化 <−1%", "信用市場確認壓力，接近五成下跌機率（n=93）"),
 ]
 for active, prob, lift, title, desc in combos:
     cls = "combo-active" if active else "combo-inactive"
@@ -272,14 +272,14 @@ st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
 
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 
 cme_v = D['cme_excess_10d']
 with c1:
-    desc = (f"CME跑贏SPY {cme_v}%，警示區間，單獨下跌機率36%" if st_cme in ('yellow','red')
+    desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率僅1.10x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
             else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
             else f"CME相對報酬中性，無明顯信號")
-    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.63x")
+    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
 
 hyg_v = D['hyg_iei_20d']
 with c2:
@@ -293,14 +293,7 @@ with c3:
     desc = (f"小型股60日跑輸大型股 {abs(iwm_v)}%，風險偏好惡化" if st_iwm=='red'
             else f"小型股相對弱勢（{iwm_v}%），需觀察" if st_iwm=='yellow'
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
-    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.50x")
-
-gv_v = D['growth_value_20d']
-with c4:
-    desc = (f"成長股跑輸價值股 {abs(gv_v)}%，資金往防禦性輪動" if st_gv=='red'
-            else f"成長/價值輪動轉弱（{gv_v}%），留意" if st_gv=='yellow'
-            else f"成長股領先（{fmt(gv_v)}），風險偏好偏進取")
-    card("成長/價值輪動 IWF/IWD（20日）", fmt(gv_v), st_gv, desc, D['gv_series'], lift="1.40x")
+    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
