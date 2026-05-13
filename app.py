@@ -237,8 +237,8 @@ st.markdown(f"""
 st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
 
 combos = [
-    (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
-    (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
+    (combo1, "63.6%", "2.98x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 63.6%（n=44）；Permutation test p<0.001，95% CI 52~79%"),
+    (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "CME 已觸發時的輔助確認（n=129）；XLP/XLY 單獨無預測力，須搭配 CME 信號方具參考價值"),
     (combo3, "48.4%", "2.23x", "CME +5~8%  ＋  信用利差惡化 <−1%", "信用市場確認壓力，接近五成下跌機率（n=93）"),
 ]
 for active, prob, lift, title, desc in combos:
@@ -276,10 +276,10 @@ c1, c2, c3 = st.columns(3)
 
 cme_v = D['cme_excess_10d']
 with c1:
-    desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率僅1.10x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
+    desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率1.46x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
             else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
             else f"CME相對報酬中性，無明顯信號")
-    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
+    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.46x（單獨）/ 2.98x（+IWM）")
 
 hyg_v = D['hyg_iei_20d']
 with c2:
