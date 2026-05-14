@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import plotly.graph_objects as go
 
 st.set_page_config(
-    page_title="牛市轉折偵測儀表板",
+    page_title="美股壓力偵測儀表板",
     page_icon="📊",
     layout="wide"
 )
