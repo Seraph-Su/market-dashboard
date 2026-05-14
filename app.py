@@ -210,7 +210,7 @@ uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 # ── Header ───────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5,1])
 with col_title:
-    st.markdown("## 📊 牛市轉折偵測儀表板")
+    st.markdown("## 📊 美股壓力偵測儀表板")
     st.markdown(f"<span style='color:#64748b;font-size:0.78rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
 with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
