@@ -289,6 +289,31 @@ for active, prob, lift, title, desc in combos:
 
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 
+# ── Core indicators ───────────────────────────────────────────────
+st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
+c1, c2, c3 = st.columns(3)
+
+cme_v = D['cme_excess_10d']
+with c1:
+    desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率僅1.10x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
+            else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
+            else f"CME相對報酬中性，無明顯信號")
+    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
+
+hyg_v = D['hyg_iei_20d']
+with c2:
+    desc = (f"信用利差擴大 {hyg_v}%，風險溢酬上升" if st_hyg=='red'
+            else f"信用利差輕微惡化（{hyg_v}%）" if st_hyg=='yellow'
+            else f"信用市場穩定（{fmt(hyg_v)}），輔助確認牛市")
+    card("信用利差 HYG/IEI（20日）", fmt(hyg_v), st_hyg, desc, D['hyg_iei_series'], lift="1.60x")
+
+iwm_v = D['iwm_spy_60d']
+with c3:
+    desc = (f"小型股60日跑輸大型股 {abs(iwm_v)}%，風險偏好惡化" if st_iwm=='red'
+            else f"小型股相對弱勢（{iwm_v}%），需觀察" if st_iwm=='yellow'
+            else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
+    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
+
 # ── EMA(60) 乖離率橫條警示 ───────────────────────────────────────
 _dev_now = D['spy_dev60']
 if st_dev == 'red':
@@ -320,32 +345,7 @@ else:
         unsafe_allow_html=True
     )
 
-st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
-
-# ── Core indicators ───────────────────────────────────────────────
-st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
-c1, c2, c3 = st.columns(3)
-
-cme_v = D['cme_excess_10d']
-with c1:
-    desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率僅1.10x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
-            else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
-            else f"CME相對報酬中性，無明顯信號")
-    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
-
-hyg_v = D['hyg_iei_20d']
-with c2:
-    desc = (f"信用利差擴大 {hyg_v}%，風險溢酬上升" if st_hyg=='red'
-            else f"信用利差輕微惡化（{hyg_v}%）" if st_hyg=='yellow'
-            else f"信用市場穩定（{fmt(hyg_v)}），輔助確認牛市")
-    card("信用利差 HYG/IEI（20日）", fmt(hyg_v), st_hyg, desc, D['hyg_iei_series'], lift="1.60x")
-
-iwm_v = D['iwm_spy_60d']
-with c3:
-    desc = (f"小型股60日跑輸大型股 {abs(iwm_v)}%，風險偏好惡化" if st_iwm=='red'
-            else f"小型股相對弱勢（{iwm_v}%），需觀察" if st_iwm=='yellow'
-            else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
-    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
+st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
 
 # ── EMA(60) 乖離率 ────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">均值回歸指標 · SPY vs EMA(60) 乖離率</div>', unsafe_allow_html=True)
