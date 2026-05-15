@@ -236,7 +236,6 @@ combo1 = cme_triggered and st_iwm != 'green'
 combo2 = cme_triggered and st_xlp in ('yellow','red')
 combo3 = cme_triggered and st_hyg == 'red'
 
-uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 
 # ── Header ───────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5,1])
@@ -290,14 +289,36 @@ for active, prob, lift, title, desc in combos:
 
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 
-# ── UVXY bar ─────────────────────────────────────────────────────
-if uvxy_warn:
-    reasons = []
-    if st_rsp == 'red':  reasons.append(f"RSP/SPY廣度 {D['rsp_spy_60d']}%")
-    if st_br != 'green': reasons.append(f"板塊廣度 {D['sector_breadth']}/9")
-    st.markdown(f'<div class="uvxy-warn">⚡ <b>UVXY早期預警觸發</b>——{("、").join(reasons)}，VIX仍低，可考慮小量預佈局</div>', unsafe_allow_html=True)
+# ── EMA(60) 乖離率橫條警示 ───────────────────────────────────────
+_dev_now = D['spy_dev60']
+if st_dev == 'red':
+    st.markdown(
+        f'<div class="uvxy-warn" style="background:#450a0a;border-color:#dc2626;color:#fca5a5">'
+        f'🔴 <b>季線乖離過熱</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，已超過歷史 90th 百分位門檻（+{DEV_P90}%），短期動能可能鈍化。'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+elif st_dev == 'yellow':
+    st.markdown(
+        f'<div class="uvxy-warn">'
+        f'🟡 <b>季線乖離偏高</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，逼近過熱門檻（+{DEV_P90}%），留意追高風險。'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+elif st_dev == 'blue':
+    st.markdown(
+        f'<div class="uvxy-ok" style="background:#0c2a1a;border-color:#16a34a;color:#86efac">'
+        f'🟢 <b>季線超賣</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，跌破歷史 10th 百分位（{DEV_P10}%），均值回歸拉力顯著。'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 else:
-    st.markdown('<div class="uvxy-ok">UVXY早期預警：未觸發（RSP/SPY與板塊廣度正常）</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="uvxy-ok">'
+        f'季線乖離正常——SPY 偏離 EMA(60) {fmt(_dev_now)}，位於正常區間（{DEV_P10}% ~ +{DEV_P90}%）。'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
 st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
 
@@ -418,14 +439,14 @@ with x3:
     rs = D['rsp_spy_60d']
     desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化，UVXY早期預警" if st_rsp=='red'
             else f"廣度正常（{fmt(rs)}）")
-    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'], note="UVXY訊號")
+    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'])
 
 with x4:
     br = D['sector_breadth']
     desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
             else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
             else f"{br} 個板塊在50MA上，廣度健康")
-    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
+    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'])
 
 
 # ── Footer ────────────────────────────────────────────────────────
