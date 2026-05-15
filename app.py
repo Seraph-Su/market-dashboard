@@ -326,38 +326,7 @@ with c3:
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
-# ── Context indicators ────────────────────────────────────────────
-st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
-x1, x2, x3, x4 = st.columns(4)
-
-with x1:
-    vr = D['vix_ratio']
-    desc = (f"期限結構倒掛（{vr}），近月恐慌高於遠月" if st_vixr!='green'
-            else f"期限結構正常 Contango（{vr}），情緒穩定")
-    card("VIX/VIX3M 期限結構", str(vr), st_vixr, desc, D['vixr_series'], inv=True)
-
-with x2:
-    xl = D['xlp_xly_20d']
-    desc = (f"防禦板塊跑贏景氣循環 {xl}%，資金轉向防禦" if st_xlp!='green'
-            else f"景氣循環領先（{abs(xl)}%），情緒偏進取")
-    card("防禦輪動 XLP/XLY（20日）", fmt(xl), st_xlp, desc, D['xlp_series'], inv=True)
-
-with x3:
-    rs = D['rsp_spy_60d']
-    desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化，UVXY早期預警" if st_rsp=='red'
-            else f"廣度正常（{fmt(rs)}）")
-    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'], note="UVXY訊號")
-
-with x4:
-    br = D['sector_breadth']
-    desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
-            else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
-            else f"{br} 個板塊在50MA上，廣度健康")
-    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
-
-
 # ── EMA(60) 乖離率 ────────────────────────────────────────────────
-st.markdown("---")
 st.markdown('<div class="section-hdr">均值回歸指標 · SPY vs EMA(60) 乖離率</div>', unsafe_allow_html=True)
 
 dev_v = D['spy_dev60']
@@ -428,6 +397,35 @@ with dev_col2:
     )
     st.plotly_chart(fig, use_container_width=True,
                     config={'displayModeBar': False}, key="chart_dev_price")
+
+# ── Context indicators ────────────────────────────────────────────
+st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
+x1, x2, x3, x4 = st.columns(4)
+
+with x1:
+    vr = D['vix_ratio']
+    desc = (f"期限結構倒掛（{vr}），近月恐慌高於遠月" if st_vixr!='green'
+            else f"期限結構正常 Contango（{vr}），情緒穩定")
+    card("VIX/VIX3M 期限結構", str(vr), st_vixr, desc, D['vixr_series'], inv=True)
+
+with x2:
+    xl = D['xlp_xly_20d']
+    desc = (f"防禦板塊跑贏景氣循環 {xl}%，資金轉向防禦" if st_xlp!='green'
+            else f"景氣循環領先（{abs(xl)}%），情緒偏進取")
+    card("防禦輪動 XLP/XLY（20日）", fmt(xl), st_xlp, desc, D['xlp_series'], inv=True)
+
+with x3:
+    rs = D['rsp_spy_60d']
+    desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化，UVXY早期預警" if st_rsp=='red'
+            else f"廣度正常（{fmt(rs)}）")
+    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'], note="UVXY訊號")
+
+with x4:
+    br = D['sector_breadth']
+    desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
+            else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
+            else f"{br} 個板塊在50MA上，廣度健康")
+    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
 
 
 # ── Footer ────────────────────────────────────────────────────────
