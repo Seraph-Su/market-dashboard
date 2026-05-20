@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import plotly.graph_objects as go
 
 st.set_page_config(
-    page_title="美股壓力偵測儀表板",
+    page_title="牛市轉折偵測儀表板",
     page_icon="📊",
     layout="wide"
 )
@@ -21,16 +21,13 @@ st.markdown("""
   .card-red   { border-color: #dc2626 !important; }
   .card-yellow{ border-color: #d97706 !important; }
   .card-green { border-color: #1e293b !important; }
-  .card-blue  { border-color: #2563eb !important; }
   .val-green  { color: #4ade80; font-size: 1.5rem; font-weight: 700; }
   .val-yellow { color: #fbbf24; font-size: 1.5rem; font-weight: 700; }
   .val-red    { color: #f87171; font-size: 1.5rem; font-weight: 700; }
-  .val-blue   { color: #60a5fa; font-size: 1.5rem; font-weight: 700; }
   .val-neutral{ color: #94a3b8; font-size: 1.5rem; font-weight: 700; }
   .badge-green { background:#14532d; color:#4ade80; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
   .badge-yellow{ background:#451a03; color:#fbbf24; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
   .badge-red   { background:#7f1d1d; color:#f87171; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
-  .badge-blue  { background:#1e3a5f; color:#60a5fa; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
   .desc-text  { color: #64748b; font-size: 0.75rem; margin-top: 4px; line-height: 1.4; }
   .lift-tag   { color: #475569; font-size: 0.65rem; }
   .combo-active  { background:#1e1b4b; border:1px solid #4f46e5; border-radius:8px; padding:10px 14px; margin-bottom:6px; }
@@ -46,10 +43,6 @@ st.markdown("""
   .section-hdr{ font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:6px; margin-top:4px; }
 </style>
 """, unsafe_allow_html=True)
-
-
-DEV_P90 =  4.44   # 90th 百分位，過熱門檻
-DEV_P10 = -2.92   # 10th 百分位，超賣門檻
 
 
 # ── Data fetch ────────────────────────────────────────────────────
@@ -91,10 +84,6 @@ def fetch_data():
     above     = close[sector_etfs] > ma50_sec
     breadth_s = above.sum(axis=1)
 
-    # ── EMA(60) 乖離率 ──────────────────────────────────────────────
-    ema60   = spy.ewm(span=60, adjust=False).mean()
-    dev60_s = (spy - ema60) / ema60 * 100
-
     latest = close.index[-1]
 
     return {
@@ -112,14 +101,6 @@ def fetch_data():
         'xlp_xly_20d':      round(float(xlp_s.iloc[-1]), 2),
         'rsp_spy_60d':      round(float(rsp_s.iloc[-1]), 2),
         'sector_breadth':   int(breadth_s.iloc[-1]),
-        # EMA(60) 乖離率
-        'spy_ema60':        round(float(ema60.iloc[-1]), 2),
-        'spy_dev60':        round(float(dev60_s.iloc[-1]), 2),
-        'dev60_series':     s60(dev60_s),
-        # 60日走勢（含日期）供詳細圖表用
-        'spy_series':       [round(float(v), 2) for v in spy.iloc[-60:].tolist()],
-        'ema60_series':     [round(float(v), 2) for v in ema60.iloc[-60:].tolist()],
-        'date_series':      [str(d.date()) for d in spy.index[-60:]],
         # Series
         'cme_series':     s60(cme_s),
         'hyg_iei_series': s60(hyg_iei_s),
@@ -144,22 +125,12 @@ def status(key, val):
     if key=='brdth': return 'red' if val<=3 else 'yellow' if val<=5 else 'green'
     return 'green'
 
-
-def status_dev(val):
-    """乖離率狀態：過熱=yellow/red, 超賣=blue（買進訊號）, 正常=green"""
-    if val >= DEV_P90:   return 'red'    if val >= 6.5 else 'yellow'
-    if val <= DEV_P10:   return 'blue'   # 超賣，均值回歸機會
-    return 'green'
-
-
 BADGE = {
     'green':  '<span class="badge-green">正常</span>',
     'yellow': '<span class="badge-yellow">留意</span>',
     'red':    '<span class="badge-red">警示</span>',
-    'blue':   '<span class="badge-blue">超賣</span>',
 }
-VAL_CLASS = {'green':'val-green','yellow':'val-yellow','red':'val-red',
-             'blue':'val-blue','neutral':'val-neutral'}
+VAL_CLASS = {'green':'val-green','yellow':'val-yellow','red':'val-red','neutral':'val-neutral'}
 
 
 def hex_to_rgba(hex_color, alpha=0.13):
@@ -185,7 +156,6 @@ def sparkline(series, color, height=55):
 def color_for(key, st_val, inv=False):
     if st_val=='green':  return '#22c55e'
     if st_val=='yellow': return '#f59e0b'
-    if st_val=='blue':   return '#60a5fa'
     return '#ef4444'
 
 
@@ -212,6 +182,13 @@ def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
                     config={'displayModeBar':False}, key=f"chart_{title[:8]}")
 
 
+# ── Sidebar navigation ────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("### 導覽")
+    st.page_link("app.py", label="📊 牛市轉折偵測儀表板")
+    st.page_link("pages/2_EMA_Analysis.py", label="📐 季線乖離率分析")
+
+
 # ── Main ──────────────────────────────────────────────────────────
 D = fetch_data()
 
@@ -222,7 +199,6 @@ st_vixr = status('vixr',  D['vix_ratio'])
 st_xlp  = status('xlp',   D['xlp_xly_20d'])
 st_rsp  = status('rsp',   D['rsp_spy_60d'])
 st_br   = status('brdth', D['sector_breadth'])
-st_dev  = status_dev(D['spy_dev60'])
 
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
 core_statuses = [st_cme, st_hyg, st_iwm]
@@ -236,12 +212,15 @@ combo1 = cme_triggered and st_iwm != 'green'
 combo2 = cme_triggered and st_xlp in ('yellow','red')
 combo3 = cme_triggered and st_hyg == 'red'
 
+uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 
 # ── Header ───────────────────────────────────────────────────────
-col_title, col_refresh = st.columns([5,1])
+col_title, col_nav, col_refresh = st.columns([4, 1.5, 1])
 with col_title:
-    st.markdown("## 📊 美股壓力偵測儀表板")
+    st.markdown("## 📊 牛市轉折偵測儀表板")
     st.markdown(f"<span style='color:#64748b;font-size:0.78rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
+with col_nav:
+    st.page_link("pages/2_EMA_Analysis.py", label="📐 季線乖離率分析", use_container_width=True)
 with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
         st.cache_data.clear()
@@ -289,6 +268,17 @@ for active, prob, lift, title, desc in combos:
 
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 
+# ── UVXY bar ─────────────────────────────────────────────────────
+if uvxy_warn:
+    reasons = []
+    if st_rsp == 'red':  reasons.append(f"RSP/SPY廣度 {D['rsp_spy_60d']}%")
+    if st_br != 'green': reasons.append(f"板塊廣度 {D['sector_breadth']}/9")
+    st.markdown(f'<div class="uvxy-warn">⚡ <b>UVXY早期預警觸發</b>——{("、").join(reasons)}，VIX仍低，可考慮小量預佈局</div>', unsafe_allow_html=True)
+else:
+    st.markdown('<div class="uvxy-ok">UVXY早期預警：未觸發（RSP/SPY與板塊廣度正常）</div>', unsafe_allow_html=True)
+
+st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
+
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
 c1, c2, c3 = st.columns(3)
@@ -314,111 +304,6 @@ with c3:
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
-# ── EMA(60) 乖離率橫條警示 ───────────────────────────────────────
-_dev_now = D['spy_dev60']
-if st_dev == 'red':
-    st.markdown(
-        f'<div class="uvxy-warn" style="background:#450a0a;border-color:#dc2626;color:#fca5a5">'
-        f'🔴 <b>季線乖離過熱</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，已超過歷史 90th 百分位門檻（+{DEV_P90}%），短期動能可能鈍化。'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-elif st_dev == 'yellow':
-    st.markdown(
-        f'<div class="uvxy-warn">'
-        f'🟡 <b>季線乖離偏高</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，逼近過熱門檻（+{DEV_P90}%），留意追高風險。'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-elif st_dev == 'blue':
-    st.markdown(
-        f'<div class="uvxy-ok" style="background:#0c2a1a;border-color:#16a34a;color:#86efac">'
-        f'🟢 <b>季線超賣</b>——SPY 偏離 EMA(60) 達 <b>{fmt(_dev_now)}</b>，跌破歷史 10th 百分位（{DEV_P10}%），均值回歸拉力顯著。'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-else:
-    st.markdown(
-        f'<div class="uvxy-ok">'
-        f'季線乖離正常——SPY 偏離 EMA(60) {fmt(_dev_now)}，位於正常區間（{DEV_P10}% ~ +{DEV_P90}%）。'
-        f'</div>',
-        unsafe_allow_html=True
-    )
-
-st.markdown("<div style='margin-bottom:4px'></div>", unsafe_allow_html=True)
-
-# ── EMA(60) 乖離率 ────────────────────────────────────────────────
-st.markdown('<div class="section-hdr">均值回歸指標 · SPY vs EMA(60) 乖離率</div>', unsafe_allow_html=True)
-
-dev_v = D['spy_dev60']
-
-# 乖離率狀態文字
-if st_dev == 'red':
-    dev_desc = f"乖離率過高（{fmt(dev_v)}），已超過過熱門檻 +{DEV_P90}%，短期動能可能鈍化。"
-elif st_dev == 'yellow':
-    dev_desc = f"乖離率 {fmt(dev_v)}，逼近過熱門檻（+{DEV_P90}%），留意追高風險。"
-elif st_dev == 'blue':
-    dev_desc = f"乖離率 {fmt(dev_v)}，跌破超賣門檻（{DEV_P10}%），均值回歸拉力顯著。"
-else:
-    dev_desc = f"乖離率 {fmt(dev_v)}，位於正常區間（{DEV_P10}% ~ +{DEV_P90}%）。"
-
-dev_col1, dev_col2 = st.columns([1, 2])
-
-with dev_col1:
-    card(
-        "SPY vs EMA(60) 乖離率",
-        fmt(dev_v),
-        st_dev,
-        f"{dev_desc}　EMA(60) = ${D['spy_ema60']}",
-        D['dev60_series'],
-    )
-
-with dev_col2:
-    # SPY + EMA(60) 走勢圖，含過熱／超賣閾值帶
-    dates = D['date_series']
-    spy_s = D['spy_series']
-    ema_s = D['ema60_series']
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=dates, y=spy_s, name='SPY',
-        line=dict(color='#60a5fa', width=2),
-        hovertemplate='%{x}<br>SPY: $%{y:.2f}<extra></extra>'
-    ))
-    fig.add_trace(go.Scatter(
-        x=dates, y=ema_s, name='EMA(60)',
-        line=dict(color='#fbbf24', width=1.5, dash='dot'),
-        hovertemplate='%{x}<br>EMA60: $%{y:.2f}<extra></extra>'
-    ))
-    if ema_s:
-        upper_line = [round(e * (1 + DEV_P90 / 100), 2) for e in ema_s]
-        lower_line = [round(e * (1 + DEV_P10 / 100), 2) for e in ema_s]
-        fig.add_trace(go.Scatter(
-            x=dates, y=upper_line, name=f'過熱線 (+{DEV_P90}%)',
-            line=dict(color='rgba(248,113,113,0.5)', width=1, dash='dash'),
-            hoverinfo='skip'
-        ))
-        fig.add_trace(go.Scatter(
-            x=dates, y=lower_line, name=f'超賣線 ({DEV_P10}%)',
-            line=dict(color='rgba(74,222,128,0.5)', width=1, dash='dash'),
-            fill='tonexty', fillcolor='rgba(248,113,113,0.04)',
-            hoverinfo='skip'
-        ))
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        height=220, margin=dict(l=4, r=4, t=8, b=4),
-        legend=dict(orientation='h', y=1.08, x=0,
-                    font=dict(color='#94a3b8', size=11),
-                    bgcolor='rgba(0,0,0,0)'),
-        xaxis=dict(showgrid=False, color='#475569',
-                   tickfont=dict(size=10), tickangle=-30),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.06)',
-                   color='#475569', tickfont=dict(size=10), tickprefix='$'),
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig, use_container_width=True,
-                    config={'displayModeBar': False}, key="chart_dev_price")
-
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
 x1, x2, x3, x4 = st.columns(4)
@@ -439,15 +324,14 @@ with x3:
     rs = D['rsp_spy_60d']
     desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化，UVXY早期預警" if st_rsp=='red'
             else f"廣度正常（{fmt(rs)}）")
-    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'])
+    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'], note="UVXY訊號")
 
 with x4:
     br = D['sector_breadth']
     desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
             else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
             else f"{br} 個板塊在50MA上，廣度健康")
-    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'])
-
+    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
 
 # ── Footer ────────────────────────────────────────────────────────
 st.markdown("---")
