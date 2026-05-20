@@ -111,7 +111,7 @@ def status(key, val):
     if key=='xlp':   return 'red' if val>2 else 'yellow' if val>1 else 'green'
     if key=='rsp':   return 'red' if val<-5 else 'yellow' if val<-3 else 'green'
     if key=='brdth': return 'red' if val<=3 else 'yellow' if val<=5 else 'green'
-    if key=='spy60': return 'red' if val>15 or val<-8 else 'yellow' if val>10 or val<-5 else 'green'
+    if key=='spy60': return 'yellow' if val > 4.44 or val < -5 else 'green'
     return 'green'
 
 BADGE = {
@@ -277,6 +277,7 @@ with c3:
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
 # ── SPY 季線乖離率 ─────────────────────────────────────────────────
+st.markdown('<div class="section-hdr">市場位置 &nbsp;·&nbsp; SPY 季線乖離率 ── 超過 90 分位（+4.44%）即示警</div>', unsafe_allow_html=True)
 y1, y2, y3, y4 = st.columns(4)
 with y1:
     s60v = D['spy_vs_60ma']
