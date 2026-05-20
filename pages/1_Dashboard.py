@@ -58,7 +58,7 @@ def fetch_data():
     spy    = close['SPY']
     ma200  = spy.rolling(200).mean()
     ma50   = spy.rolling(50).mean()
-    ma60   = spy.rolling(60).mean()
+    ma60   = spy.ewm(span=60, adjust=False).mean()
     spy60_s = (spy / ma60 - 1) * 100
     cme_s  = (close['CME'].pct_change(10) - spy.pct_change(10)) * 100
     hyg_iei_s = (close['HYG']/close['IEI']).pct_change(20) * 100
@@ -276,6 +276,17 @@ with c3:
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
+# ── SPY 季線乖離率 ─────────────────────────────────────────────────
+y1, y2, y3, y4 = st.columns(4)
+with y1:
+    s60v = D['spy_vs_60ma']
+    desc = (f"SPY 大幅超買，距季線 {s60v}%，歷史修正風險升高" if st_spy60=='red' and s60v>0
+            else f"SPY 跌破季線 {abs(s60v)}%，短線走弱" if st_spy60=='red' and s60v<0
+            else f"SPY 偏離季線 {fmt(s60v)}，留意過熱" if st_spy60=='yellow' and s60v>0
+            else f"SPY 偏離季線 {fmt(s60v)}，接近季線支撐" if st_spy60=='yellow' and s60v<0
+            else f"SPY 距季線 {fmt(s60v)}，位置健康（季線 ${D['spy_60ma_val']}）")
+    card("SPY 季線乖離率（EMA 60）", fmt(s60v), st_spy60, desc, D['spy60_series'])
+
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
 x1, x2, x3, x4 = st.columns(4)
@@ -300,17 +311,6 @@ with x4:
             else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
             else f"{br} 個板塊在50MA上，廣度健康")
     card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
-
-# ── SPY 季線乖離率 ─────────────────────────────────────────────────
-y1, y2, y3, y4 = st.columns(4)
-with y1:
-    s60v = D['spy_vs_60ma']
-    desc = (f"SPY 大幅超買，距季線 {s60v}%，歷史修正風險升高" if st_spy60=='red' and s60v>0
-            else f"SPY 跌破季線 {abs(s60v)}%，短線走弱" if st_spy60=='red' and s60v<0
-            else f"SPY 偏離季線 {fmt(s60v)}，留意過熱" if st_spy60=='yellow' and s60v>0
-            else f"SPY 偏離季線 {fmt(s60v)}，接近季線支撐" if st_spy60=='yellow' and s60v<0
-            else f"SPY 距季線 {fmt(s60v)}，位置健康（季線 ${D['spy_60ma_val']}）")
-    card("SPY 季線乖離率（60日MA）", fmt(s60v), st_spy60, desc, D['spy60_series'])
 
 # ── Footer ────────────────────────────────────────────────────────
 st.markdown("---")
