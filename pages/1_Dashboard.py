@@ -277,7 +277,10 @@ with c3:
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
 
 # ── SPY 季線乖離率 ─────────────────────────────────────────────────
-st.markdown('<div class="section-hdr">市場位置 &nbsp;·&nbsp; SPY 季線乖離率 ── 超過 90 分位（+4.44%）即示警</div>', unsafe_allow_html=True)
+if st_spy60 == 'yellow':
+    st.markdown(f'<div class="uvxy-warn">⚡ <b>SPY 季線乖離率示警</b>——距 EMA60 偏離 {fmt(D["spy_vs_60ma"])}，已超過 90 分位（+4.44%），留意過熱修正風險</div>', unsafe_allow_html=True)
+else:
+    st.markdown(f'<div class="uvxy-ok">SPY 季線乖離率：正常（距 EMA60 {fmt(D["spy_vs_60ma"])}，低於 90 分位 +4.44%）</div>', unsafe_allow_html=True)
 y1, y2, y3, y4 = st.columns(4)
 with y1:
     s60v = D['spy_vs_60ma']
