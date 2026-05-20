@@ -144,14 +144,6 @@ def warn_box(dev, max_dev, mean, std, label):
     return 'green', f'✓ 乖離率正常（{sign(dev)}），技術壓力不大'
 
 
-# ── Sidebar nav ───────────────────────────────────────────────────────────────
-
-with st.sidebar:
-    st.markdown("### 導覽")
-    st.page_link("pages/2_EMA_Analysis.py", label="**📐 季線乖離率分析**")
-    st.markdown("📊 牛市轉折偵測儀表板")
-
-
 # ── Page header ───────────────────────────────────────────────────────────────
 
 st.markdown("## 📐 季線乖離率分析")
