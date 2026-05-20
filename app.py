@@ -182,13 +182,6 @@ def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
                     config={'displayModeBar':False}, key=f"chart_{title[:8]}")
 
 
-# ── Sidebar navigation ────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("### 導覽")
-    st.markdown("**📊 牛市轉折偵測儀表板**")
-    st.page_link("pages/2_EMA_Analysis.py", label="📐 季線乖離率分析")
-
-
 # ── Main ──────────────────────────────────────────────────────────
 D = fetch_data()
 
@@ -215,12 +208,10 @@ combo3 = cme_triggered and st_hyg == 'red'
 uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 
 # ── Header ───────────────────────────────────────────────────────
-col_title, col_nav, col_refresh = st.columns([4, 1.5, 1])
+col_title, col_refresh = st.columns([5, 1])
 with col_title:
     st.markdown("## 📊 牛市轉折偵測儀表板")
     st.markdown(f"<span style='color:#64748b;font-size:0.78rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
-with col_nav:
-    st.page_link("pages/2_EMA_Analysis.py", label="📐 季線乖離率分析", use_container_width=True)
 with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
         st.cache_data.clear()
