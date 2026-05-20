@@ -7,8 +7,9 @@ st.set_page_config(
 )
 
 pages = [
-    st.Page("pages/1_Dashboard.py",    title="大盤儀表板", icon="📊"),
-    st.Page("pages/2_EMA_Analysis.py", title="EMA 分析",   icon="📈"),
+    st.Page("pages/1_Dashboard.py",       title="大盤儀表板",     icon="📊"),
+    st.Page("pages/2_EMA_Analysis.py",    title="EMA 分析",       icon="📈"),
+    st.Page("pages/3_Sector_Rotation.py", title="細分產業週報",   icon="🇺🇸"),
 ]
 
 pg = st.navigation(pages)
