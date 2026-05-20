@@ -185,7 +185,7 @@ def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
 # ── Sidebar navigation ────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 導覽")
-    st.page_link("app.py", label="📊 牛市轉折偵測儀表板")
+    st.markdown("**📊 牛市轉折偵測儀表板**")
     st.page_link("pages/2_EMA_Analysis.py", label="📐 季線乖離率分析")
 
 
