@@ -241,16 +241,6 @@ for active, prob, lift, title, desc in combos:
 
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 
-# ── UVXY bar ─────────────────────────────────────────────────────
-if uvxy_warn:
-    reasons = []
-    if st_rsp == 'red':  reasons.append(f"RSP/SPY廣度 {D['rsp_spy_60d']}%")
-    if st_br != 'green': reasons.append(f"板塊廣度 {D['sector_breadth']}/9")
-    st.markdown(f'<div class="uvxy-warn">⚡ <b>UVXY早期預警觸發</b>——{("、").join(reasons)}，VIX仍低，可考慮小量預佈局</div>', unsafe_allow_html=True)
-else:
-    st.markdown('<div class="uvxy-ok">UVXY早期預警：未觸發（RSP/SPY與板塊廣度正常）</div>', unsafe_allow_html=True)
-
-st.markdown("<div style='margin-bottom:12px'></div>", unsafe_allow_html=True)
 
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
