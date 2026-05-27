@@ -178,7 +178,7 @@ st_br    = status('brdth', D['sector_breadth'])
 st_spy60 = status('spy60', D['spy_vs_60ma'])
 
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
-core_statuses = [st_cme, st_hyg, st_iwm]
+core_statuses = [st_cme, st_xlp, st_iwm]
 n_red    = core_statuses.count('red')
 n_yellow = core_statuses.count('yellow')
 overall  = 'red' if n_red>=2 else 'yellow' if n_red>=1 or n_yellow>=2 else 'green'
@@ -252,12 +252,12 @@ with c1:
             else f"CME相對報酬中性，無明顯信號")
     card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
 
-hyg_v = D['hyg_iei_20d']
+xl_v = D['xlp_xly_20d']
 with c2:
-    desc = (f"信用利差擴大 {hyg_v}%，風險溢酬上升" if st_hyg=='red'
-            else f"信用利差輕微惡化（{hyg_v}%）" if st_hyg=='yellow'
-            else f"信用市場穩定（{fmt(hyg_v)}），輔助確認牛市")
-    card("信用利差 HYG/IEI（20日）", fmt(hyg_v), st_hyg, desc, D['hyg_iei_series'], lift="1.60x")
+    desc = (f"防禦板塊跑贏景氣循環 {xl_v}%，資金明顯轉向防禦" if st_xlp=='red'
+            else f"防禦輪動初現（{xl_v}%），留意資金動向" if st_xlp=='yellow'
+            else f"景氣循環領先（{fmt(xl_v)}），市場情緒偏進取")
+    card("防禦輪動 XLP/XLY（20日）", fmt(xl_v), st_xlp, desc, D['xlp_series'], inv=True, lift="2.50x")
 
 iwm_v = D['iwm_spy_60d']
 with c3:
@@ -283,23 +283,18 @@ with y1:
 
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
-x1, x2, x3, x4 = st.columns(4)
+x1, x2, x3 = st.columns(3)
 with x1:
     vr = D['vix_ratio']
     desc = (f"期限結構倒掛（{vr}），近月恐慌高於遠月" if st_vixr!='green'
             else f"期限結構正常 Contango（{vr}），情緒穩定")
     card("VIX/VIX3M 期限結構", str(vr), st_vixr, desc, D['vixr_series'], inv=True)
 with x2:
-    xl = D['xlp_xly_20d']
-    desc = (f"防禦板塊跑贏景氣循環 {xl}%，資金轉向防禦" if st_xlp!='green'
-            else f"景氣循環領先（{abs(xl)}%），情緒偏進取")
-    card("防禦輪動 XLP/XLY（20日）", fmt(xl), st_xlp, desc, D['xlp_series'], inv=True)
-with x3:
     rs = D['rsp_spy_60d']
-    desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化，UVXY早期預警" if st_rsp=='red'
+    desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化" if st_rsp=='red'
             else f"廣度正常（{fmt(rs)}）")
-    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'], note="UVXY訊號")
-with x4:
+    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'])
+with x3:
     br = D['sector_breadth']
     desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
             else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
