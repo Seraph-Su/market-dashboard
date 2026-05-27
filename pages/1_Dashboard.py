@@ -193,7 +193,7 @@ uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 # ── Header ───────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
-    st.markdown("## 📊 牛市轉折偵測儀表板")
+    st.markdown("## 📊 大盤壓力儀表板")
     st.markdown(f"<span style='color:#64748b;font-size:0.78rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
 with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
@@ -221,7 +221,7 @@ st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_ht
 combos = [
     (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
     (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
-    (combo3, "—", "—", "CME +5~8%  ＋  IWM/SPY <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心指標同步觸發，為最高警示等級"),
+    (combo3, "46.2%", "3.05x", "CME +5~8%  ＋  IWM/SPY 60日 <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心同步觸發，下跌>5%機率 46.2%（n=39，2016後）；Permutation test p<0.001，95% CI 32~61%"),
 ]
 for active, prob, lift, title, desc in combos:
     cls = "combo-active" if active else "combo-inactive"
