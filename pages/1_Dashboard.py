@@ -187,7 +187,7 @@ overall  = 'red' if n_red>=2 else 'yellow' if n_red>=1 or n_yellow>=2 else 'gree
 cme_triggered = st_cme in ('yellow','red')
 combo1 = cme_triggered and st_iwm != 'green'
 combo2 = cme_triggered and st_xlp in ('yellow','red')
-combo3 = cme_triggered and st_hyg == 'red'
+combo3 = cme_triggered and st_iwm != 'green' and st_xlp in ('yellow','red')
 uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 
 # ── Header ───────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_ht
 combos = [
     (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
     (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
-    (combo3, "48.4%", "2.23x", "CME +5~8%  ＋  信用利差惡化 <−1%", "信用市場確認壓力，接近五成下跌機率（n=93）"),
+    (combo3, "—", "—", "CME +5~8%  ＋  IWM/SPY <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心指標同步觸發，為最高警示等級"),
 ]
 for active, prob, lift, title, desc in combos:
     cls = "combo-active" if active else "combo-inactive"
