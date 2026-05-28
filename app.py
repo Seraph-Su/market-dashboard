@@ -10,7 +10,6 @@ pages = [
     st.Page("pages/1_Dashboard.py",       title="大盤壓力儀表板", icon="📊"),
     st.Page("pages/2_EMA_Analysis.py",    title="EMA 分析",       icon="📈"),
     st.Page("pages/3_Sector_Rotation.py", title="細分產業週報",   icon="🇺🇸"),
-    st.Page("pages/4_Stock_Screener.py",  title="每日選股",       icon="🔍"),
 ]
 
 pg = st.navigation(pages)
