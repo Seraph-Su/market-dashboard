@@ -219,7 +219,7 @@ st.markdown(f"""
 # ── Combo panel ──────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
 combos = [
-    (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
+    (combo1, "62.5%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
     (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
     (combo3, "46.2%", "3.05x", "CME +5~8%  ＋  IWM/SPY 60日 <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心同步觸發，下跌>5%機率 46.2%（n=39，2016後）；Permutation test p<0.001，95% CI 32~61%"),
 ]
