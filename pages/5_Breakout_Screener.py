@@ -111,6 +111,7 @@ def detect_signal(df):
     vol_ratio = float(today["Volume"]) / avg_vol
 
     signal_type = None
+    day_gain    = (close - float(df.iloc[-2]["Close"])) / float(df.iloc[-2]["Close"])
     consol_high = float(consol["High"].max())
     consol_low  = float(consol["Low"].min())
     consol_rng  = (consol_high - consol_low) / consol_low
