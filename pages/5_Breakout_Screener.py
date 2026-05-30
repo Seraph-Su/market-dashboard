@@ -325,7 +325,7 @@ try:
                 return "color: #67e8f9; font-weight: 700"
             return "color: #94a3b8"
 
-        styled = result.style.applymap(style_signal, subset=["訊號類型"])
+        styled = result.style.map(style_signal, subset=["訊號類型"])
         st.dataframe(styled, use_container_width=True,
                      height=min(700, 60 + len(result) * 35))
 
