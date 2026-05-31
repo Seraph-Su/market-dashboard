@@ -1,340 +1,241 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import yfinance as yf
-import requests
-from datetime import datetime, timedelta
-from io import StringIO
+"""
+breakout_screener.py
+--------------------
+每日掃描股票，偵測「EMA收斂後放量突破」訊號，輸出 CSV。
 
-# ── 股票清單 ──────────────────────────────────────────────────────
-NASDAQ100 = [
+核心邏輯（兩個條件同時滿足其一即觸發）：
+  A. K棒條件：前N天盤整幅度 < X%，今日收盤突破最高點，且量比 > 門檻
+  B. EMA條件：近期三線（月/季/年 EMA）曾高度收斂，今日收盤突破 EMA20，且量比 > 門檻
+
+使用方式：
+    python breakout_screener.py                  # 掃描預設清單 (Nasdaq 100)
+    python breakout_screener.py --tickers PANW NVDA APP
+    python breakout_screener.py --list sp500
+
+輸出：
+    signals_YYYY-MM-DD.csv  (與腳本同目錄)
+"""
+
+import argparse
+import datetime
+import os
+
+import pandas as pd
+import yfinance as yf
+
+# ─────────────────────────────────────────────
+# 參數設定
+# ─────────────────────────────────────────────
+DEFAULTS = dict(
+    # K棒盤整條件
+    consolidation_days   = 14,    # 盤整期長度（交易日）
+    consolidation_range  = 0.16,  # 盤整幅度上限（16%）
+    breakout_buffer      = 0.003, # 收盤需超過最高點 0.3%
+
+    # EMA收斂條件
+    ema_spread_threshold = 0.05,  # 三線最大收斂度（spread < 5% 視為收斂）
+    ema_lookback         = 20,    # 往前看幾天內曾收斂過
+
+    # 共用
+    volume_mult          = 1.3,   # 成交量需 > 均量 × 1.3
+    lookback_days        = 400,   # 下載歷史天數（EMA260 需要足夠資料）
+    cooldown_days        = 10,    # 同支股票兩次訊號最短間隔（交易日）
+)
+
+# 預設 Nasdaq 100 精簡清單（前50大）
+DEFAULT_TICKERS = [
     "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","TSLA","AVGO","COST",
     "NFLX","ASML","AMD","PEP","CSCO","ADBE","INTC","CMCSA","HON","AMGN",
     "TXN","QCOM","INTU","AMAT","ISRG","BKNG","ADP","SBUX","GILD","MU",
     "LRCX","REGN","ADI","PANW","KLAC","MDLZ","SNPS","CDNS","MELI","FTNT",
     "CTAS","CSX","PAYX","ORLY","MRVL","IDXX","ROST","CPRT","PCAR","KDP",
-    "DXCM","BIIB","TEAM","ILMN","MRNA","ZS","CRWD","OKTA","DDOG","SNOW",
-    "APP","PLTR","CEG","GEHC","TTD","ARM","DASH","MSTR","RBLX","ON",
 ]
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def fetch_largecap_us_tickers(min_market_cap: int = 1_000_000_000) -> list:
-    """從 Yahoo Finance Screener 抓取市值 > min_market_cap 的全美股清單"""
-    url = "https://query2.finance.yahoo.com/v1/finance/screener"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        "Content-Type": "application/json",
-    }
-    query_body = {
-        "offset": 0,
-        "size": 250,
-        "sortField": "marketcap",
-        "sortType": "DESC",
-        "quoteType": "EQUITY",
-        "query": {
-            "operator": "and",
-            "operands": [
-                {"operator": "gt", "operands": ["marketcap", min_market_cap]},
-                {"operator": "eq", "operands": ["region", "us"]},
-            ],
-        },
-        "userId": "",
-        "userIdType": "guid",
-    }
-    tickers = []
-    for offset in range(0, 3000, 250):   # 最多抓 3000 支
-        query_body["offset"] = offset
+
+def get_sp500_tickers() -> list[str]:
+    tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+    return tables[0]["Symbol"].str.replace(".", "-", regex=False).tolist()
+
+
+def fetch_data(tickers: list[str], lookback: int) -> dict[str, pd.DataFrame]:
+    end   = datetime.date.today()
+    start = end - datetime.timedelta(days=lookback + 60)
+    print(f"[*] 下載 {len(tickers)} 支股票資料…")
+    raw = yf.download(
+        tickers, start=str(start), end=str(end),
+        group_by="ticker", auto_adjust=True, progress=False, threads=True,
+    )
+    result = {}
+    for t in tickers:
         try:
-            resp = requests.post(url, json=query_body, headers=headers, timeout=15)
-            resp.raise_for_status()
-            quotes = resp.json()["finance"]["result"][0].get("quotes", [])
-            if not quotes:
-                break
-            tickers.extend(q["symbol"] for q in quotes if "." not in q["symbol"])
-            if len(quotes) < 250:
-                break
+            df = raw.copy() if len(tickers) == 1 else raw[t].copy()
+            df = df.dropna(subset=["Close"])
+            if len(df) >= 60:
+                result[t] = df
         except Exception:
-            break
-    return tickers
+            pass
+    return result
 
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def fetch_sp500_tickers():
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
-    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-                        headers=headers, timeout=30)
-    resp.raise_for_status()
-    df = pd.read_html(StringIO(resp.text))[0]
-    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
-
-# ── 核心選股邏輯 ──────────────────────────────────────────────────
-CFG = dict(
-    consolidation_days   = 14,
-    consolidation_range  = 0.16,
-    breakout_buffer      = 0.003,
-    ema_spread_threshold = 0.05,
-    ema_lookback         = 20,
-    volume_mult          = 1.3,
-)
-
-def add_emas(df):
+def add_emas(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    新增 EMA20/60/260 與收斂度欄位。
+    - 歷史 >= 300 天：三線收斂（月/季/年）
+    - 歷史 < 300 天（新股）：雙線收斂（月/季），並標記 ema_mode
+    """
     df = df.copy()
     df["ema20"]  = df["Close"].ewm(span=20,  adjust=False).mean()
     df["ema60"]  = df["Close"].ewm(span=60,  adjust=False).mean()
     df["ema260"] = df["Close"].ewm(span=260, adjust=False).mean()
+
     if len(df) >= 300:
-        cols = ["ema20", "ema60", "ema260"]
-        df["ema_mode"] = "三線"
+        # 三線收斂
+        cols = ["ema20","ema60","ema260"]
+        df["ema_mode"] = "3ema"
     else:
-        cols = ["ema20", "ema60"]
-        df["ema_mode"] = "雙線"
-    df["ema_spread"] = (df[cols].max(axis=1) - df[cols].min(axis=1)) / df[cols].median(axis=1)
+        # 新股：只用 EMA20 & EMA60
+        cols = ["ema20","ema60"]
+        df["ema_mode"] = "2ema"
+
+    df["ema_spread"] = (
+        df[cols].max(axis=1) - df[cols].min(axis=1)
+    ) / df[cols].median(axis=1)
     return df
 
-def detect_signal(df):
-    cfg = CFG
-    n, rng, buf = cfg["consolidation_days"], cfg["consolidation_range"], cfg["breakout_buffer"]
-    vmult = cfg["volume_mult"]
-    spread_thr, ema_lb = cfg["ema_spread_threshold"], cfg["ema_lookback"]
 
-    if len(df) < max(n + 2, 65):
+def detect_breakout(df: pd.DataFrame, cfg: dict) -> dict | None:
+    """
+    判斷最新交易日是否出現突破訊號。
+    條件 A（K棒盤整）或 條件 B（EMA收斂）滿足其一即回傳訊號。
+    """
+    n      = cfg["consolidation_days"]
+    rng    = cfg["consolidation_range"]
+    buf    = cfg["breakout_buffer"]
+    vmult  = cfg["volume_mult"]
+    spread_thr  = cfg["ema_spread_threshold"]
+    ema_lb      = cfg["ema_lookback"]
+
+    min_rows = max(n + 2, 65)   # 新股至少需要 EMA60 穩定
+    if len(df) < min_rows:
         return None
 
     df = add_emas(df)
     today        = df.iloc[-1]
-    consol       = df.iloc[-(n + 1):-1]
+    consolidation = df.iloc[-(n + 1):-1]
 
-    close     = float(today["Close"])
-    avg_vol   = float(consol["Volume"].mean())
+    close    = float(today["Close"])
+    avg_vol  = float(consolidation["Volume"].mean())
     if avg_vol == 0:
         return None
     vol_ratio = float(today["Volume"]) / avg_vol
 
+    # ── 條件 A：K棒盤整突破 ──────────────────────
     signal_type = None
-    day_gain    = (close - float(df.iloc[-2]["Close"])) / float(df.iloc[-2]["Close"])
-    consol_high = float(consol["High"].max())
-    consol_low  = float(consol["Low"].min())
-    consol_rng  = (consol_high - consol_low) / consol_low
+    consol_high = float(consolidation["High"].max())
+    consol_low  = float(consolidation["Low"].min())
+    consol_range_pct = (consol_high - consol_low) / consol_low
 
-    # 訊號 A：K棒盤整突破
-    if (consol_rng <= rng
+    if (consol_range_pct <= rng
             and close > consol_high * (1 + buf)
             and vol_ratio >= vmult):
-        signal_type = "A｜K棒盤整突破"
+        signal_type = "K棒盤整突破"
 
-    # 訊號 B / C：EMA 收斂突破
+    # ── 條件 B：EMA收斂後突破（三線或雙線）──────────
     if signal_type is None:
-        recent     = df.iloc[-(ema_lb + 1):-1]
-        prev_close = float(df.iloc[-2]["Close"])
-        day_gain   = (close - prev_close) / prev_close
+        recent        = df.iloc[-(ema_lb + 1):-1]
+        recent_spread = recent["ema_spread"]
+        prev_close    = float(df.iloc[-2]["Close"])
+        day_gain      = (close - prev_close) / prev_close
 
-        ema_was_tight  = recent["ema_spread"].min() < spread_thr
+        # 三線收斂（原有邏輯）
+        ema_was_tight = recent_spread.min() < spread_thr
+
+        # 雙線收斂（EMA20/60，適用於 EMA260 因前段大漲而位移的情況）
         spread2 = abs(df["ema20"] - df["ema60"]) / df[["ema20","ema60"]].mean(axis=1)
         ema2_was_tight = spread2.iloc[-(ema_lb + 1):-1].min() < spread_thr
 
-        recent_high = float(recent["High"].max())
-        broke_high  = close > recent_high * (1 + buf)
-        big_move    = day_gain > 0.03
+        recent_high       = float(recent["High"].max())
+        broke_recent_high = close > recent_high * (1 + buf)
+        big_move          = day_gain > 0.03
 
-        if (ema_was_tight or ema2_was_tight) and broke_high and big_move and vol_ratio >= vmult:
-            signal_type = ("B｜EMA三線收斂突破" if ema_was_tight else "C｜EMA雙線收斂突破")
+        if (ema_was_tight or ema2_was_tight) and broke_recent_high and big_move and vol_ratio >= vmult:
+            signal_type = "EMA收斂突破" if ema_was_tight else "EMA雙線收斂突破"
 
     if signal_type is None:
         return None
 
     return {
-        "訊號類型":    signal_type,
-        "收盤價":      round(close, 2),
-        "突破幅度":    f"{round((close / consol_high - 1) * 100, 2):+.2f}%",
-        "量比":        f"{vol_ratio:.1f}x",
-        "EMA收斂度":   f"{round(float(today['ema_spread']) * 100, 2):.2f}%",
-        "20日最小收斂":f"{round(float(df['ema_spread'].iloc[-ema_lb:].min()) * 100, 2):.2f}%",
-        "EMA20":       round(float(today["ema20"]), 2),
-        "均線模式":    str(today["ema_mode"]),
-        "_day_gain":   round(day_gain * 100, 2),
+        "date":             str(df.index[-1].date()),
+        "signal_type":      signal_type,
+        "ema_mode":         str(today["ema_mode"]),
+        "close":            round(close, 2),
+        "ema20":            round(float(today["ema20"]), 2),
+        "ema_spread":       round(float(today["ema_spread"]), 4),
+        "min_spread_20d":   round(float(df["ema_spread"].iloc[-ema_lb:].min()), 4),
+        "consol_high":      round(consol_high, 2),
+        "consol_range_pct": round(consol_range_pct * 100, 2),
+        "breakout_pct":     round((close / consol_high - 1) * 100, 2),
+        "volume_ratio":     round(vol_ratio, 2),
     }
 
-def _download_batch(tickers, start, end):
-    """批次下載，回傳 {ticker: df} 字典"""
-    stock_data = {}
-    try:
-        raw = yf.download(tickers, start=start, end=end,
-                          auto_adjust=True, progress=False)
-        if isinstance(raw.columns, pd.MultiIndex):
-            for ticker in tickers:
-                try:
-                    df = pd.DataFrame({
-                        "Close":  raw["Close"][ticker],
-                        "High":   raw["High"][ticker],
-                        "Low":    raw["Low"][ticker],
-                        "Volume": raw["Volume"][ticker],
-                    }).dropna()
-                    if len(df) >= 65:
-                        stock_data[ticker] = df
-                except Exception:
-                    pass
-        else:
-            # 單一股票
-            df = raw[["Close","High","Low","Volume"]].dropna()
-            if len(df) >= 65:
-                stock_data[tickers[0]] = df
-    except Exception:
-        pass
-    return stock_data
+
+def run(tickers: list[str], cfg: dict, output_dir: str = ".") -> pd.DataFrame:
+    data    = fetch_data(tickers, cfg["lookback_days"])
+    signals = []
+
+    for ticker, df in data.items():
+        result = detect_breakout(df, cfg)
+        if result:
+            result["ticker"] = ticker
+            signals.append(result)
+            print(f"  ✓ {ticker:6s}  [{result['signal_type']}]  "
+                  f"close={result['close']}  "
+                  f"breakout={result['breakout_pct']:+.2f}%  "
+                  f"vol={result['volume_ratio']:.1f}x  "
+                  f"ema_spread={result['ema_spread']:.3f}")
+
+    cols = ["ticker","date","signal_type","ema_mode","close","ema20","ema_spread",
+            "min_spread_20d","consol_high","consol_range_pct","breakout_pct","volume_ratio"]
+    out_df = (pd.DataFrame(signals)[cols].sort_values("breakout_pct", ascending=False)
+              if signals else pd.DataFrame())
+
+    date_str = datetime.date.today().strftime("%Y-%m-%d")
+    out_path = os.path.join(output_dir, f"signals_{date_str}.csv")
+    out_df.to_csv(out_path, index=False)
+    print(f"\n[+] 找到 {len(signals)} 個訊號 → {out_path}")
+    return out_df
 
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def run_screener(universe: str):
-    if universe == "S&P 500":
-        tickers = fetch_sp500_tickers()
-    elif universe == "全美股":
-        tickers = fetch_largecap_us_tickers(min_market_cap=1_000_000_000)
-    else:
-        tickers = NASDAQ100
+# ─────────────────────────────────────────────
+# CLI 入口
+# ─────────────────────────────────────────────
+def main():
+    parser = argparse.ArgumentParser(description="EMA收斂突破選股器")
+    parser.add_argument("--tickers", nargs="+")
+    parser.add_argument("--list", choices=["sp500","nasdaq100"], default="nasdaq100")
+    parser.add_argument("--consol-days",   type=int,   default=DEFAULTS["consolidation_days"])
+    parser.add_argument("--consol-range",  type=float, default=DEFAULTS["consolidation_range"])
+    parser.add_argument("--ema-spread",    type=float, default=DEFAULTS["ema_spread_threshold"],
+                        help="EMA收斂門檻（預設 0.05）")
+    parser.add_argument("--vol-mult",      type=float, default=DEFAULTS["volume_mult"])
+    parser.add_argument("--output-dir",    default=".")
+    args = parser.parse_args()
 
-    end_str   = datetime.today().strftime("%Y-%m-%d")
-    start_str = (datetime.today() - timedelta(days=460)).strftime("%Y-%m-%d")
-
-    # 全美股分批下載（每批 150 支，避免逾時）
-    BATCH = 150 if universe == "全美股" else len(tickers)
-    stock_data = {}
-    for i in range(0, len(tickers), BATCH):
-        batch = tickers[i:i+BATCH]
-        stock_data.update(_download_batch(batch, start_str, end_str))
-
-    rows = []
-    for ticker, df in stock_data.items():
-        sig = detect_signal(df)
-        if sig:
-            sig["代號"] = ticker
-            rows.append(sig)
-
-    if not rows:
-        return pd.DataFrame()
-
-    df_out = pd.DataFrame(rows)
-    # 排序：先訊號類型（B > C > A），再突破幅度
-    order = {"B｜EMA三線收斂突破": 0, "C｜EMA雙線收斂突破": 1, "A｜K棒盤整突破": 2}
-    df_out["_order"] = df_out["訊號類型"].map(order)
-    df_out = df_out.sort_values(["_order", "_day_gain"], ascending=[True, False])
-    df_out = df_out.drop(columns=["_order", "_day_gain"]).reset_index(drop=True)
-    df_out.index += 1
-    cols = ["代號", "訊號類型", "收盤價", "突破幅度", "量比", "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
-    return df_out[cols]
-
-# ── Page ──────────────────────────────────────────────────────────
-col_title, col_refresh = st.columns([5, 1])
-with col_title:
-    st.markdown("## 📡 均線收斂突破選股")
-    st.markdown(
-        "<span style='color:#64748b;font-size:0.78rem'>"
-        "偵測 EMA 三線/雙線收斂後放量突破訊號 &nbsp;｜&nbsp; "
-        "回測：EMA收斂訊號 QQQ 成分股 20日平均報酬 +10.7%，勝率 82%（2020–2026，去除熊市）"
-        "&nbsp;｜&nbsp; 資料每日自動更新"
-        "</span>",
-        unsafe_allow_html=True,
+    tickers = (
+        [t.upper() for t in args.tickers] if args.tickers
+        else (get_sp500_tickers() if args.list == "sp500" else DEFAULT_TICKERS)
     )
-with col_refresh:
-    if st.button("🔄 重新掃描", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
 
-st.markdown("---")
+    cfg = {**DEFAULTS,
+           "consolidation_days":  args.consol_days,
+           "consolidation_range": args.consol_range,
+           "ema_spread_threshold": args.ema_spread,
+           "volume_mult":          args.vol_mult}
 
-# 股票池選擇
-universe = st.radio(
-    "掃描股票池",
-    ["Nasdaq 100（建議）", "S&P 500", "全美股（市值 > 10億，約需 3–5 分鐘）"],
-    horizontal=True,
-    help="EMA 收斂訊號在 Nasdaq 100 科技成長股中效果最顯著；全美股掃描首次載入較慢",
-)
-if universe.startswith("Nasdaq"):
-    universe_key = "Nasdaq 100"
-elif universe.startswith("S&P"):
-    universe_key = "S&P 500"
-else:
-    universe_key = "全美股"
+    print(f"[*] 參數: 盤整={cfg['consolidation_days']}天 幅度<{cfg['consolidation_range']*100:.0f}% "
+          f"EMA收斂<{cfg['ema_spread_threshold']*100:.0f}% 量比>{cfg['volume_mult']}x")
+    run(tickers, cfg, output_dir=args.output_dir)
 
-st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
-# 策略說明摺疊區
-with st.expander("📖 三種訊號說明"):
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("""
-**A｜K棒盤整突破**
-
-短期緊密橫盤後直接向上突破。
-
-- 過去 14 日高低差 ≤ 16%
-- 今日收盤 > 盤整最高點 × 1.003
-- 量比 > 1.3×
-        """)
-    with c2:
-        st.markdown("""
-**B｜EMA 三線收斂突破** ⭐
-
-月線/季線/年線三線充分靠近後爆量突破。
-
-- 近 20 日內三線收斂度曾 < 5%
-- 今日漲幅 > 3%，突破近 20 日高點
-- 量比 > 1.3×（僅適用上市 300 日以上）
-        """)
-    with c3:
-        st.markdown("""
-**C｜EMA 雙線收斂突破**
-
-EMA20 / EMA60 在回調期間重新糾結後突破。
-
-- 近 20 日內雙線收斂度曾 < 5%
-- 今日漲幅 > 3%，突破近 20 日高點
-- 量比 > 1.3×
-        """)
-
-# 掃描
-try:
-    wait = "約需 3–5 分鐘" if universe_key == "全美股" else "約需 30–60 秒"
-    with st.spinner(f"掃描 {universe_key} 中，{wait}（結果會快取至明日）…"):
-        result = run_screener(universe_key)
-
-    as_of = datetime.today().strftime("%Y-%m-%d")
-
-    if result.empty:
-        st.info(f"今日 {universe_key} 無符合條件的訊號。")
-    else:
-        # 各類型數量
-        n_b = (result["訊號類型"].str.startswith("B")).sum()
-        n_c = (result["訊號類型"].str.startswith("C")).sum()
-        n_a = (result["訊號類型"].str.startswith("A")).sum()
-
-        st.markdown(
-            f"<span style='color:#4ade80;font-size:0.9rem;font-weight:700'>"
-            f"✅ 今日訊號：{len(result)} 個</span>"
-            f"<span style='color:#475569;font-size:0.75rem'>"
-            f" &nbsp;（B 三線收斂 {n_b} 個 ／ C 雙線收斂 {n_c} 個 ／ A K棒盤整 {n_a} 個）"
-            f" &nbsp;截至 {as_of}"
-            f"</span>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
-
-        def style_signal(val):
-            if val.startswith("B"):
-                return "color: #a5b4fc; font-weight: 700"
-            if val.startswith("C"):
-                return "color: #67e8f9; font-weight: 700"
-            return "color: #94a3b8"
-
-        styled = result.style.map(style_signal, subset=["訊號類型"])
-        st.dataframe(styled, use_container_width=True,
-                     height=min(700, 60 + len(result) * 35))
-
-        st.markdown(
-            "<div style='color:#334155;font-size:0.68rem;margin-top:8px'>"
-            "⚠️ 策略在多頭環境表現顯著優於熊市，建議搭配大盤壓力儀表板的燈號判斷是否進場。"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
-except Exception as e:
-    st.error(f"掃描失敗：{e}")
+if __name__ == "__main__":
+    main()
