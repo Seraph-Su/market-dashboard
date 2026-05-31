@@ -1,19 +1,4 @@
 """
-breakout_screener.py
---------------------
-每日掃描股票，偵測「EMA收斂後放量突破」訊號，輸出 CSV。
-
-核心邏輯（兩個條件同時滿足其一即觸發）：
-  A. K棒條件：前N天盤整幅度 < X%，今日收盤突破最高點，且量比 > 門檻
-  B. EMA條件：近期三線（月/季/年 EMA）曾高度收斂，今日收盤突破 EMA20，且量比 > 門檻
-
-使用方式：
-    python breakout_screener.py                  # 掃描預設清單 (Nasdaq 100)
-    python breakout_screener.py --tickers PANW NVDA APP
-    python breakout_screener.py --list sp500
-
-輸出：
-    signals_YYYY-MM-DD.csv  (與腳本同目錄)
 """
 
 import argparse
