@@ -123,44 +123,50 @@ def detect_signal(df, offset=0):
     consol_low  = float(consol["Low"].min())
     consol_rng  = (consol_high - consol_low) / consol_low
 
+    def make_record(signal_type):
+        return {
+            "觸發日期":    str(df.index[-1].date()),
+            "訊號類型":    signal_type,
+            "收盤價":      round(close, 2),
+            "突破幅度":    f"{round((close / consol_high - 1) * 100, 2):+.2f}%",
+            "量比":        f"{vol_ratio:.1f}x",
+            "EMA收斂度":   f"{round(float(today['ema_spread']) * 100, 2):.2f}%",
+            "20日最小收斂":f"{round(float(df['ema_spread'].iloc[-ema_lb:].min()) * 100, 2):.2f}%",
+            "EMA20":       round(float(today["ema20"]), 2),
+            "均線模式":    str(today["ema_mode"]),
+            "_day_gain":   round(day_gain * 100, 2),
+        }
+
     # 訊號 A：K棒盤整突破
-    if (consol_rng <= rng
-            and close > consol_high * (1 + buf)
-            and vol_ratio >= vmult):
-        signal_type = "A｜K棒盤整突破"
+    cond_a = (consol_rng <= rng
+              and close > consol_high * (1 + buf)
+              and vol_ratio >= vmult)
 
     # 訊號 B / C：EMA 收斂突破
-    if signal_type is None:
-        recent     = df.iloc[-(ema_lb + 1):-1]
-        prev_close = float(df.iloc[-2]["Close"])
-        day_gain   = (close - prev_close) / prev_close
+    recent     = df.iloc[-(ema_lb + 1):-1]
+    prev_close = float(df.iloc[-2]["Close"])
+    day_gain   = (close - prev_close) / prev_close
 
-        ema_was_tight  = recent["ema_spread"].min() < spread_thr
-        spread2 = abs(df["ema20"] - df["ema60"]) / df[["ema20","ema60"]].mean(axis=1)
-        ema2_was_tight = spread2.iloc[-(ema_lb + 1):-1].min() < spread_thr
+    ema_was_tight  = recent["ema_spread"].min() < spread_thr
+    spread2 = abs(df["ema20"] - df["ema60"]) / df[["ema20","ema60"]].mean(axis=1)
+    ema2_was_tight = spread2.iloc[-(ema_lb + 1):-1].min() < spread_thr
 
-        recent_high = float(recent["High"].max())
-        broke_high  = close > recent_high * (1 + buf)
-        big_move    = day_gain > 0.03
+    recent_high = float(recent["High"].max())
+    broke_high  = close > recent_high * (1 + buf)
+    big_move    = day_gain > 0.03
 
-        if (ema_was_tight or ema2_was_tight) and broke_high and big_move and vol_ratio >= vmult:
-            signal_type = ("B｜EMA三線收斂突破" if ema_was_tight else "C｜EMA雙線收斂突破")
+    cond_bc = (ema_was_tight or ema2_was_tight) and broke_high and big_move and vol_ratio >= vmult
+    ema_type = "B｜EMA三線收斂突破" if ema_was_tight else "C｜EMA雙線收斂突破"
 
-    if signal_type is None:
+    if not cond_a and not cond_bc:
         return None
 
-    return {
-        "觸發日期":    str(df.index[-1].date()),
-        "訊號類型":    signal_type,
-        "收盤價":      round(close, 2),
-        "突破幅度":    f"{round((close / consol_high - 1) * 100, 2):+.2f}%",
-        "量比":        f"{vol_ratio:.1f}x",
-        "EMA收斂度":   f"{round(float(today['ema_spread']) * 100, 2):.2f}%",
-        "20日最小收斂":f"{round(float(df['ema_spread'].iloc[-ema_lb:].min()) * 100, 2):.2f}%",
-        "EMA20":       round(float(today["ema20"]), 2),
-        "均線模式":    str(today["ema_mode"]),
-        "_day_gain":   round(day_gain * 100, 2),
-    }
+    # 兩個條件同時成立 → 兩筆獨立記錄
+    if cond_a and cond_bc:
+        return [make_record("A｜K棒盤整突破"), make_record(ema_type)]
+
+    # 單一條件
+    return make_record("A｜K棒盤整突破" if cond_a else ema_type)
 
 def _download_batch(tickers, start, end):
     """批次下載，回傳 {ticker: df} 字典"""
@@ -212,12 +218,15 @@ def run_screener(universe: str):
 
     SCAN_DAYS = 5   # 往回掃描幾個交易日
     rows = []
-    seen = set()    # 同一支股票同一天只記一次
+    seen = set()    # 同一支股票同一天同一訊號只記一次
     for ticker, df in stock_data.items():
         for offset in range(SCAN_DAYS):
-            sig = detect_signal(df, offset=offset)
-            if sig:
-                key = (ticker, sig["觸發日期"])
+            result = detect_signal(df, offset=offset)
+            if result is None:
+                continue
+            records = result if isinstance(result, list) else [result]
+            for sig in records:
+                key = (ticker, sig["觸發日期"], sig["訊號類型"])
                 if key not in seen:
                     seen.add(key)
                     sig["代號"] = ticker
