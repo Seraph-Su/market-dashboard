@@ -91,18 +91,25 @@ def add_emas(df):
     df["ema_spread"] = (df[cols].max(axis=1) - df[cols].min(axis=1)) / df[cols].median(axis=1)
     return df
 
-def detect_signal(df):
+def detect_signal(df, offset=0):
+    """
+    offset=0 → 最新一天；offset=1 → 前一個交易日，以此類推。
+    """
     cfg = CFG
     n, rng, buf = cfg["consolidation_days"], cfg["consolidation_range"], cfg["breakout_buffer"]
     vmult = cfg["volume_mult"]
     spread_thr, ema_lb = cfg["ema_spread_threshold"], cfg["ema_lookback"]
 
+    # 把 df 截到目標日期
+    if offset > 0:
+        df = df.iloc[:len(df) - offset]
+
     if len(df) < max(n + 2, 65):
         return None
 
     df = add_emas(df)
-    today        = df.iloc[-1]
-    consol       = df.iloc[-(n + 1):-1]
+    today  = df.iloc[-1]
+    consol = df.iloc[-(n + 1):-1]
 
     close     = float(today["Close"])
     avg_vol   = float(consol["Volume"].mean())
@@ -143,6 +150,7 @@ def detect_signal(df):
         return None
 
     return {
+        "觸發日期":    str(df.index[-1].date()),
         "訊號類型":    signal_type,
         "收盤價":      round(close, 2),
         "突破幅度":    f"{round((close / consol_high - 1) * 100, 2):+.2f}%",
@@ -202,24 +210,32 @@ def run_screener(universe: str):
         batch = tickers[i:i+BATCH]
         stock_data.update(_download_batch(batch, start_str, end_str))
 
+    SCAN_DAYS = 5   # 往回掃描幾個交易日
     rows = []
+    seen = set()    # 同一支股票同一天只記一次
     for ticker, df in stock_data.items():
-        sig = detect_signal(df)
-        if sig:
-            sig["代號"] = ticker
-            rows.append(sig)
+        for offset in range(SCAN_DAYS):
+            sig = detect_signal(df, offset=offset)
+            if sig:
+                key = (ticker, sig["觸發日期"])
+                if key not in seen:
+                    seen.add(key)
+                    sig["代號"] = ticker
+                    rows.append(sig)
 
     if not rows:
         return pd.DataFrame()
 
     df_out = pd.DataFrame(rows)
-    # 排序：先訊號類型（B > C > A），再突破幅度
+    # 排序：先觸發日期（新→舊），再訊號類型（B > C > A），再突破幅度
     order = {"B｜EMA三線收斂突破": 0, "C｜EMA雙線收斂突破": 1, "A｜K棒盤整突破": 2}
     df_out["_order"] = df_out["訊號類型"].map(order)
-    df_out = df_out.sort_values(["_order", "_day_gain"], ascending=[True, False])
+    df_out = df_out.sort_values(["觸發日期", "_order", "_day_gain"],
+                                ascending=[False, True, False])
     df_out = df_out.drop(columns=["_order", "_day_gain"]).reset_index(drop=True)
     df_out.index += 1
-    cols = ["代號", "訊號類型", "收盤價", "突破幅度", "量比", "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
+    cols = ["觸發日期", "代號", "訊號類型", "收盤價", "突破幅度", "量比",
+            "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
     return df_out[cols]
 
 # ── Page ──────────────────────────────────────────────────────────
