@@ -1,8 +1,10 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import yfinance as yf
 import requests
+import json
 from datetime import datetime, timedelta
 from io import StringIO
 
@@ -247,6 +249,166 @@ def run_screener(universe: str):
             "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
     return df_out[cols]
 
+# ── Chart data for hover tooltips ────────────────────────────────
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_chart_data(tickers: tuple) -> dict:
+    """只針對結果股票下載 130 天資料，計算三條均線"""
+    end   = datetime.today()
+    start = end - timedelta(days=400)   # 需足夠讓 EMA260 收斂
+    raw   = yf.download(list(tickers), start=start.strftime("%Y-%m-%d"),
+                        end=end.strftime("%Y-%m-%d"),
+                        auto_adjust=True, progress=False)
+    result = {}
+    for ticker in tickers:
+        try:
+            if isinstance(raw.columns, pd.MultiIndex):
+                closes = raw["Close"][ticker].dropna()
+            else:
+                closes = raw["Close"].dropna()
+            df = closes.to_frame("Close")
+            df["EMA20"]  = df["Close"].ewm(span=20,  adjust=False).mean()
+            df["EMA60"]  = df["Close"].ewm(span=60,  adjust=False).mean()
+            df["EMA260"] = df["Close"].ewm(span=260, adjust=False).mean()
+            df = df.tail(90)
+            result[ticker] = {
+                "dates": [str(d.date()) for d in df.index],
+                "close": [round(v, 2) for v in df["Close"].tolist()],
+                "ema20": [round(v, 2) for v in df["EMA20"].tolist()],
+                "ema60": [round(v, 2) for v in df["EMA60"].tolist()],
+                "ema260":[round(v, 2) for v in df["EMA260"].tolist()],
+            }
+        except Exception:
+            pass
+    return result
+
+
+def build_hover_table(result_df: pd.DataFrame, chart_data_dict: dict) -> str:
+    sig_colors = {
+        "B｜EMA三線收斂突破": "#a5b4fc",
+        "C｜EMA雙線收斂突破": "#67e8f9",
+        "A｜K棒盤整突破":    "#94a3b8",
+    }
+    rows_html = ""
+    for _, row in result_df.iterrows():
+        ticker    = row["代號"]
+        sig_color = sig_colors.get(row["訊號類型"], "#94a3b8")
+        has_chart = ticker in chart_data_dict
+        bp        = str(row["突破幅度"])
+        bp_color  = "#4ade80" if "+" in bp else "#f87171"
+        ticker_td = (
+            f'<td class="ticker-cell" data-ticker="{ticker}" '
+            f'style="color:#60a5fa;font-weight:700;font-family:monospace;cursor:crosshair">{ticker}</td>'
+            if has_chart else
+            f'<td style="color:#60a5fa;font-weight:700;font-family:monospace">{ticker}</td>'
+        )
+        rows_html += f"""<tr>
+          <td style="color:#64748b">{row['觸發日期']}</td>
+          {ticker_td}
+          <td style="color:{sig_color};font-size:0.8em;font-weight:600">{row['訊號類型']}</td>
+          <td style="text-align:right">{row['收盤價']}</td>
+          <td style="text-align:right;color:{bp_color}">{bp}</td>
+          <td style="text-align:right;color:#fbbf24">{row['量比']}</td>
+          <td style="text-align:right;color:#94a3b8">{row['EMA收斂度']}</td>
+          <td style="text-align:right;color:#64748b">{row['20日最小收斂']}</td>
+          <td style="text-align:right;color:#64748b">{row['EMA20']}</td>
+          <td style="text-align:right;color:#475569;font-size:0.78em">{row['均線模式']}</td>
+        </tr>"""
+
+    chart_json = json.dumps(chart_data_dict, ensure_ascii=False)
+    table_height = min(700, 80 + len(result_df) * 37)
+
+    return f"""<!DOCTYPE html><html><head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  * {{ box-sizing:border-box; margin:0; padding:0; }}
+  body {{ background:transparent; font-family:-apple-system,sans-serif; color:#e2e8f0; font-size:0.84em; }}
+  table {{ width:100%; border-collapse:collapse; }}
+  th {{ padding:7px 10px; text-align:left; background:#0f172a; color:#64748b;
+        font-size:0.72em; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }}
+  td {{ padding:7px 10px; border-bottom:1px solid #1e293b; white-space:nowrap; }}
+  tr:hover td {{ background:rgba(255,255,255,0.02); }}
+  #chartTooltip {{
+    display:none; position:fixed; z-index:9999;
+    background:#1e293b; border:1px solid #334155; border-radius:12px;
+    padding:14px; width:390px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.6); pointer-events:none;
+  }}
+  #tooltipTitle {{ color:#93c5fd; font-size:0.95em; font-weight:700;
+                   margin-bottom:8px; font-family:monospace; letter-spacing:.05em; }}
+  #tooltipLegend {{ color:#64748b; font-size:0.72em; margin-bottom:6px; }}
+</style>
+</head><body>
+<div id="chartTooltip">
+  <div id="tooltipTitle"></div>
+  <div id="tooltipLegend">收盤 &nbsp;│&nbsp; <span style="color:#60a5fa">EMA20</span> &nbsp;│&nbsp; <span style="color:#f59e0b">EMA60</span> &nbsp;│&nbsp; <span style="color:#f87171">EMA260</span></div>
+  <canvas id="tooltipCanvas" width="362" height="200"></canvas>
+</div>
+<div style="height:{table_height}px;overflow-y:auto">
+<table>
+  <thead><tr>
+    <th>觸發日期</th><th>代號 ↑ hover 看圖</th><th>訊號類型</th>
+    <th style="text-align:right">收盤價</th><th style="text-align:right">突破幅度</th>
+    <th style="text-align:right">量比</th><th style="text-align:right">EMA收斂度</th>
+    <th style="text-align:right">20日最小收斂</th><th style="text-align:right">EMA20</th>
+    <th style="text-align:right">均線模式</th>
+  </tr></thead>
+  <tbody>{rows_html}</tbody>
+</table>
+</div>
+<script>
+const chartData = {chart_json};
+let currentChart = null;
+const tooltip  = document.getElementById('chartTooltip');
+const ttTitle  = document.getElementById('tooltipTitle');
+const canvas   = document.getElementById('tooltipCanvas');
+
+document.querySelectorAll('.ticker-cell').forEach(cell => {{
+  cell.addEventListener('mouseenter', function(e) {{
+    const ticker = this.dataset.ticker;
+    const data   = chartData[ticker];
+    if (!data) return;
+    ttTitle.textContent = ticker;
+    tooltip.style.display = 'block';
+    positionTooltip(e);
+    if (currentChart) {{ currentChart.destroy(); currentChart = null; }}
+    currentChart = new Chart(canvas, {{
+      type: 'line',
+      data: {{
+        labels: data.dates.map(d => d.slice(5)),
+        datasets: [
+          {{ label:'收盤',  data:data.close,  borderColor:'#e2e8f0', borderWidth:1.5, pointRadius:0, tension:0.2 }},
+          {{ label:'EMA20', data:data.ema20,  borderColor:'#60a5fa', borderWidth:1.5, pointRadius:0, tension:0.2 }},
+          {{ label:'EMA60', data:data.ema60,  borderColor:'#f59e0b', borderWidth:1.5, pointRadius:0, tension:0.2 }},
+          {{ label:'EMA260',data:data.ema260, borderColor:'#f87171', borderWidth:1.5, pointRadius:0, tension:0.2, borderDash:[4,3] }},
+        ]
+      }},
+      options: {{
+        responsive:false, animation:false,
+        plugins: {{ legend:{{display:false}}, tooltip:{{enabled:false}} }},
+        scales: {{
+          x: {{ ticks:{{color:'#475569',font:{{size:9}},maxTicksLimit:8,maxRotation:0}}, grid:{{color:'#1e293b'}} }},
+          y: {{ ticks:{{color:'#475569',font:{{size:9}}}}, grid:{{color:'#1e293b'}} }}
+        }}
+      }}
+    }});
+  }});
+  cell.addEventListener('mouseleave', () => {{ tooltip.style.display='none'; }});
+  cell.addEventListener('mousemove',  e => positionTooltip(e));
+}});
+
+function positionTooltip(e) {{
+  const tw=390, th=260;
+  let x = e.clientX + 24;
+  let y = e.clientY - 100;
+  if (x + tw > window.innerWidth)  x = e.clientX - tw - 10;
+  if (y + th > window.innerHeight) y = window.innerHeight - th - 10;
+  if (y < 0) y = 10;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+}}
+</script></body></html>"""
+
+
 # ── Page ──────────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
@@ -343,16 +505,14 @@ try:
         )
         st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
-        def style_signal(val):
-            if val.startswith("B"):
-                return "color: #a5b4fc; font-weight: 700"
-            if val.startswith("C"):
-                return "color: #67e8f9; font-weight: 700"
-            return "color: #94a3b8"
+        # 取得結果股票的 EMA 線圖資料（hover 用）
+        result_tickers = tuple(result["代號"].unique().tolist())
+        with st.spinner("載入線圖資料…"):
+            chart_data = fetch_chart_data(result_tickers)
 
-        styled = result.style.map(style_signal, subset=["訊號類型"])
-        st.dataframe(styled, use_container_width=True,
-                     height=min(700, 60 + len(result) * 35))
+        table_html = build_hover_table(result, chart_data)
+        table_height = min(720, 100 + len(result) * 37)
+        components.html(table_html, height=table_height, scrolling=False)
 
         st.markdown(
             "<div style='color:#334155;font-size:0.68rem;margin-top:8px'>"
