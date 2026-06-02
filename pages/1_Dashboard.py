@@ -58,8 +58,11 @@ def fetch_data():
     spy    = close['SPY']
     ma200  = spy.rolling(200).mean()
     ma50   = spy.rolling(50).mean()
-    ma60   = spy.ewm(span=60, adjust=False).mean()
+    ma60    = spy.ewm(span=60, adjust=False).mean()
     spy60_s = (spy / ma60 - 1) * 100
+    vix      = close['^VIX']
+    vix_ma20 = vix.rolling(20).mean()
+    vix_vs_ma20_s = (vix / vix_ma20 - 1) * 100
     cme_s  = (close['CME'].pct_change(10) - spy.pct_change(10)) * 100
     hyg_iei_s = (close['HYG']/close['IEI']).pct_change(20) * 100
     iwm_s  = (close['IWM']/spy).pct_change(60) * 100
@@ -89,6 +92,8 @@ def fetch_data():
         'sector_breadth':   int(breadth_s.iloc[-1]),
         'spy_vs_60ma':      round(float(spy60_s.iloc[-1]), 2),
         'spy_60ma_val':     round(float(ma60.iloc[-1]), 2),
+        'vix_vs_ma20':      round(float(vix_vs_ma20_s.iloc[-1]), 2),
+        'vix_ma20_val':     round(float(vix_ma20.iloc[-1]), 2),
         # Series
         'cme_series':     s60(cme_s),
         'hyg_iei_series': s60(hyg_iei_s),
@@ -98,7 +103,8 @@ def fetch_data():
         'xlp_series':     s60(xlp_s),
         'rsp_series':     s60(rsp_s),
         'breadth_series': [int(x) for x in breadth_s.iloc[-60:].tolist()],
-        'spy60_series':   s60(spy60_s),
+        'spy60_series':      s60(spy60_s),
+        'vix_ma20_series':   s60(vix_vs_ma20_s),
     }
 
 # ── Status functions ──────────────────────────────────────────────
@@ -111,7 +117,8 @@ def status(key, val):
     if key=='xlp':   return 'red' if val>2 else 'yellow' if val>1 else 'green'
     if key=='rsp':   return 'red' if val<-5 else 'yellow' if val<-3 else 'green'
     if key=='brdth': return 'red' if val<=3 else 'yellow' if val<=5 else 'green'
-    if key=='spy60': return 'yellow' if val > 4.44 or val < -5 else 'green'
+    if key=='spy60':   return 'yellow' if val > 4.44 or val < -5 else 'green'
+    if key=='vixma20': return 'yellow' if val > 0 else 'green'
     return 'green'
 
 BADGE = {
@@ -175,7 +182,8 @@ st_vixr = status('vixr',  D['vix_ratio'])
 st_xlp  = status('xlp',   D['xlp_xly_20d'])
 st_rsp  = status('rsp',   D['rsp_spy_60d'])
 st_br    = status('brdth', D['sector_breadth'])
-st_spy60 = status('spy60', D['spy_vs_60ma'])
+st_spy60   = status('spy60',   D['spy_vs_60ma'])
+st_vixma20 = status('vixma20', D['vix_vs_ma20'])
 
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
 core_statuses = [st_cme, st_xlp, st_iwm]
@@ -219,7 +227,7 @@ st.markdown(f"""
 # ── Combo panel ──────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
 combos = [
-    (combo1, "62.5%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
+    (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
     (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
     (combo3, "46.2%", "3.05x", "CME +5~8%  ＋  IWM/SPY 60日 <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心同步觸發，下跌>5%機率 46.2%（n=39，2016後）；Permutation test p<0.001，95% CI 32~61%"),
 ]
@@ -280,6 +288,11 @@ with y1:
             else f"SPY 偏離季線 {fmt(s60v)}，接近季線支撐" if st_spy60=='yellow' and s60v<0
             else f"SPY 距季線 {fmt(s60v)}，位置健康（季線 ${D['spy_60ma_val']}）")
     card("SPY 季線乖離率（EMA 60）", fmt(s60v), st_spy60, desc, D['spy60_series'])
+with y2:
+    vmv = D['vix_vs_ma20']
+    desc = (f"VIX 漲破 MA20，偏離 {fmt(vmv)}，恐慌情緒升溫" if st_vixma20 == 'yellow'
+            else f"VIX 低於 MA20（{fmt(vmv)}），恐慌情緒平穩（MA20：{D['vix_ma20_val']}）")
+    card("VIX 距 MA20", fmt(vmv), st_vixma20, desc, D['vix_ma20_series'], inv=True)
 
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
