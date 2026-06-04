@@ -164,11 +164,11 @@ def wr_color(wr):
 
 def calc_wr_table(close_arr, dates_arr, forward=20, min_n=5):
     """
-    計算 EMA(260) 乖離率加碼勝率表。
-    只使用 EMA(260) 斜率 > 0（季線向上）的日期。
+    計算 EMA(60) 乖離率加碼勝率表。
+    只使用 EMA(60) 斜率 > 0（季線向上）的日期。
     """
     close_s  = pd.Series(close_arr, index=pd.to_datetime(dates_arr), dtype=float)
-    ema260   = close_s.ewm(span=260, adjust=False).mean()
+    ema260   = close_s.ewm(span=60, adjust=False).mean()
     slope260 = ema260.diff()
     dev260   = (close_s / ema260 - 1) * 100
 
@@ -484,14 +484,14 @@ with ep_col:
                 f"<span style='color:{tc};font-weight:500'>{e['trough']:+.1f}%</span>"
                 f"</div>", unsafe_allow_html=True)
 
-# ── EMA(260) 加碼勝率 ─────────────────────────────────────────────────────────
+# ── EMA(60) 加碼勝率 ─────────────────────────────────────────────────────────
 st.markdown("---")
-st.markdown('<div class="section-hdr">EMA(260) 季線加碼勝率（持有20日 · 季線向上期間）</div>',
+st.markdown('<div class="section-hdr">EMA(60) 季線加碼勝率（持有20日 · 季線向上期間）</div>',
             unsafe_allow_html=True)
 
-if len(close) < 400:
+if len(close) < 200:
     st.markdown(
-        "<div class='warn-yellow'>⚠ 資料不足 400 天，EMA(260) 尚未完全收斂，"
+        "<div class='warn-yellow'>⚠ 資料不足 200 天，EMA(60) 統計樣本可能偏少，"
         "勝率統計樣本可能偏少，請謹慎解讀。</div>",
         unsafe_allow_html=True)
 
@@ -505,13 +505,13 @@ st.markdown(f"""
 <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;
             padding:10px 16px;margin-bottom:12px;display:flex;gap:28px;align-items:center">
   <div>
-    <div style="font-size:0.65rem;color:#64748b">EMA(260) 乖離率</div>
+    <div style="font-size:0.65rem;color:#64748b">EMA(60) 乖離率</div>
     <div style="font-size:1.3rem;font-weight:800;
                 color:{'#fbbf24' if abs(curr_dev260)>10 else '#e2e8f0'}">{'+' if curr_dev260>=0 else ''}{curr_dev260:.2f}%</div>
     <div style="font-size:0.65rem;color:#64748b">桶：{curr_bkt260}</div>
   </div>
   <div>
-    <div style="font-size:0.65rem;color:#64748b">EMA(260) 斜率</div>
+    <div style="font-size:0.65rem;color:#64748b">EMA(60) 斜率</div>
     <div style="font-size:0.95rem;font-weight:700;color:{slope_col}">{slope_txt}</div>
   </div>
 </div>
@@ -564,7 +564,7 @@ else:
 
     st.markdown(
         "<div style='color:#334155;font-size:0.65rem;margin-top:6px'>"
-        "期望值 = 勝率 × 平均報酬 &nbsp;｜&nbsp; 僅計入 EMA(260) 斜率 &gt; 0 的交易日 &nbsp;｜&nbsp;"
+        "期望值 = 勝率 × 平均報酬 &nbsp;｜&nbsp; 僅計入 EMA(60) 斜率 &gt; 0 的交易日 &nbsp;｜&nbsp;"
         "含存活者偏差，n &lt; 20 時請謹慎解讀"
         "</div>",
         unsafe_allow_html=True)
