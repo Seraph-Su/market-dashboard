@@ -58,7 +58,8 @@ def fetch_data():
     spy    = close['SPY']
     ma200  = spy.rolling(200).mean()
     ma50   = spy.rolling(50).mean()
-    ma60    = spy.ewm(span=60, adjust=False).mean()
+    ma60    = spy.ewm(span=60,  adjust=False).mean()
+    ma260   = spy.ewm(span=260, adjust=False).mean()
     spy60_s = (spy / ma60 - 1) * 100
     vix      = close['^VIX']
     vix_ma20 = vix.rolling(20).mean()
@@ -92,6 +93,7 @@ def fetch_data():
         'sector_breadth':   int(breadth_s.iloc[-1]),
         'spy_vs_60ma':      round(float(spy60_s.iloc[-1]), 2),
         'spy_60ma_val':     round(float(ma60.iloc[-1]), 2),
+        'spy_vs_260ma':     round((float(spy.iloc[-1])/float(ma260.iloc[-1])-1)*100, 2),
         'vix_vs_ma20':      round(float(vix_vs_ma20_s.iloc[-1]), 2),
         'vix_ma20_val':     round(float(vix_ma20.iloc[-1]), 2),
         # Series
@@ -120,6 +122,65 @@ def status(key, val):
     if key=='spy60':   return 'yellow' if val > 4.44 or val < -5 else 'green'
     if key=='vixma20': return 'yellow' if val > 0 else 'green'
     return 'green'
+
+# ── Win-rate lookup table ─────────────────────────────────────────
+_WR_TABLE = [
+    {"dev":"5~10%","vix":"30~40","wr":100.0,"avg":8.11,"n":5},
+    {"dev":"0~2%","vix":"30~40","wr":100.0,"avg":11.28,"n":7},
+    {"dev":"5~10%","vix":"25~30","wr":100.0,"avg":8.1,"n":44},
+    {"dev":"2~5%","vix":"30~40","wr":100.0,"avg":9.54,"n":18},
+    {"dev":"2~5%","vix":"25~30","wr":100.0,"avg":9.47,"n":54},
+    {"dev":"5~10%","vix":"20~25","wr":92.8,"avg":5.12,"n":111},
+    {"dev":"2~5%","vix":"20~25","wr":88.0,"avg":5.3,"n":208},
+    {"dev":"5~10%","vix":"18~20","wr":87.5,"avg":3.74,"n":32},
+    {"dev":"0~2%","vix":"25~30","wr":83.9,"avg":7.99,"n":31},
+    {"dev":"-5~-2%","vix":"15~18","wr":83.3,"avg":4.67,"n":12},
+    {"dev":"-2~0%","vix":"15~18","wr":82.2,"avg":4.11,"n":174},
+    {"dev":"-5~-2%","vix":"25~30","wr":81.2,"avg":5.3,"n":16},
+    {"dev":"5~10%","vix":"15~18","wr":80.7,"avg":2.32,"n":57},
+    {"dev":"-5~-2%","vix":"20~25","wr":79.3,"avg":3.65,"n":58},
+    {"dev":"-2~0%","vix":"18~20","wr":78.4,"avg":3.72,"n":88},
+    {"dev":"-2~0%","vix":"12~15","wr":77.8,"avg":2.63,"n":99},
+    {"dev":"-2~0%","vix":"20~25","wr":76.9,"avg":3.4,"n":121},
+    {"dev":"2~5%","vix":"18~20","wr":75.2,"avg":2.18,"n":222},
+    {"dev":"0~2%","vix":"<12","wr":73.9,"avg":1.96,"n":176},
+    {"dev":"2~5%","vix":"<12","wr":73.5,"avg":1.75,"n":377},
+    {"dev":"0~2%","vix":"15~18","wr":71.7,"avg":2.17,"n":353},
+    {"dev":"0~2%","vix":"12~15","wr":71.2,"avg":2.34,"n":489},
+    {"dev":"2~5%","vix":"12~15","wr":69.6,"avg":1.05,"n":843},
+    {"dev":"0~2%","vix":"20~25","wr":66.7,"avg":1.45,"n":102},
+    {"dev":"0~2%","vix":"18~20","wr":64.9,"avg":1.46,"n":134},
+    {"dev":"5~10%","vix":"12~15","wr":64.7,"avg":1.16,"n":68},
+    {"dev":"2~5%","vix":"15~18","wr":61.7,"avg":0.65,"n":564},
+    {"dev":"-2~0%","vix":"30~40","wr":60.0,"avg":4.75,"n":5},
+    {"dev":"-2~0%","vix":"25~30","wr":53.8,"avg":2.54,"n":26},
+    {"dev":"-5~-2%","vix":"18~20","wr":50.0,"avg":2.5,"n":34},
+    {"dev":"-5~-2%","vix":"30~40","wr":27.3,"avg":1.33,"n":11},
+    {"dev":"5~10%","vix":"<12","wr":0.0,"avg":-5.47,"n":8},
+]
+_WR_INDEX = {(r["dev"], r["vix"]): r for r in _WR_TABLE}
+
+def _dev_bucket(dev):
+    if dev < -5:  return "<-5%"
+    if dev < -2:  return "-5~-2%"
+    if dev < 0:   return "-2~0%"
+    if dev < 2:   return "0~2%"
+    if dev < 5:   return "2~5%"
+    if dev < 10:  return "5~10%"
+    return ">10%"
+
+def _vix_bucket(vix):
+    if vix < 12:  return "<12"
+    if vix < 15:  return "12~15"
+    if vix < 18:  return "15~18"
+    if vix < 20:  return "18~20"
+    if vix < 25:  return "20~25"
+    if vix < 30:  return "25~30"
+    if vix < 40:  return "30~40"
+    return ">40"
+
+def lookup_winrate(dev, vix):
+    return _WR_INDEX.get((_dev_bucket(dev), _vix_bucket(vix)))
 
 BADGE = {
     'green':  '<span class="badge-green">正常</span>',
@@ -293,6 +354,45 @@ with y2:
     desc = (f"VIX 漲破 MA20，偏離 {fmt(vmv)}，恐慌情緒升溫" if st_vixma20 == 'yellow'
             else f"VIX 低於 MA20（{fmt(vmv)}），恐慌情緒平穩（MA20：{D['vix_ma20_val']}）")
     card("VIX 距 MA20", fmt(vmv), st_vixma20, desc, D['vix_ma20_series'], inv=True)
+with y3:
+    _dev_now  = D['spy_vs_60ma']
+    _vix_now  = D['vix']
+    _above260 = D['spy_vs_260ma'] > 0
+    _wr_row   = lookup_winrate(_dev_now, _vix_now)
+    _dev_bkt  = _dev_bucket(_dev_now)
+    _vix_bkt  = _vix_bucket(_vix_now)
+    def _wr_color(wr):
+        if wr >= 90: return '#4ade80'
+        if wr >= 70: return '#86efac'
+        if wr >= 60: return '#fb923c'
+        return '#f87171'
+    if _wr_row and _above260:
+        wr_col  = _wr_color(_wr_row['wr'])
+        avg_col = '#4ade80' if _wr_row['avg'] > 0 else '#f87171'
+        st.markdown(f"""
+        <div class="metric-card" style="border-color:{wr_col}55">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <span style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</span>
+            <span class="badge-green" style="background:#14532d;color:#4ade80;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700">EMA260 之上</span>
+          </div>
+          <div style="font-size:2rem;font-weight:800;color:{wr_col};line-height:1.2;margin:4px 0 2px">{_wr_row['wr']:.1f}%</div>
+          <div style="font-size:0.68rem;color:{avg_col}">3個月平均報酬 {'+' if _wr_row['avg']>0 else ''}{_wr_row['avg']:.2f}%</div>
+          <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}，n={_wr_row['n']}<br>資料期間 2000–2026，含存活者偏差</div>
+        </div>""", unsafe_allow_html=True)
+    elif _wr_row and not _above260:
+        st.markdown(f"""
+        <div class="metric-card card-red">
+          <div style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#f87171;margin:4px 0 2px">年線以下，勝率不適用</div>
+          <div class="desc-text">SPY 位於 EMA260 下方 {fmt(D['spy_vs_260ma'])}，回測條件不成立</div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="metric-card">
+          <div style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
+          <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}</div>
+        </div>""", unsafe_allow_html=True)
 
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
