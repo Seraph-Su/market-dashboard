@@ -563,6 +563,12 @@ else:
     """, unsafe_allow_html=True)
 
     st.markdown(
+        "<div style='background:#1c1400;border:1px solid #854d0e;border-radius:8px;"
+        "padding:10px 14px;margin-top:12px;color:#fde68a;font-size:0.82rem;font-weight:600'>"
+        "⚠️ 加碼勝率僅供參考，過去統計數字不代表未來表現"
+        "</div>",
+        unsafe_allow_html=True)
+    st.markdown(
         "<div style='color:#334155;font-size:0.65rem;margin-top:6px'>"
         "期望值 = 勝率 × 平均報酬 &nbsp;｜&nbsp; 僅計入 EMA(60) 斜率 &gt; 0 的交易日 &nbsp;｜&nbsp;"
         "含存活者偏差，n &lt; 20 時請謹慎解讀"
