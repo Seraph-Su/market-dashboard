@@ -1,9 +1,8 @@
 import streamlit as st
+import pandas as pd
 import yfinance as yf
 import numpy as np
 import plotly.graph_objects as go
-
-st.set_page_config(page_title="季線乖離率分析", page_icon="📐", layout="wide")
 
 st.markdown("""
 <style>
@@ -35,9 +34,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_and_calc(ticker: str, period: str, span: int, ma_type: str):
     df = yf.download(ticker, period=period, interval='1d',
@@ -57,7 +54,6 @@ def fetch_and_calc(ticker: str, period: str, span: int, ma_type: str):
         'dev':   dev.tolist(),
         'n':     len(close),
     }
-
 
 def threshold_stats(close_arr, dev_arr, thresholds):
     close = np.array(close_arr, dtype=float)
@@ -87,7 +83,6 @@ def threshold_stats(close_arr, dev_arr, thresholds):
         ))
     return rows
 
-
 def below_episodes(dev_arr, dates_arr):
     dev = np.array(dev_arr, dtype=float)
     eps, in_ep = [], False
@@ -104,7 +99,6 @@ def below_episodes(dev_arr, dates_arr):
                                 trough_date=dates_arr[trough_i]))
                 in_ep = False
     return eps
-
 
 def sign(v, d=1):
     if v is None or np.isnan(v): return '—'
@@ -143,16 +137,90 @@ def warn_box(dev, max_dev, mean, std, label):
         return 'yellow', f'△ 超過均值 +1σ（{mean+std:.1f}%），留意乖離是否繼續擴大'
     return 'green', f'✓ 乖離率正常（{sign(dev)}），技術壓力不大'
 
+# ── Win-rate helpers ──────────────────────────────────────────────────────────
+WR_BUCKETS = [
+    ("<-15%",   None, -15),
+    ("-15~-10%", -15, -10),
+    ("-10~-5%", -10,  -5),
+    ("-5~0%",    -5,   0),
+    ("0~5%",      0,   5),
+    ("5~10%",     5,  10),
+    ("10~15%",   10,  15),
+    (">15%",     15, None),
+]
+
+def get_bucket_label(dev_val):
+    for label, lo, hi in WR_BUCKETS:
+        if lo is None and dev_val < hi:            return label
+        if hi is None and dev_val >= lo:           return label
+        if lo is not None and hi is not None and lo <= dev_val < hi: return label
+    return None
+
+def wr_color(wr):
+    if wr >= 80: return '#4ade80'
+    if wr >= 65: return '#86efac'
+    if wr >= 50: return '#fbbf24'
+    return '#f87171'
+
+def calc_wr_table(close_arr, dates_arr, forward=20, min_n=5):
+    """
+    計算 EMA(260) 乖離率加碼勝率表。
+    只使用 EMA(260) 斜率 > 0（季線向上）的日期。
+    """
+    close_s  = pd.Series(close_arr, index=pd.to_datetime(dates_arr), dtype=float)
+    ema260   = close_s.ewm(span=260, adjust=False).mean()
+    slope260 = ema260.diff()
+    dev260   = (close_s / ema260 - 1) * 100
+
+    df = pd.DataFrame({
+        'close':   close_s,
+        'ema260':  ema260,
+        'slope':   slope260,
+        'dev':     dev260,
+    })
+    # 前向報酬
+    df['fwd']     = df['close'].shift(-forward) / df['close'] - 1
+    df['fwd_pos'] = df['fwd'] > 0
+
+    # 去除 EMA 收斂期前 260 筆及最後 forward 筆
+    df_valid = df.iloc[260:-forward].copy()
+    uptrend  = df_valid['slope'] > 0
+
+    curr_dev260   = round(float(dev260.iloc[-1]), 2)
+    curr_slope260 = float(slope260.iloc[-1])
+    curr_bkt      = get_bucket_label(curr_dev260)
+
+    rows = []
+    for label, lo, hi in WR_BUCKETS:
+        if lo is None:
+            mask = uptrend & (df_valid['dev'] < hi)
+        elif hi is None:
+            mask = uptrend & (df_valid['dev'] >= lo)
+        else:
+            mask = uptrend & (df_valid['dev'] >= lo) & (df_valid['dev'] < hi)
+        sub = df_valid[mask]
+        if len(sub) < min_n:
+            continue
+        wr  = round(sub['fwd_pos'].mean() * 100, 1)
+        avg = round(sub['fwd'].mean() * 100, 2)
+        ev  = round(wr / 100 * avg, 2)
+        rows.append({
+            '乖離率區間': label,
+            '勝率':      wr,
+            '平均報酬':   avg,
+            '期望值':     ev,
+            'n':         len(sub),
+        })
+
+    return pd.DataFrame(rows) if rows else None, curr_dev260, curr_slope260, curr_bkt
 
 # ── Page header ───────────────────────────────────────────────────────────────
-
 st.markdown("## 📐 季線乖離率分析")
 st.markdown("<span style='color:#64748b;font-size:0.78rem'>輸入代碼自動抓取 Yahoo Finance 資料，計算 EMA/SMA 乖離率及歷史分佈</span>",
             unsafe_allow_html=True)
 st.markdown("---")
 
 # ── Controls ──────────────────────────────────────────────────────────────────
-
 c1, c2, c3, c4, c5 = st.columns([3, 1.8, 1.2, 1.2, 1.2])
 with c1:
     raw_input = st.text_input("代碼", placeholder="CRWD / 2330.TW",
@@ -184,11 +252,9 @@ if chip_clicked:
     st.session_state['dev_ticker'] = chip_clicked
 elif go_btn and raw_input.strip():
     st.session_state['dev_ticker'] = raw_input.strip().upper()
-
 ticker = st.session_state.get('dev_ticker', '')
 
 # ── Main display ──────────────────────────────────────────────────────────────
-
 if not ticker:
     st.markdown(
         "<div style='text-align:center;padding:4rem;color:#334155'>"
@@ -210,11 +276,9 @@ close  = np.array(data['close'])
 ma_arr = np.array(data['ma'])
 dev    = np.array(data['dev'])
 ma_lbl = f"{ma_type}({span})"
-
 valid  = dev[~np.isnan(dev)]
 neg    = valid[valid < 0]
 pos    = valid[valid > 0]
-
 cur_price = close[-1]
 cur_ma    = ma_arr[-1]
 cur_dev   = dev[-1]
@@ -234,7 +298,6 @@ p95 = pct(valid, 95); p99 = pct(valid, 99)
 n10 = pct(neg, 10); n25 = pct(neg, 25); n50 = pct(neg, 50)
 
 # ── Header & metrics ──────────────────────────────────────────────────────────
-
 st.markdown(
     f"### {ticker} "
     f"<span style='color:#64748b;font-size:0.85rem'>"
@@ -253,11 +316,8 @@ wtype, wmsg = warn_box(cur_dev, max_dev, mean_all, std_all, ma_lbl)
 st.markdown(f'<div class="warn-{wtype}">{wmsg}</div>', unsafe_allow_html=True)
 
 # ── Charts ────────────────────────────────────────────────────────────────────
-
 chart_col, dist_col = st.columns([3, 1])
-
 with chart_col:
-    # Price chart
     fig_p = go.Figure()
     fig_p.add_trace(go.Scatter(x=dates, y=close.tolist(), name='收盤價',
                                line=dict(color='#60a5fa', width=1.5), mode='lines'))
@@ -273,7 +333,6 @@ with chart_col:
     )
     st.plotly_chart(fig_p, use_container_width=True, config={'displayModeBar': False})
 
-    # Deviation chart
     fig_d = go.Figure()
     fig_d.add_trace(go.Scatter(x=dates, y=dev.tolist(), name='乖離率',
                                line=dict(color='#a78bfa', width=1.5), mode='lines',
@@ -287,7 +346,6 @@ with chart_col:
                         annotation_text=lbl,
                         annotation_font=dict(size=10, color=col),
                         annotation_position=pos_)
-    # Mark current
     fig_d.add_hline(y=cur_dev,
                     line=dict(color=dev_color(cur_dev), width=1.5, dash='dot'),
                     annotation_text=f'現在 {sign(cur_dev)}',
@@ -306,7 +364,6 @@ with chart_col:
 
 with dist_col:
     max_abs = max(abs(p99) if p99 else 1, abs(n10) if n10 else 1) * 1.15
-
     st.markdown('<div class="section-hdr">正乖離百分位</div>', unsafe_allow_html=True)
     for lbl, val, col in [('99th', p99,'#f87171'), ('95th',p95,'#fb923c'),
                            ('90th', p90,'#fbbf24'), ('85th',p85,'#a3e635'),
@@ -317,7 +374,6 @@ with dist_col:
             f"{bar_html(val, max_abs, col)}"
             f"<span style='color:#94a3b8;width:46px;text-align:right'>{val:+.1f}%</span>"
             f"</div>", unsafe_allow_html=True)
-
     if cur_dev > 0:
         c = dev_color(cur_dev)
         st.markdown(
@@ -326,7 +382,6 @@ with dist_col:
             f"{bar_html(cur_dev, max_abs, c)}"
             f"<span style='color:{c};width:46px;text-align:right;font-weight:700'>{cur_dev:+.1f}%</span>"
             f"</div>", unsafe_allow_html=True)
-
     if len(neg) > 0:
         st.markdown('<div class="section-hdr" style="margin-top:12px">負乖離百分位</div>',
                     unsafe_allow_html=True)
@@ -345,8 +400,6 @@ with dist_col:
                 f"{bar_html(cur_dev, max_abs, c, reverse=True)}"
                 f"<span style='color:{c};width:46px;text-align:right;font-weight:700'>{cur_dev:+.1f}%</span>"
                 f"</div>", unsafe_allow_html=True)
-
-        # Negative frequency
         st.markdown('<div class="section-hdr" style="margin-top:10px">跌入各深度機率</div>',
                     unsafe_allow_html=True)
         eps_all = below_episodes(dev.tolist(), dates)
@@ -363,26 +416,19 @@ with dist_col:
                 f"</div>", unsafe_allow_html=True)
 
 # ── Threshold & episode tables ────────────────────────────────────────────────
-
 st.markdown("---")
 ta_col, ep_col = st.columns(2)
-
 with ta_col:
     st.markdown('<div class="section-hdr">超過閾值後的後續表現</div>', unsafe_allow_html=True)
-
-    # Build sensible thresholds from this stock's distribution
     raw_thrs = sorted(set([
         round(mean_all + std_all), round(p75), round(p85), round(p90), round(p95), round(p99)
     ]))
     thresholds = [t for t in raw_thrs if t > mean_all]
-
     rows = threshold_stats(close.tolist(), dev.tolist(), thresholds)
-
     st.markdown(
         "<div class='tbl-hdr' style='grid-template-columns:70px 40px 60px 60px 60px 68px'>"
         "<span>閾值</span><span>次數</span><span>5日</span><span>10日</span><span>20日</span>"
         "<span>回落>5%</span></div>", unsafe_allow_html=True)
-
     for thr, n, r5, r10, r20, dd in rows:
         is_here = (cur_dev >= thr and
                    (rows.index((thr,n,r5,r10,r20,dd)) == len(rows)-1 or
@@ -409,7 +455,6 @@ with ta_col:
 
 with ep_col:
     st.markdown('<div class="section-hdr">跌破季線事件記錄</div>', unsafe_allow_html=True)
-
     eps = below_episodes(dev.tolist(), dates)
     if not eps:
         st.markdown("<span style='color:#475569;font-size:0.8rem'>歷史上未曾跌破季線</span>",
@@ -423,12 +468,10 @@ with ep_col:
             f"共 {len(eps)} 次 ｜ 歷史 {below_pct:.0f}% 時間在均線下方 ｜"
             f" 平均持續 {avg_days} 日 ｜ 平均最深 {np.mean(troughs):+.1f}%</div>",
             unsafe_allow_html=True)
-
         st.markdown(
             "<div class='tbl-hdr' style='grid-template-columns:88px 88px 40px 70px'>"
             "<span>開始</span><span>結束</span><span>天數</span><span>最深跌幅</span></div>",
             unsafe_allow_html=True)
-
         for e in reversed(eps[-14:]):
             is_now = e['end'] == '至今'
             tc = '#f87171' if e['trough'] < -10 else '#fbbf24' if e['trough'] < -5 else '#94a3b8'
@@ -440,6 +483,91 @@ with ep_col:
                 f"<span style='color:#475569'>{e['days']}日</span>"
                 f"<span style='color:{tc};font-weight:500'>{e['trough']:+.1f}%</span>"
                 f"</div>", unsafe_allow_html=True)
+
+# ── EMA(260) 加碼勝率 ─────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown('<div class="section-hdr">EMA(260) 季線加碼勝率（持有20日 · 季線向上期間）</div>',
+            unsafe_allow_html=True)
+
+if len(close) < 400:
+    st.markdown(
+        "<div class='warn-yellow'>⚠ 資料不足 400 天，EMA(260) 尚未完全收斂，"
+        "勝率統計樣本可能偏少，請謹慎解讀。</div>",
+        unsafe_allow_html=True)
+
+wr_tbl, curr_dev260, curr_slope260, curr_bkt260 = calc_wr_table(close.tolist(), dates)
+is_uptrend260 = curr_slope260 > 0
+
+# 狀態橫條
+slope_col = '#4ade80' if is_uptrend260 else '#f87171'
+slope_txt = '季線向上 ✓' if is_uptrend260 else '季線向下 ✗（加碼勝率不適用）'
+st.markdown(f"""
+<div style="background:#1e293b;border:1px solid #334155;border-radius:10px;
+            padding:10px 16px;margin-bottom:12px;display:flex;gap:28px;align-items:center">
+  <div>
+    <div style="font-size:0.65rem;color:#64748b">EMA(260) 乖離率</div>
+    <div style="font-size:1.3rem;font-weight:800;
+                color:{'#fbbf24' if abs(curr_dev260)>10 else '#e2e8f0'}">{'+' if curr_dev260>=0 else ''}{curr_dev260:.2f}%</div>
+    <div style="font-size:0.65rem;color:#64748b">桶：{curr_bkt260}</div>
+  </div>
+  <div>
+    <div style="font-size:0.65rem;color:#64748b">EMA(260) 斜率</div>
+    <div style="font-size:0.95rem;font-weight:700;color:{slope_col}">{slope_txt}</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+if not is_uptrend260:
+    st.markdown(
+        "<div class='warn-red'>季線目前向下，以下歷史統計僅供參考，不建議依此加碼。</div>",
+        unsafe_allow_html=True)
+
+if wr_tbl is None:
+    st.markdown(
+        "<div style='color:#475569;font-size:0.8rem'>各桶樣本數不足（< 5），無法統計勝率。"
+        "請選擇更長的資料期間（建議 5y）。</div>",
+        unsafe_allow_html=True)
+else:
+    rows_html = ""
+    for _, row in wr_tbl.iterrows():
+        is_curr = (row['乖離率區間'] == curr_bkt260) and is_uptrend260
+        bg       = "background:rgba(99,102,241,0.15);border-left:3px solid #4f46e5" if is_curr else "border-left:3px solid transparent"
+        wc       = wr_color(row['勝率'])
+        avg_c    = '#4ade80' if row['平均報酬'] > 0 else '#f87171'
+        ev_c     = '#4ade80' if row['期望值']   > 0 else '#f87171'
+        now_tag  = (' <span style="background:#312e81;color:#a5b4fc;padding:1px 5px;'
+                    'border-radius:6px;font-size:0.62rem;font-weight:700">現在</span>'
+                    if is_curr else "")
+        rows_html += f"""
+        <tr style="{bg}">
+          <td style="padding:7px 12px;font-weight:600;color:#e2e8f0">{row['乖離率區間']}{now_tag}</td>
+          <td style="padding:7px 12px;text-align:right;font-size:1.05rem;font-weight:800;color:{wc}">{row['勝率']:.1f}%</td>
+          <td style="padding:7px 12px;text-align:right;color:{avg_c}">{'+' if row['平均報酬']>0 else ''}{row['平均報酬']:.2f}%</td>
+          <td style="padding:7px 12px;text-align:right;color:{ev_c}">{'+' if row['期望值']>0 else ''}{row['期望值']:.2f}%</td>
+          <td style="padding:7px 12px;text-align:right;color:#64748b">{row['n']}</td>
+        </tr>"""
+
+    st.markdown(f"""
+    <table style="width:100%;border-collapse:collapse;background:#1e293b;border-radius:10px;overflow:hidden">
+      <thead>
+        <tr style="background:#0f172a">
+          <th style="padding:7px 12px;text-align:left;color:#64748b;font-size:0.7em;text-transform:uppercase;letter-spacing:.05em">乖離率區間</th>
+          <th style="padding:7px 12px;text-align:right;color:#64748b;font-size:0.7em;text-transform:uppercase;letter-spacing:.05em">20日勝率</th>
+          <th style="padding:7px 12px;text-align:right;color:#64748b;font-size:0.7em;text-transform:uppercase;letter-spacing:.05em">平均報酬</th>
+          <th style="padding:7px 12px;text-align:right;color:#64748b;font-size:0.7em;text-transform:uppercase;letter-spacing:.05em">期望值</th>
+          <th style="padding:7px 12px;text-align:right;color:#64748b;font-size:0.7em;text-transform:uppercase;letter-spacing:.05em">n</th>
+        </tr>
+      </thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    """, unsafe_allow_html=True)
+
+    st.markdown(
+        "<div style='color:#334155;font-size:0.65rem;margin-top:6px'>"
+        "期望值 = 勝率 × 平均報酬 &nbsp;｜&nbsp; 僅計入 EMA(260) 斜率 &gt; 0 的交易日 &nbsp;｜&nbsp;"
+        "含存活者偏差，n &lt; 20 時請謹慎解讀"
+        "</div>",
+        unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("---")
