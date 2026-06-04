@@ -393,6 +393,42 @@ with y3:
           <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
           <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}</div>
         </div>""", unsafe_allow_html=True)
+with y4:
+    if _wr_row and _above260:
+        avg     = _wr_row['avg']
+        wr      = _wr_row['wr']
+        ev      = round(wr / 100 * avg, 2)   # 期望值 = 勝率 × 平均報酬
+        avg_col = '#4ade80' if avg > 0 else '#f87171'
+        ev_col  = '#4ade80' if ev  > 0 else '#f87171'
+        st.markdown(f"""
+        <div class="metric-card">
+          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
+          <div style="display:flex;gap:16px;align-items:baseline;margin:6px 0 4px">
+            <div>
+              <div style="font-size:0.6rem;color:#64748b;margin-bottom:1px">期望值</div>
+              <div style="font-size:1.45rem;font-weight:800;color:{ev_col}">{'+' if ev>0 else ''}{ev:.2f}%</div>
+            </div>
+            <div style="color:#1e293b;font-size:1rem">｜</div>
+            <div>
+              <div style="font-size:0.6rem;color:#64748b;margin-bottom:1px">平均報酬</div>
+              <div style="font-size:1.45rem;font-weight:800;color:{avg_col}">{'+' if avg>0 else ''}{avg:.2f}%</div>
+            </div>
+          </div>
+          <div class="desc-text">期望值 = 勝率 {wr:.0f}% × 平均報酬 {'+' if avg>0 else ''}{avg:.2f}%<br>差值（平均報酬 − 期望值）= <span style="color:#f87171">−{round(avg - ev, 2):.2f}%</span>（損失機率的拖累）&nbsp;｜&nbsp; n={_wr_row['n']}</div>
+        </div>""", unsafe_allow_html=True)
+    elif not _above260:
+        st.markdown("""
+        <div class="metric-card">
+          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
+          <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">—</div>
+          <div class="desc-text">年線以下，數據不適用</div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="metric-card">
+          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
+          <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">查無資料</div>
+        </div>""", unsafe_allow_html=True)
 
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
