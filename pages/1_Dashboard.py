@@ -408,19 +408,28 @@ with y3:
         if wr >= 60: return '#fb923c'
         return '#f87171'
     if _above260:
+        # 百分位計算（在所有桶位的勝率分佈中排第幾）
+        _all_wr_20 = [r['wr'] for r in _WR_TABLE_20D]
+        _all_wr_60 = [r['wr'] for r in _WR_TABLE]
+        def _percentile_in(wr, all_wrs):
+            return round(sum(1 for w in all_wrs if w <= wr) / len(all_wrs) * 100)
+
         # 建立雙欄比較列
-        def _period_row(label, row):
+        def _period_row(label, row, all_wrs):
             if not row:
                 return (f"<div style='flex:1;opacity:0.4'>"
                         f"<div style='font-size:0.6rem;color:#64748b'>{label}</div>"
                         f"<div style='font-size:1.1rem;font-weight:700;color:#475569'>—</div></div>")
-            wc  = _wr_color(row['wr'])
+            wc   = _wr_color(row['wr'])
+            pctl = _percentile_in(row['wr'], all_wrs)
+            pctl_col = '#4ade80' if pctl >= 75 else '#fbbf24' if pctl >= 50 else '#f87171'
             return (f"<div style='flex:1'>"
                     f"<div style='font-size:0.6rem;color:#64748b;margin-bottom:2px'>{label}</div>"
                     f"<div style='font-size:1.3rem;font-weight:800;color:{wc}'>{row['wr']:.1f}%</div>"
-                    f"<div style='font-size:0.65rem;color:#475569'>n={row['n']}</div></div>")
-        row1 = _period_row("1個月勝率", _wr_row_20)
-        row2 = _period_row("3個月勝率", _wr_row)
+                    f"<div style='font-size:0.65rem;color:{pctl_col}'>P{pctl} 百分位</div>"
+                    f"<div style='font-size:0.62rem;color:#475569'>n={row['n']}</div></div>")
+        row1 = _period_row("1個月勝率", _wr_row_20, _all_wr_20)
+        row2 = _period_row("3個月勝率", _wr_row,    _all_wr_60)
         border_col = _wr_color(_wr_row['wr']) if _wr_row else '#334155'
         st.markdown(f"""
         <div class="metric-card" style="border-color:{border_col}55">
