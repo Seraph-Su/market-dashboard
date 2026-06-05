@@ -21,38 +21,18 @@ NASDAQ100 = [
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_largecap_us_tickers(min_market_cap: int = 1_000_000_000) -> list:
-    """從 Yahoo Finance Screener 抓取市值 > min_market_cap 的全美股清單"""
-    url = "https://query2.finance.yahoo.com/v1/finance/screener"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        "Content-Type": "application/json",
-    }
-    query_body = {
-        "offset": 0,
-        "size": 250,
-        "sortField": "marketcap",
-        "sortType": "DESC",
-        "quoteType": "EQUITY",
-        "query": {
-            "operator": "and",
-            "operands": [
-                {"operator": "gt", "operands": ["marketcap", min_market_cap]},
-                {"operator": "eq", "operands": ["region", "us"]},
-            ],
-        },
-        "userId": "",
-        "userIdType": "guid",
-    }
+    """使用 yfinance EquityQuery 抓取市值 > min_market_cap 的全美股清單"""
+    from yfinance import EquityQuery
+    q = EquityQuery('and', [
+        EquityQuery('gt', ['intradaymarketcap', min_market_cap]),
+        EquityQuery('eq', ['region', 'us']),
+    ])
     tickers = []
-    for offset in range(0, 3000, 250):   # 最多抓 3000 支
-        query_body["offset"] = offset
+    for offset in range(0, 7000, 250):   # 全美股約 6400+ 支
         try:
-            resp = requests.post(url, json=query_body, headers=headers, timeout=15)
-            resp.raise_for_status()
-            quotes = resp.json()["finance"]["result"][0].get("quotes", [])
-            if not quotes:
-                break
-            tickers.extend(q["symbol"] for q in quotes if "." not in q["symbol"])
+            result = yf.screen(q, size=250, offset=offset)
+            quotes  = result.get('quotes', [])
+            tickers.extend(x['symbol'] for x in quotes if '.' not in x['symbol'])
             if len(quotes) < 250:
                 break
         except Exception:
