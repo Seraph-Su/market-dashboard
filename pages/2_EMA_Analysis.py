@@ -586,17 +586,18 @@ try:
                 f"<div style='font-size:1.4rem;font-weight:800;color:{c}'>{wr:.0f}%</div>"
                 f"<div style='font-size:0.62rem;color:{pc}'>P{pctl} 百分位</div></div>")
 
-    # 建議文字（門檻依回測跳躍點：1個月 65/70%，3個月 70/75%）
-    _wr20v = _wr20 or 0
-    _wr60v = _wr60 or 0
-    if _wr20v >= 70 and _wr60v >= 75:
-        advice = "大盤環境有利，個股勝率可直接使用"
+    # 建議文字（使用 1個月與 3個月勝率的平均值，門檻：≥72.5% 綠，≥67.5% 黃）
+    _wr20v  = _wr20 or 0
+    _wr60v  = _wr60 or 0
+    _avg_wr = (_wr20v + _wr60v) / 2 if (_wr20 and _wr60) else max(_wr20v, _wr60v)
+    if _avg_wr >= 72.5:
+        advice = f"大盤環境有利（平均勝率 {_avg_wr:.0f}%），個股勝率可直接使用"
         adv_col = "#4ade80"; adv_bg = "#052e16"; adv_border = "#16a34a"
-    elif _wr20v >= 65 or _wr60v >= 70:
-        advice = "大盤環境普通，建議個股勝率門檻提高至 75% 以上才加碼"
+    elif _avg_wr >= 67.5:
+        advice = f"大盤環境普通（平均勝率 {_avg_wr:.0f}%），建議個股勝率門檻提高至 75% 以上才加碼"
         adv_col = "#fcd34d"; adv_bg = "#3a2800"; adv_border = "#d97706"
     else:
-        advice = "大盤環境不佳，即使個股技術良好也建議暫緩加碼"
+        advice = f"大盤環境不佳（平均勝率 {_avg_wr:.0f}%），即使個股技術良好也建議暫緩加碼"
         adv_col = "#fca5a5"; adv_bg = "#450a0a"; adv_border = "#dc2626"
 
     b20 = _wr_block("1個月勝率", _wr20, _pctl20)
