@@ -4,6 +4,71 @@ import yfinance as yf
 import numpy as np
 import plotly.graph_objects as go
 
+# ── 大盤環境勝率表（來自 S&P500 回測 2000–2026）────────────────────
+_MKT_WR_20 = {
+    ("0~2%","30~40"):100.0,("2~5%","30~40"):88.9,("2~5%","25~30"):87.3,
+    ("-2~0%","30~40"):100.0,("-5~-2%","18~20"):85.3,("2~5%","20~25"):85.0,
+    ("-2~0%","15~18"):81.5,("0~2%","25~30"):90.3,("-5~-2%","25~30"):75.0,
+    ("5~10%","18~20"):77.4,("5~10%","20~25"):74.1,("-2~0%","18~20"):77.3,
+    ("-5~-2%","20~25"):69.0,("5~10%","25~30"):63.6,("0~2%","<12"):73.6,
+    ("2~5%","<12"):68.7,("0~2%","15~18"):62.8,("0~2%","12~15"):66.9,
+    ("2~5%","12~15"):63.0,("2~5%","18~20"):62.9,("0~2%","20~25"):64.1,
+    ("5~10%","15~18"):63.8,("2~5%","15~18"):63.7,("-2~0%","20~25"):69.4,
+    ("-2~0%","12~15"):51.5,("-2~0%","25~30"):57.1,("0~2%","18~20"):56.3,
+    ("-5~-2%","15~18"):16.7,("-5~-2%","30~40"):45.5,("5~10%","12~15"):56.7,
+    ("5~10%","30~40"):20.0,("5~10%","<12"):0.0,
+}
+_MKT_WR_60 = {
+    ("5~10%","30~40"):100.0,("0~2%","30~40"):100.0,("5~10%","25~30"):100.0,
+    ("2~5%","30~40"):100.0,("2~5%","25~30"):100.0,("5~10%","20~25"):92.9,
+    ("2~5%","20~25"):87.9,("5~10%","18~20"):87.1,("0~2%","25~30"):83.9,
+    ("-5~-2%","15~18"):83.3,("-2~0%","15~18"):82.1,("-5~-2%","25~30"):81.2,
+    ("5~10%","15~18"):79.3,("-5~-2%","20~25"):79.3,("-2~0%","18~20"):78.4,
+    ("-2~0%","12~15"):77.8,("-2~0%","20~25"):77.4,("2~5%","18~20"):74.6,
+    ("0~2%","<12"):74.1,("2~5%","<12"):74.1,("0~2%","15~18"):71.9,
+    ("0~2%","12~15"):71.0,("2~5%","12~15"):69.3,("0~2%","20~25"):67.0,
+    ("5~10%","12~15"):65.7,("0~2%","18~20"):64.4,("2~5%","15~18"):62.1,
+    ("-2~0%","30~40"):60.0,("-2~0%","25~30"):57.1,("-5~-2%","18~20"):50.0,
+    ("-5~-2%","30~40"):27.3,("5~10%","<12"):0.0,
+}
+
+def _mkt_dev_bkt(v):
+    if v<-5: return "<-5%"
+    if v<-2: return "-5~-2%"
+    if v<0:  return "-2~0%"
+    if v<2:  return "0~2%"
+    if v<5:  return "2~5%"
+    if v<10: return "5~10%"
+    return ">10%"
+
+def _mkt_vix_bkt(v):
+    if v<12: return "<12"
+    if v<15: return "12~15"
+    if v<18: return "15~18"
+    if v<20: return "18~20"
+    if v<25: return "20~25"
+    if v<30: return "25~30"
+    if v<40: return "30~40"
+    return ">40"
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_market_context():
+    """抓取 SPY EMA60 乖離率 + VIX，供大盤環境評分使用"""
+    import yfinance as yf
+    from datetime import datetime, timedelta
+    end   = datetime.today()
+    start = end - timedelta(days=120)
+    spy = yf.download('SPY', start=start.strftime('%Y-%m-%d'),
+                      end=end.strftime('%Y-%m-%d'),
+                      auto_adjust=True, progress=False)['Close'].squeeze()
+    vix = yf.download('^VIX', start=(end-timedelta(days=5)).strftime('%Y-%m-%d'),
+                      end=end.strftime('%Y-%m-%d'),
+                      auto_adjust=True, progress=False)['Close'].squeeze()
+    ema60 = spy.ewm(span=60, adjust=False).mean()
+    dev   = round(float((spy.iloc[-1]/ema60.iloc[-1]-1)*100), 2)
+    vix_v = round(float(vix.iloc[-1]), 2)
+    return dev, vix_v
+
 st.markdown("""
 <style>
   .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
@@ -41,7 +106,7 @@ def fetch_and_calc(ticker: str, period: str, span: int, ma_type: str):
                      auto_adjust=True, progress=False)
     if df.empty or len(df) < span + 5:
         return None
-    close = df['Close'].squeeze()
+    close = df['Close'].squeeze().dropna()
     if ma_type == 'EMA':
         ma = close.ewm(span=span, adjust=False).mean()
     else:
@@ -484,8 +549,86 @@ with ep_col:
                 f"<span style='color:{tc};font-weight:500'>{e['trough']:+.1f}%</span>"
                 f"</div>", unsafe_allow_html=True)
 
-# ── EMA(60) 加碼勝率 ─────────────────────────────────────────────────────────
+# ── 大盤環境評分 ──────────────────────────────────────────────────────────────
 st.markdown("---")
+st.markdown('<div class="section-hdr">雙層過濾框架：大盤環境 × 個股位置</div>',
+            unsafe_allow_html=True)
+try:
+    _mkt_dev, _mkt_vix = fetch_market_context()
+    _mkt_db  = _mkt_dev_bkt(_mkt_dev)
+    _mkt_vb  = _mkt_vix_bkt(_mkt_vix)
+    _wr20    = _MKT_WR_20.get((_mkt_db, _mkt_vb))
+    _wr60    = _MKT_WR_60.get((_mkt_db, _mkt_vb))
+
+    def _env_color(wr):
+        if wr is None: return '#475569'
+        if wr >= 75: return '#4ade80'
+        if wr >= 60: return '#fbbf24'
+        return '#f87171'
+
+    def _pct_in_dist(wr, d):
+        if wr is None: return None
+        vals = list(d.values())
+        return round(sum(1 for v in vals if v <= wr) / len(vals) * 100)
+
+    _pctl20 = _pct_in_dist(_wr20, _MKT_WR_20)
+    _pctl60 = _pct_in_dist(_wr60, _MKT_WR_60)
+
+    def _wr_block(label, wr, pctl):
+        if wr is None:
+            return (f"<div style='flex:1;text-align:center;opacity:0.4'>"
+                    f"<div style='font-size:0.62rem;color:#64748b'>{label}</div>"
+                    f"<div style='font-size:1.1rem;font-weight:700;color:#475569'>—</div></div>")
+        c = _env_color(wr)
+        pc = '#4ade80' if pctl>=75 else '#fbbf24' if pctl>=50 else '#f87171'
+        return (f"<div style='flex:1;text-align:center'>"
+                f"<div style='font-size:0.62rem;color:#64748b;margin-bottom:2px'>{label}</div>"
+                f"<div style='font-size:1.4rem;font-weight:800;color:{c}'>{wr:.0f}%</div>"
+                f"<div style='font-size:0.62rem;color:{pc}'>P{pctl} 百分位</div></div>")
+
+    # 建議文字（門檻依回測跳躍點：1個月 65/70%，3個月 70/75%）
+    _wr20v = _wr20 or 0
+    _wr60v = _wr60 or 0
+    if _wr20v >= 70 and _wr60v >= 75:
+        advice = "大盤環境有利，個股勝率可直接使用"
+        adv_col = "#4ade80"; adv_bg = "#052e16"; adv_border = "#16a34a"
+    elif _wr20v >= 65 or _wr60v >= 70:
+        advice = "大盤環境普通，建議個股勝率門檻提高至 75% 以上才加碼"
+        adv_col = "#fcd34d"; adv_bg = "#3a2800"; adv_border = "#d97706"
+    else:
+        advice = "大盤環境不佳，即使個股技術良好也建議暫緩加碼"
+        adv_col = "#fca5a5"; adv_bg = "#450a0a"; adv_border = "#dc2626"
+
+    b20 = _wr_block("1個月勝率", _wr20, _pctl20)
+    b60 = _wr_block("3個月勝率", _wr60, _pctl60)
+
+    st.markdown(f"""
+    <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:20px">
+        <div style="flex:2">
+          <div style="font-size:0.68rem;color:#64748b;margin-bottom:4px">
+            S&P500 大盤環境評分 &nbsp;｜&nbsp;
+            EMA60 乖離率 <span style="color:#e2e8f0;font-weight:600">{'+' if _mkt_dev>=0 else ''}{_mkt_dev}%</span>（桶：{_mkt_db}）&nbsp;×&nbsp;
+            VIX <span style="color:#e2e8f0;font-weight:600">{_mkt_vix}</span>（桶：{_mkt_vb}）
+          </div>
+          <div style="background:{adv_bg};border:1px solid {adv_border};border-radius:6px;
+                      padding:7px 12px;color:{adv_col};font-size:0.78rem;font-weight:600">
+            💡 {advice}
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex:1;border-left:1px solid #334155;padding-left:16px">
+          {b20}{b60}
+        </div>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
+except Exception:
+    st.markdown(
+        "<div style='background:#1e293b;border:1px solid #334155;border-radius:8px;"
+        "padding:10px 14px;color:#475569;font-size:0.78rem'>大盤環境評分：暫時無法載入</div>",
+        unsafe_allow_html=True)
+
+# ── EMA(60) 加碼勝率 ─────────────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">EMA(60) 季線加碼勝率（持有20日 · 季線向上期間）</div>',
             unsafe_allow_html=True)
 
