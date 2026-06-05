@@ -60,10 +60,10 @@ def fetch_market_context():
     start = end - timedelta(days=120)
     spy = yf.download('SPY', start=start.strftime('%Y-%m-%d'),
                       end=end.strftime('%Y-%m-%d'),
-                      auto_adjust=True, progress=False)['Close'].squeeze()
-    vix = yf.download('^VIX', start=(end-timedelta(days=5)).strftime('%Y-%m-%d'),
+                      auto_adjust=True, progress=False)['Close'].squeeze().dropna()
+    vix = yf.download('^VIX', start=(end-timedelta(days=10)).strftime('%Y-%m-%d'),
                       end=end.strftime('%Y-%m-%d'),
-                      auto_adjust=True, progress=False)['Close'].squeeze()
+                      auto_adjust=True, progress=False)['Close'].squeeze().dropna()
     ema60 = spy.ewm(span=60, adjust=False).mean()
     dev   = round(float((spy.iloc[-1]/ema60.iloc[-1]-1)*100), 2)
     vix_v = round(float(vix.iloc[-1]), 2)
