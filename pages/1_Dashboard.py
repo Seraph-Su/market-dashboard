@@ -160,6 +160,46 @@ _WR_TABLE = [
 ]
 _WR_INDEX = {(r["dev"], r["vix"]): r for r in _WR_TABLE}
 
+# 20 日（1個月）持有勝率表（2000–2026，年線之上）
+_WR_TABLE_20D = [
+    {"dev":"0~2%","vix":"30~40","wr":100.0,"avg":4.96,"n":7},
+    {"dev":"-2~0%","vix":"30~40","wr":100.0,"avg":7.57,"n":5},
+    {"dev":"2~5%","vix":"25~30","wr":87.3,"avg":3.56,"n":55},
+    {"dev":"2~5%","vix":"30~40","wr":88.9,"avg":3.31,"n":18},
+    {"dev":"-5~-2%","vix":"18~20","wr":85.3,"avg":3.31,"n":34},
+    {"dev":"2~5%","vix":"20~25","wr":85.0,"avg":2.16,"n":207},
+    {"dev":"-2~0%","vix":"15~18","wr":81.5,"avg":1.87,"n":173},
+    {"dev":"0~2%","vix":"25~30","wr":90.3,"avg":4.14,"n":31},
+    {"dev":"-5~-2%","vix":"25~30","wr":75.0,"avg":1.49,"n":16},
+    {"dev":"5~10%","vix":"18~20","wr":77.4,"avg":1.52,"n":31},
+    {"dev":"5~10%","vix":"20~25","wr":74.1,"avg":1.44,"n":112},
+    {"dev":"-2~0%","vix":"18~20","wr":77.3,"avg":2.04,"n":88},
+    {"dev":"-5~-2%","vix":"20~25","wr":69.0,"avg":1.31,"n":58},
+    {"dev":"5~10%","vix":"25~30","wr":63.6,"avg":0.63,"n":44},
+    {"dev":"0~2%","vix":"<12","wr":73.6,"avg":0.85,"n":174},
+    {"dev":"2~5%","vix":"<12","wr":68.7,"avg":0.62,"n":374},
+    {"dev":"0~2%","vix":"15~18","wr":62.8,"avg":0.54,"n":352},
+    {"dev":"0~2%","vix":"12~15","wr":66.9,"avg":0.66,"n":490},
+    {"dev":"2~5%","vix":"12~15","wr":63.0,"avg":0.40,"n":844},
+    {"dev":"2~5%","vix":"18~20","wr":62.9,"avg":0.50,"n":224},
+    {"dev":"0~2%","vix":"20~25","wr":64.1,"avg":0.67,"n":103},
+    {"dev":"5~10%","vix":"15~18","wr":63.8,"avg":0.14,"n":58},
+    {"dev":"2~5%","vix":"15~18","wr":63.7,"avg":0.13,"n":564},
+    {"dev":"-2~0%","vix":"20~25","wr":69.4,"avg":1.45,"n":124},
+    {"dev":"-2~0%","vix":"12~15","wr":51.5,"avg":-0.31,"n":99},
+    {"dev":"-2~0%","vix":"25~30","wr":57.1,"avg":-0.07,"n":28},
+    {"dev":"0~2%","vix":"18~20","wr":56.3,"avg":-0.39,"n":135},
+    {"dev":"-5~-2%","vix":"15~18","wr":16.7,"avg":-0.99,"n":12},
+    {"dev":"-5~-2%","vix":"30~40","wr":45.5,"avg":-1.80,"n":11},
+    {"dev":"5~10%","vix":"12~15","wr":56.7,"avg":0.13,"n":67},
+    {"dev":"5~10%","vix":"30~40","wr":20.0,"avg":-1.46,"n":5},
+    {"dev":"5~10%","vix":"<12","wr":0.0,"avg":-3.92,"n":8},
+]
+_WR_INDEX_20D = {(r["dev"], r["vix"]): r for r in _WR_TABLE_20D}
+
+def lookup_winrate_20d(dev, vix):
+    return _WR_INDEX_20D.get((_dev_bucket(dev), _vix_bucket(vix)))
+
 def _dev_bucket(dev):
     if dev < -5:  return "<-5%"
     if dev < -2:  return "-5~-2%"
@@ -355,66 +395,80 @@ with y2:
             else f"VIX 低於 MA20（{fmt(vmv)}），恐慌情緒平穩（MA20：{D['vix_ma20_val']}）")
     card("VIX 距 MA20", fmt(vmv), st_vixma20, desc, D['vix_ma20_series'], inv=True)
 with y3:
-    _dev_now  = D['spy_vs_60ma']
-    _vix_now  = D['vix']
-    _above260 = D['spy_vs_260ma'] > 0
-    _wr_row   = lookup_winrate(_dev_now, _vix_now)
-    _dev_bkt  = _dev_bucket(_dev_now)
-    _vix_bkt  = _vix_bucket(_vix_now)
+    _dev_now   = D['spy_vs_60ma']
+    _vix_now   = D['vix']
+    _above260  = D['spy_vs_260ma'] > 0
+    _wr_row    = lookup_winrate(_dev_now, _vix_now)
+    _wr_row_20 = lookup_winrate_20d(_dev_now, _vix_now)
+    _dev_bkt   = _dev_bucket(_dev_now)
+    _vix_bkt   = _vix_bucket(_vix_now)
     def _wr_color(wr):
         if wr >= 90: return '#4ade80'
         if wr >= 70: return '#86efac'
         if wr >= 60: return '#fb923c'
         return '#f87171'
-    if _wr_row and _above260:
-        wr_col  = _wr_color(_wr_row['wr'])
-        avg_col = '#4ade80' if _wr_row['avg'] > 0 else '#f87171'
+    if _above260:
+        # 建立雙欄比較列
+        def _period_row(label, row):
+            if not row:
+                return (f"<div style='flex:1;opacity:0.4'>"
+                        f"<div style='font-size:0.6rem;color:#64748b'>{label}</div>"
+                        f"<div style='font-size:1.1rem;font-weight:700;color:#475569'>—</div></div>")
+            wc  = _wr_color(row['wr'])
+            return (f"<div style='flex:1'>"
+                    f"<div style='font-size:0.6rem;color:#64748b;margin-bottom:2px'>{label}</div>"
+                    f"<div style='font-size:1.3rem;font-weight:800;color:{wc}'>{row['wr']:.1f}%</div>"
+                    f"<div style='font-size:0.65rem;color:#475569'>n={row['n']}</div></div>")
+        row1 = _period_row("1個月勝率", _wr_row_20)
+        row2 = _period_row("3個月勝率", _wr_row)
+        border_col = _wr_color(_wr_row['wr']) if _wr_row else '#334155'
         st.markdown(f"""
-        <div class="metric-card" style="border-color:{wr_col}55">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <span style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</span>
-            <span class="badge-green" style="background:#14532d;color:#4ade80;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700">EMA260 之上</span>
+        <div class="metric-card" style="border-color:{border_col}55">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <span style="font-size:0.72rem;color:#94a3b8">進場勝率（EMA260 之上）</span>
+            <span style="background:#14532d;color:#4ade80;padding:2px 7px;border-radius:8px;font-size:0.62rem;font-weight:700">✓</span>
           </div>
-          <div style="font-size:2rem;font-weight:800;color:{wr_col};line-height:1.2;margin:4px 0 2px">{_wr_row['wr']:.1f}%</div>
-          <div style="font-size:0.68rem;color:{avg_col}">3個月平均報酬 {'+' if _wr_row['avg']>0 else ''}{_wr_row['avg']:.2f}%</div>
-          <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}，n={_wr_row['n']}<br>資料期間 2000–2026，含存活者偏差</div>
+          <div style="display:flex;gap:12px">{row1}{row2}</div>
+          <div class="desc-text" style="margin-top:6px">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}<br>資料期間 2000–2026，含存活者偏差</div>
         </div>""", unsafe_allow_html=True)
-    elif _wr_row and not _above260:
+    elif not _above260:
         st.markdown(f"""
         <div class="metric-card card-red">
-          <div style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</div>
-          <div style="font-size:1.1rem;font-weight:700;color:#f87171;margin:4px 0 2px">年線以下，勝率不適用</div>
+          <div style="font-size:0.72rem;color:#94a3b8">進場勝率</div>
+          <div style="font-size:1rem;font-weight:700;color:#f87171;margin:4px 0 2px">年線以下，勝率不適用</div>
           <div class="desc-text">SPY 位於 EMA260 下方 {fmt(D['spy_vs_260ma'])}，回測條件不成立</div>
         </div>""", unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8">進場勝率（60日持有）</div>
-          <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
+          <div style="font-size:0.72rem;color:#94a3b8">進場勝率</div>
+          <div style="font-size:1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
           <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}</div>
         </div>""", unsafe_allow_html=True)
 with y4:
-    if _wr_row and _above260:
-        avg     = _wr_row['avg']
-        wr      = _wr_row['wr']
-        ev      = round(wr / 100 * avg, 2)   # 期望值 = 勝率 × 平均報酬
-        avg_col = '#4ade80' if avg > 0 else '#f87171'
-        ev_col  = '#4ade80' if ev  > 0 else '#f87171'
+    if _above260 and (_wr_row or _wr_row_20):
+        def _ev_block(label, row):
+            if not row:
+                return (f"<div style='flex:1;opacity:0.4'>"
+                        f"<div style='font-size:0.6rem;color:#64748b'>{label}</div>"
+                        f"<div style='font-size:0.95rem;font-weight:700;color:#475569'>—</div></div>")
+            avg = row['avg']; wr = row['wr']; ev = round(wr/100*avg, 2)
+            ac = '#4ade80' if avg>0 else '#f87171'
+            ec = '#4ade80' if ev>0  else '#f87171'
+            return (f"<div style='flex:1'>"
+                    f"<div style='font-size:0.6rem;color:#64748b;margin-bottom:2px'>{label}</div>"
+                    f"<div style='font-size:0.7rem;color:#475569'>期望值</div>"
+                    f"<div style='font-size:1.15rem;font-weight:800;color:{ec}'>{'+' if ev>0 else ''}{ev:.2f}%</div>"
+                    f"<div style='font-size:0.7rem;color:#475569;margin-top:3px'>平均報酬</div>"
+                    f"<div style='font-size:1.15rem;font-weight:800;color:{ac}'>{'+' if avg>0 else ''}{avg:.2f}%</div>"
+                    f"</div>")
+        b1 = _ev_block("1個月", _wr_row_20)
+        b2 = _ev_block("3個月", _wr_row)
         st.markdown(f"""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
-          <div style="display:flex;gap:16px;align-items:baseline;margin:6px 0 4px">
-            <div>
-              <div style="font-size:0.6rem;color:#64748b;margin-bottom:1px">期望值</div>
-              <div style="font-size:1.45rem;font-weight:800;color:{ev_col}">{'+' if ev>0 else ''}{ev:.2f}%</div>
-            </div>
-            <div style="color:#1e293b;font-size:1rem">｜</div>
-            <div>
-              <div style="font-size:0.6rem;color:#64748b;margin-bottom:1px">平均報酬</div>
-              <div style="font-size:1.45rem;font-weight:800;color:{avg_col}">{'+' if avg>0 else ''}{avg:.2f}%</div>
-            </div>
-          </div>
-          <div class="desc-text">期望值 = 勝率 {wr:.0f}% × 平均報酬 {'+' if avg>0 else ''}{avg:.2f}%<br>差值（平均報酬 − 期望值）= <span style="color:#f87171">−{round(avg - ev, 2):.2f}%</span>（損失機率的拖累）&nbsp;｜&nbsp; n={_wr_row['n']}</div>
+          <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:6px">期望值 &amp; 平均報酬</div>
+          <div style="display:flex;gap:12px">{b1}{b2}</div>
+          <div class="desc-text" style="margin-top:6px">期望值 = 勝率 × 平均報酬</div>
         </div>""", unsafe_allow_html=True)
     elif not _above260:
         st.markdown("""
