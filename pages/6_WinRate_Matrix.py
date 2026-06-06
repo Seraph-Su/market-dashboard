@@ -564,8 +564,13 @@ try:
 
     # Caveats
     st.markdown("""
+    <div style="background:#1c1400;border:1px solid #854d0e;border-radius:8px;
+                padding:10px 16px;margin-top:4px;margin-bottom:6px;
+                color:#fde68a;font-size:0.82rem;font-weight:600">
+      ⚠️ 勝率僅為參考，過去統計數字不代表未來表現
+    </div>
     <div style="background:#1e293b;border:1px solid #1e3a5f;border-radius:8px;
-                padding:10px 16px;margin-top:4px">
+                padding:10px 16px;margin-top:0">
       <div style="font-size:0.7rem;color:#475569;line-height:1.8">
         📌 <b style="color:#64748b">統計說明</b>
         &nbsp;｜&nbsp; ① 相鄰日期樣本高度重疊（非獨立事件），實際信賴區間比 n 看起來更寬
