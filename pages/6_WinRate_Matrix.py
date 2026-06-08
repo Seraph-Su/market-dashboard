@@ -245,16 +245,12 @@ def get_vix_bin(vix):
 # ── Live data ─────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入市場數據中…")
 def fetch_live():
-    end   = datetime.today()
-    start = end - timedelta(days=320)
-    spy = yf.download("SPY",
-                      start=start.strftime("%Y-%m-%d"),
-                      end=end.strftime("%Y-%m-%d"),
+    # 使用 period 相對參數，避免 yfinance 內部 SQLite 快取以固定日期 key 回傳舊資料
+    spy = yf.download("SPY", period="400d", interval="1d",
                       auto_adjust=True, progress=False)["Close"].squeeze().dropna()
-    vix = yf.download("^VIX",
-                      start=(end - timedelta(days=10)).strftime("%Y-%m-%d"),
-                      end=end.strftime("%Y-%m-%d"),
-                      auto_adjust=True, progress=False)["Close"].squeeze().dropna()
+    # VIX 是指數不需要 auto_adjust，部分 yfinance 版本對指數加此參數會靜默失敗
+    vix = yf.download("^VIX", period="5d", interval="1d",
+                      auto_adjust=False, progress=False)["Close"].squeeze().dropna()
     ema60  = spy.ewm(span=60,  adjust=False).mean()
     sma200 = spy.rolling(200).mean()
     price    = round(float(spy.iloc[-1]),    2)
