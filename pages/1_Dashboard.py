@@ -2,7 +2,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
 import plotly.graph_objects as go
 
 st.markdown("""
@@ -41,15 +40,15 @@ st.markdown("""
 # ── Data fetch ────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入最新市場數據中…")
 def fetch_data():
-    end   = datetime.today()
-    start = end - timedelta(days=400)
     tickers = ['CME','SPY','IWM','IWF','IWD','^VIX','^VIX3M',
                'HYG','IEI','RSP','XLP','XLY',
                'XLK','XLF','XLV','XLE','XLI','XLB','XLU']
-    raw   = yf.download(tickers, start=start, end=end,
+    # 使用 period 相對參數，避免 yfinance 內部 SQLite 快取以固定日期 key 回傳舊資料
+    raw   = yf.download(tickers, period="400d", interval="1d",
                         auto_adjust=True, progress=False)
     close = raw['Close'].copy()
-    close.columns = [c[1] if isinstance(c,tuple) else c for c in close.columns]
+    # c[-1] 相容 ('Close','CME')、('CME',) 等不同版本 yfinance 的 tuple 結構
+    close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
     close = close.dropna(how='all')
     sector_etfs = ['XLK','XLF','XLV','XLE','XLI','XLB','XLU','XLP','XLY']
     def s60(series):
@@ -349,7 +348,6 @@ for active, prob, lift, title, desc in combos:
     """, unsafe_allow_html=True)
 
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
-
 
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
