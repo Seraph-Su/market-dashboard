@@ -40,61 +40,94 @@ st.markdown("""
 # ── Data fetch ────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入最新市場數據中…")
 def fetch_data():
-    tickers = ['CME','SPY','IWM','IWF','IWD','^VIX','^VIX3M',
-               'HYG','IEI','RSP','XLP','XLY',
-               'XLK','XLF','XLV','XLE','XLI','XLB','XLU']
-    # 使用 period 相對參數，避免 yfinance 內部 SQLite 快取以固定日期 key 回傳舊資料
-    raw   = yf.download(tickers, period="400d", interval="1d",
+    # ── 批量下載（不含 CME）────────────────────────────────────────
+    # CME 在批量下載時 Yahoo Finance 偶爾靜默失敗，改成單獨下載以確保可靠
+    main_tickers = ['SPY','IWM','IWF','IWD','^VIX','^VIX3M',
+                    'HYG','IEI','RSP','XLP','XLY',
+                    'XLK','XLF','XLV','XLE','XLI','XLB','XLU']
+    # period 相對參數避免 yfinance 內部 SQLite 快取回傳舊資料
+    raw   = yf.download(main_tickers, period="400d", interval="1d",
                         auto_adjust=True, progress=False)
     close = raw['Close'].copy()
-    # c[-1] 相容 ('Close','CME')、('CME',) 等不同版本 yfinance 的 tuple 結構
+    # c[-1] 相容 ('Close','SPY') 及 ('SPY',) 等不同 yfinance 版本的 tuple 結構
     close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
+
+    # ── CME 單獨下載 ───────────────────────────────────────────────
+    cme_raw = yf.download("CME", period="400d", interval="1d",
+                           auto_adjust=True, progress=False)
+    if not cme_raw.empty:
+        cme_close = cme_raw['Close'].squeeze()
+        # 移除 timezone 差異後 reindex 對齊主資料日期
+        if hasattr(cme_close.index, 'tz') and cme_close.index.tz is not None:
+            cme_close.index = cme_close.index.tz_localize(None)
+        if hasattr(close.index, 'tz') and close.index.tz is not None:
+            close.index = close.index.tz_localize(None)
+        close['CME'] = cme_close.reindex(close.index)
+    else:
+        close['CME'] = float('nan')
+
     close = close.dropna(how='all')
+
     sector_etfs = ['XLK','XLF','XLV','XLE','XLI','XLB','XLU','XLP','XLY']
+
     def s60(series):
         vals = series.iloc[-60:].tolist()
-        return [round(v,3) if not (v!=v) else None for v in vals]
+        return [round(v, 3) if not (v != v) else None for v in vals]
+
     spy    = close['SPY']
     ma200  = spy.rolling(200).mean()
     ma50   = spy.rolling(50).mean()
-    ma60    = spy.ewm(span=60,  adjust=False).mean()
-    ma260   = spy.ewm(span=260, adjust=False).mean()
+    ma60   = spy.ewm(span=60,  adjust=False).mean()
+    ma260  = spy.ewm(span=260, adjust=False).mean()
     spy60_s = (spy / ma60 - 1) * 100
     vix      = close['^VIX']
     vix_ma20 = vix.rolling(20).mean()
     vix_vs_ma20_s = (vix / vix_ma20 - 1) * 100
-    cme_s  = (close['CME'].pct_change(10) - spy.pct_change(10)) * 100
-    hyg_iei_s = (close['HYG']/close['IEI']).pct_change(20) * 100
-    iwm_s  = (close['IWM']/spy).pct_change(60) * 100
-    gv_s   = (close['IWF']/close['IWD']).pct_change(20) * 100
-    vixr_s = close['^VIX'] / close['^VIX3M']
-    xlp_s  = (close['XLP']/close['XLY']).pct_change(20) * 100
-    rsp_s  = (close['RSP']/spy).pct_change(60) * 100
+
+    # ffill() 確保 CME 的 pct_change 不因個別缺值而炸掉
+    cme_s     = (close['CME'].ffill().pct_change(10) - spy.pct_change(10)) * 100
+    hyg_iei_s = (close['HYG'] / close['IEI']).pct_change(20) * 100
+    iwm_s     = (close['IWM'] / spy).pct_change(60) * 100
+    gv_s      = (close['IWF'] / close['IWD']).pct_change(20) * 100
+    vixr_s    = close['^VIX'] / close['^VIX3M']
+    xlp_s     = (close['XLP'] / close['XLY']).pct_change(20) * 100
+    rsp_s     = (close['RSP'] / spy).pct_change(60) * 100
+
     # Sector breadth (vectorized)
     ma50_sec  = close[sector_etfs].rolling(50).mean()
     above     = close[sector_etfs] > ma50_sec
     breadth_s = above.sum(axis=1)
+
     latest = close.index[-1]
+
+    def _safe(val, default=0.0, decimals=2):
+        """NaN 安全轉換：避免 float(nan) 傳入後端導致顯示異常"""
+        try:
+            f = float(val)
+            return default if pd.isna(f) else round(f, decimals)
+        except Exception:
+            return default
+
     return {
         'as_of':            str(latest.date()),
-        'spy_price':        round(float(spy.iloc[-1]), 2),
-        'spy_200ma_val':    round(float(ma200.iloc[-1]), 2),
-        'spy_vs_200ma':     round((float(spy.iloc[-1])/float(ma200.iloc[-1])-1)*100, 2),
-        'cme_excess_10d':   round(float(cme_s.iloc[-1]), 2),
-        'hyg_iei_20d':      round(float(hyg_iei_s.iloc[-1]), 2),
-        'iwm_spy_60d':      round(float(iwm_s.iloc[-1]), 2),
-        'growth_value_20d': round(float(gv_s.iloc[-1]), 2),
-        'vix':              round(float(close['^VIX'].iloc[-1]), 2),
-        'vix3m':            round(float(close['^VIX3M'].iloc[-1]), 2),
-        'vix_ratio':        round(float(vixr_s.iloc[-1]), 3),
-        'xlp_xly_20d':      round(float(xlp_s.iloc[-1]), 2),
-        'rsp_spy_60d':      round(float(rsp_s.iloc[-1]), 2),
+        'spy_price':        _safe(spy.iloc[-1]),
+        'spy_200ma_val':    _safe(ma200.iloc[-1]),
+        'spy_vs_200ma':     _safe((spy.iloc[-1] / ma200.iloc[-1] - 1) * 100),
+        'cme_excess_10d':   _safe(cme_s.iloc[-1]),
+        'hyg_iei_20d':      _safe(hyg_iei_s.iloc[-1]),
+        'iwm_spy_60d':      _safe(iwm_s.iloc[-1]),
+        'growth_value_20d': _safe(gv_s.iloc[-1]),
+        'vix':              _safe(close['^VIX'].iloc[-1]),
+        'vix3m':            _safe(close['^VIX3M'].iloc[-1]),
+        'vix_ratio':        _safe(vixr_s.iloc[-1], decimals=3),
+        'xlp_xly_20d':      _safe(xlp_s.iloc[-1]),
+        'rsp_spy_60d':      _safe(rsp_s.iloc[-1]),
         'sector_breadth':   int(breadth_s.iloc[-1]),
-        'spy_vs_60ma':      round(float(spy60_s.iloc[-1]), 2),
-        'spy_60ma_val':     round(float(ma60.iloc[-1]), 2),
-        'spy_vs_260ma':     round((float(spy.iloc[-1])/float(ma260.iloc[-1])-1)*100, 2),
-        'vix_vs_ma20':      round(float(vix_vs_ma20_s.iloc[-1]), 2),
-        'vix_ma20_val':     round(float(vix_ma20.iloc[-1]), 2),
+        'spy_vs_60ma':      _safe(spy60_s.iloc[-1]),
+        'spy_60ma_val':     _safe(ma60.iloc[-1]),
+        'spy_vs_260ma':     _safe((spy.iloc[-1] / ma260.iloc[-1] - 1) * 100),
+        'vix_vs_ma20':      _safe(vix_vs_ma20_s.iloc[-1]),
+        'vix_ma20_val':     _safe(vix_ma20.iloc[-1]),
         # Series
         'cme_series':     s60(cme_s),
         'hyg_iei_series': s60(hyg_iei_s),
@@ -406,13 +439,10 @@ with y3:
         if wr >= 60: return '#fb923c'
         return '#f87171'
     if _above260:
-        # 百分位計算（在所有桶位的勝率分佈中排第幾）
         _all_wr_20 = [r['wr'] for r in _WR_TABLE_20D]
         _all_wr_60 = [r['wr'] for r in _WR_TABLE]
         def _percentile_in(wr, all_wrs):
             return round(sum(1 for w in all_wrs if w <= wr) / len(all_wrs) * 100)
-
-        # 建立雙欄比較列
         def _period_row(label, row, all_wrs):
             if not row:
                 return (f"<div style='flex:1;opacity:0.4'>"
