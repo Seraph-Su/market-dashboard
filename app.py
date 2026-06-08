@@ -11,7 +11,7 @@ pages = [
     st.Page("pages/2_EMA_Analysis.py",    title="EMA 分析",       icon="📈"),
     st.Page("pages/3_Sector_Rotation.py", title="細分產業週報",   icon="🇺🇸"),
     st.Page("pages/5_Breakout_Screener.py", title="均線收斂突破選股", icon="📡"),
-    st.Page("pages/7_Position_Sizing.py,  title="加碼比例計算器", icon="📉"),
+    st.Page("pages/7_Position_Sizing.py",  title="加碼比例計算器", icon="📉"),
 ]
 
 pg = st.navigation(pages)
