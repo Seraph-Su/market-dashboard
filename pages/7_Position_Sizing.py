@@ -347,6 +347,10 @@ with right_col:
         f"padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:700'>"
         f"風險標籤：{rec['risk_label']}</span>"
         f"</div>"
+        f"<div style='margin-top:10px;background:#1c1400;border:1px solid #854d0e;"
+        f"border-radius:6px;padding:7px 10px;color:#fde68a;font-size:0.72rem;font-weight:600'>"
+        f"⚠️ 本加碼比例僅供參考，過去不代表未來"
+        f"</div>"
         f"</div>",
         unsafe_allow_html=True)
 
