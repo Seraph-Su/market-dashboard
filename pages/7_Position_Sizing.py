@@ -3,7 +3,6 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
 
 st.markdown("""
 <style>
@@ -39,9 +38,8 @@ st.markdown("""
 # ── Data fetch ───────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
 def fetch_stock(ticker: str, years: int = 3):
-    end   = datetime.today()
-    start = end - timedelta(days=365 * years)
-    df = yf.download(ticker, start=start, end=end, auto_adjust=True, progress=False)
+    period = f"{years}y"
+    df = yf.download(ticker, period=period, interval="1d", auto_adjust=True, progress=False)
     if df.empty or len(df) < 60:
         return None
     close = df['Close'].squeeze().dropna()
@@ -397,6 +395,135 @@ with right_col:
             f"</div>",
             unsafe_allow_html=True)
 
+# ── 自訂加碼模擬器 ────────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown('<div class="section-hdr">自訂加碼模擬器</div>', unsafe_allow_html=True)
+st.markdown(
+    "<span style='color:#64748b;font-size:0.78rem'>"
+    "不想照建議比例？拖動滑桿輸入自訂比例，即時看新均價落在歷史回檔哪個風險帶"
+    "</span>", unsafe_allow_html=True)
+
+custom_pct = st.slider(
+    "自訂加碼比例（% of 現有持股）",
+    min_value=0, max_value=300,
+    value=max(0, int(rec['final_ratio'] * 100)),
+    step=5, key="custom_ratio_slider",
+    help="100% = 加碼等同現有持股數；200% = 加碼現有持股兩倍"
+)
+
+custom_ratio      = custom_pct / 100
+custom_add_shares = shares * custom_ratio
+custom_add_amount = custom_add_shares * cp
+custom_new_total  = shares + custom_add_shares
+custom_new_avg    = (shares * cost + custom_add_shares * cp) / custom_new_total if custom_ratio > 0 else cost
+custom_pnl        = (cp / custom_new_avg - 1) * 100
+
+# 新均價距 52 週高點的隱含回檔幅度
+implied_dd_of_avg = (custom_new_avg / h52w - 1) * 100   # 負值代表新均價在高點以下
+
+# 歷史上幾次修正曾跌穿此位置？
+troughs_list = stats['troughs']
+if len(troughs_list) > 0 and implied_dd_of_avg < 0:
+    n_deeper   = sum(1 for t in troughs_list if t < implied_dd_of_avg)
+    pct_deeper = n_deeper / len(troughs_list) * 100
+else:
+    n_deeper   = 0
+    pct_deeper = 0.0
+
+# 壓力測試（自訂比例下的最深回檔損益）
+stress_price_c = h52w * (1 + stats['max_dd'] / 100) if stats['max_dd'] < -0.5 else cp
+stress_pnl_c   = (stress_price_c / custom_new_avg - 1) * 100
+
+sc1, sc2 = st.columns([1, 1])
+
+with sc1:
+    pnl_c = '#4ade80' if custom_pnl >= 0 else '#f87171'
+    rec_pct = int(rec['final_ratio'] * 100)
+    if custom_pct == rec_pct:
+        badge = '<span style="background:#1e1b4b;color:#a5b4fc;padding:2px 8px;border-radius:8px;font-size:0.65rem">與建議相同</span>'
+    elif custom_pct > rec_pct:
+        badge = '<span style="background:#3b1515;color:#f87171;padding:2px 8px;border-radius:8px;font-size:0.65rem">↑ 高於建議</span>'
+    else:
+        badge = '<span style="background:#14532d;color:#4ade80;padding:2px 8px;border-radius:8px;font-size:0.65rem">↓ 低於建議</span>'
+
+    st.markdown(
+        f"<div class='result-card'>"
+        f"<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px'>"
+        f"<div class='section-hdr' style='margin:0'>試算結果（自訂 {custom_pct}%）</div>{badge}</div>"
+        f"<div class='stress-row'><span style='color:#64748b'>加碼股數</span>"
+        f"<span style='color:#e2e8f0;font-weight:600'>{custom_add_shares:.0f} 股</span></div>"
+        f"<div class='stress-row'><span style='color:#64748b'>加碼金額</span>"
+        f"<span style='color:#e2e8f0;font-weight:600'>${custom_add_amount:,.0f}</span></div>"
+        f"<div class='stress-row'><span style='color:#64748b'>加碼後總股數</span>"
+        f"<span style='color:#e2e8f0;font-weight:600'>{custom_new_total:.0f} 股</span></div>"
+        f"<div class='stress-row'><span style='color:#64748b'>加碼後新均價</span>"
+        f"<span style='color:#60a5fa;font-weight:800;font-size:1.15rem'>${custom_new_avg:,.2f}</span></div>"
+        f"<div class='stress-row' style='border:none'><span style='color:#64748b'>新均價現損益</span>"
+        f"<span style='color:{pnl_c};font-weight:700'>{custom_pnl:+.1f}%</span></div>"
+        f"</div>",
+        unsafe_allow_html=True)
+
+with sc2:
+    # 安全帶判斷
+    if pct_deeper <= 20:
+        s_color, s_bg, s_border = '#4ade80', '#052e16', '#16a34a'
+        s_icon, s_label = '🟢', '相對安全區'
+        s_desc = f'僅 {pct_deeper:.0f}% 的歷史修正曾跌穿此均價'
+    elif pct_deeper <= 50:
+        s_color, s_bg, s_border = '#fbbf24', '#3a2800', '#d97706'
+        s_icon, s_label = '🟡', '中等風險區'
+        s_desc = f'{pct_deeper:.0f}% 的歷史修正曾跌穿此均價'
+    else:
+        s_color, s_bg, s_border = '#f87171', '#450a0a', '#dc2626'
+        s_icon, s_label = '🔴', '高風險區'
+        s_desc = f'{pct_deeper:.0f}% 的歷史修正曾跌穿此均價'
+
+    stress_c = '#f87171' if stress_pnl_c < -20 else '#fbbf24' if stress_pnl_c < -10 else '#94a3b8'
+
+    # 進度條：新均價在歷史回檔分佈中的位置
+    # 0% = 52w high, max_dd% = 最深，bar 顯示 implied_dd 落在哪裡
+    bar_pct = 0
+    if stats['max_dd'] < 0 and implied_dd_of_avg < 0:
+        bar_pct = min(100, max(0, implied_dd_of_avg / stats['max_dd'] * 100))
+    # bar_pct: 0% = 靠近高點（安全），100% = 靠近歷史最深（危險）
+    # 顯示時反過來：已佔用的空間代表「距高點多遠」
+    bar_used = 100 - bar_pct   # 剩餘空間（未觸及最深的緩衝）
+
+    st.markdown(
+        f"<div class='result-card'>"
+        f"<div class='section-hdr' style='margin-top:0'>新均價 vs 歷史回檔分佈</div>"
+        # 數字
+        f"<div style='margin-bottom:10px'>"
+        f"<div style='font-size:0.68rem;color:#64748b'>新均價距 52 週高點</div>"
+        f"<div style='font-size:1.9rem;font-weight:800;color:#60a5fa;line-height:1.1'>{implied_dd_of_avg:.1f}%</div>"
+        f"<div style='font-size:0.65rem;color:#475569;margin-top:2px'>"
+        f"${custom_new_avg:,.2f} vs 52 週高 ${h52w:,.2f}</div>"
+        f"</div>"
+        # 進度條
+        f"<div style='margin-bottom:10px'>"
+        f"<div style='display:flex;justify-content:space-between;font-size:0.6rem;color:#475569;margin-bottom:3px'>"
+        f"<span>52 週高點 0%</span><span>歷史最深 {stats['max_dd']:.1f}%</span></div>"
+        f"<div style='background:#1e293b;border-radius:4px;height:10px;position:relative;overflow:hidden'>"
+        f"<div style='height:100%;width:{100-bar_pct:.0f}%;background:linear-gradient(90deg,#4ade80,#fbbf24,#f87171);border-radius:4px'></div>"
+        f"<div style='position:absolute;top:0;left:{100-bar_pct:.0f}%;height:100%;width:2px;background:#60a5fa'></div>"
+        f"</div>"
+        f"<div style='font-size:0.6rem;color:#60a5fa;margin-top:2px;text-align:left;padding-left:{max(0,100-bar_pct-5):.0f}%'>▲ 新均價</div>"
+        f"</div>"
+        # 安全帶
+        f"<div style='background:{s_bg};border:1px solid {s_border};border-radius:8px;padding:9px 12px;margin-bottom:8px'>"
+        f"<div style='color:{s_color};font-size:0.82rem;font-weight:700'>{s_icon} {s_label}</div>"
+        f"<div style='color:{s_color};font-size:0.72rem;margin-top:2px'>{s_desc}</div>"
+        f"<div style='font-size:0.62rem;color:#475569;margin-top:3px'>"
+        f"共 {len(troughs_list)} 次歷史修正，{n_deeper} 次曾跌穿</div>"
+        f"</div>"
+        # 壓力測試
+        f"<div class='stress-row'><span style='color:#64748b'>壓力測試（歷史最深 {stats['max_dd']:.1f}%）</span>"
+        f"<span style='color:{stress_c};font-weight:700'>{stress_pnl_c:+.1f}%</span></div>"
+        f"<div style='font-size:0.62rem;color:#475569;margin-top:3px'>"
+        f"若跌至 ${stress_price_c:,.2f}，自訂加碼後的損益</div>"
+        f"</div>",
+        unsafe_allow_html=True)
+
 # ── Drawdown history chart ────────────────────────────────────────────────
 st.markdown("---")
 st.markdown('<div class="section-hdr">歷史回檔走勢（距 52 週高點）</div>', unsafe_allow_html=True)
@@ -456,6 +583,12 @@ if len(stats['troughs']) >= 3:
     fig2.add_vline(x=stats['p50'], line=dict(color='#fbbf24', width=1.5, dash='dot'),
                    annotation_text=f'中位 {stats["p50"]:.1f}%',
                    annotation_font=dict(size=10, color='#fbbf24'))
+    if implied_dd_of_avg < 0:
+        fig2.add_vline(x=implied_dd_of_avg,
+                       line=dict(color='#60a5fa', width=2, dash='dot'),
+                       annotation_text=f'自訂新均價 {implied_dd_of_avg:.1f}%',
+                       annotation_font=dict(size=10, color='#60a5fa'),
+                       annotation_position='top left')
     fig2.update_layout(
         height=160, margin=dict(l=10, r=10, t=10, b=8),
         paper_bgcolor='#0e1117', plot_bgcolor='#0e1117',
