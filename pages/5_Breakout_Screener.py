@@ -55,7 +55,7 @@ CFG = dict(
     consolidation_range  = 0.16,
     breakout_buffer      = 0.003,
     ema_spread_threshold = 0.05,
-    ema_lookback         = 20,
+    ema_lookback         = 40,   # 20→40：收斂可能發生在 4~8 週前，視窗太短會漏訊號
     volume_mult          = 1.3,
 )
 
@@ -135,10 +135,22 @@ def detect_signal(df, offset=0):
 
     recent_high = float(recent["High"].max())
     broke_high  = close > recent_high * (1 + buf)
-    big_move    = day_gain > 0.03
+    big_move    = day_gain > 0.02   # 3%→2%：防止緩慢回升的股票被漏掉
 
-    cond_bc = (ema_was_tight or ema2_was_tight) and broke_high and big_move and vol_ratio >= vmult
-    ema_type = "B｜EMA三線收斂突破" if ema_was_tight else "C｜EMA雙線收斂突破"
+    # 均線發散中偵測：EMA20 > EMA60，且兩者間距在過去 10 日持續擴大
+    ema20_now  = float(today["ema20"])
+    ema60_now  = float(today["ema60"])
+    spread2_now = spread2.iloc[-1]
+    spread2_10d_ago = spread2.iloc[-11] if len(spread2) >= 11 else spread2.iloc[0]
+    ema_diverging = (ema20_now > ema60_now) and (spread2_now > spread2_10d_ago * 1.2)
+
+    cond_bc = (ema_was_tight or ema2_was_tight or ema_diverging) and broke_high and big_move and vol_ratio >= vmult
+    if ema_was_tight:
+        ema_type = "B｜EMA三線收斂突破"
+    elif ema2_was_tight:
+        ema_type = "C｜EMA雙線收斂突破"
+    else:
+        ema_type = "D｜EMA均線發散突破"
 
     if not cond_a and not cond_bc:
         return None
@@ -219,7 +231,7 @@ def run_screener(universe: str):
 
     df_out = pd.DataFrame(rows)
     # 排序：先觸發日期（新→舊），再訊號類型（B > C > A），再突破幅度
-    order = {"B｜EMA三線收斂突破": 0, "C｜EMA雙線收斂突破": 1, "A｜K棒盤整突破": 2}
+    order = {"B｜EMA三線收斂突破": 0, "C｜EMA雙線收斂突破": 1, "D｜EMA均線發散突破": 2, "A｜K棒盤整突破": 3}
     df_out["_order"] = df_out["訊號類型"].map(order)
     df_out = df_out.sort_values(["觸發日期", "_order", "_day_gain"],
                                 ascending=[False, True, False])
@@ -266,6 +278,7 @@ def build_hover_table(result_df: pd.DataFrame, chart_data_dict: dict) -> str:
     sig_colors = {
         "B｜EMA三線收斂突破": "#a5b4fc",
         "C｜EMA雙線收斂突破": "#67e8f9",
+        "D｜EMA均線發散突破": "#86efac",
         "A｜K棒盤整突破":    "#94a3b8",
     }
     rows_html = ""
@@ -425,8 +438,8 @@ else:
 st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
 # 策略說明摺疊區
-with st.expander("📖 三種訊號說明"):
-    c1, c2, c3 = st.columns(3)
+with st.expander("📖 四種訊號說明"):
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown("""
 **A｜K棒盤整突破**
@@ -443,8 +456,8 @@ with st.expander("📖 三種訊號說明"):
 
 月線/季線/年線三線充分靠近後爆量突破。
 
-- 近 20 日內三線收斂度曾 < 5%
-- 今日漲幅 > 3%，突破近 20 日高點
+- 近 40 日內三線收斂度曾 < 5%
+- 今日漲幅 > 2%，突破近 40 日高點
 - 量比 > 1.3×（僅適用上市 300 日以上）
         """)
     with c3:
@@ -453,9 +466,19 @@ with st.expander("📖 三種訊號說明"):
 
 EMA20 / EMA60 在回調期間重新糾結後突破。
 
-- 近 20 日內雙線收斂度曾 < 5%
-- 今日漲幅 > 3%，突破近 20 日高點
+- 近 40 日內雙線收斂度曾 < 5%
+- 今日漲幅 > 2%，突破近 40 日高點
 - 量比 > 1.3×
+        """)
+    with c4:
+        st.markdown("""
+**D｜EMA 均線發散突破**
+
+從低位緩慢回升、均線已轉為多頭排列並持續擴張。
+
+- EMA20 > EMA60，且雙線間距過去 10 日擴大 ≥ 20%
+- 今日漲幅 > 2%，突破近 40 日高點
+- 量比 > 1.3×（適合抓 UNH 這類崩跌後緩回升個股）
         """)
 
 # 掃描
@@ -472,13 +495,14 @@ try:
         # 各類型數量
         n_b = (result["訊號類型"].str.startswith("B")).sum()
         n_c = (result["訊號類型"].str.startswith("C")).sum()
+        n_d = (result["訊號類型"].str.startswith("D")).sum()
         n_a = (result["訊號類型"].str.startswith("A")).sum()
 
         st.markdown(
             f"<span style='color:#4ade80;font-size:0.9rem;font-weight:700'>"
             f"✅ 今日訊號：{len(result)} 個</span>"
             f"<span style='color:#475569;font-size:0.75rem'>"
-            f" &nbsp;（B 三線收斂 {n_b} 個 ／ C 雙線收斂 {n_c} 個 ／ A K棒盤整 {n_a} 個）"
+            f" &nbsp;（B 三線收斂 {n_b} 個 ／ C 雙線收斂 {n_c} 個 ／ D 均線發散 {n_d} 個 ／ A K棒盤整 {n_a} 個）"
             f" &nbsp;截至 {as_of}"
             f"</span>",
             unsafe_allow_html=True,
