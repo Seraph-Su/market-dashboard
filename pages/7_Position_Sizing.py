@@ -37,7 +37,7 @@ st.markdown("""
 
 # ── Data fetch ───────────────────────────────────────────────────────────
 @st.cache_data(ttl=1800, show_spinner=False)
-def fetch_stock(ticker: str, years: int = 3):
+def fetch_stock(ticker: str, years: int = 5):
     period = f"{years}y"
     df = yf.download(ticker, period=period, interval="1d", auto_adjust=True, progress=False)
     if df.empty or len(df) < 60:
@@ -218,7 +218,7 @@ if not ticker:
 
 # ── Fetch & calculate ────────────────────────────────────────────────────
 with st.spinner(f'抓取 {ticker} 資料中…'):
-    data = fetch_stock(ticker, years=3)
+    data = fetch_stock(ticker, years=5)
 
 if data is None:
     st.error(f'找不到 **{ticker}** 的資料。請確認代碼正確（台股請加 .TW，例如 2330.TW）。')
