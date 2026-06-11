@@ -142,22 +142,33 @@ def compute_backtest(hour_key: str):
 
     return all_data, str(start_date), str(end_date)
 
-# ── Live data (cached 1 hour) ──────────────────────────────────────────
+# ── Live data (批量下載，仿照 1_Dashboard.py 的成功寫法) ─────────────────
 @st.cache_data(ttl=3600, show_spinner="載入即時行情中…")
-def fetch_live():
-    # period= 相對參數：yfinance 每次帶入當下時間戳 → URL 不同 → 保證拿新資料
-    tickers = ["SPY", "QQQ", "DIA", "SOXX"]
-    vix = yf.download("^VIX", period="5d", interval="1d",
-                      auto_adjust=False, progress=False)["Close"].squeeze().dropna()
-    vix_v = round(float(vix.iloc[-1]), 2)
+def fetch_live(hour_key: str):
+    # 批量下載：和 1_Dashboard.py fetch_data() 完全相同的模式
+    # 一次呼叫拿全部，避免多次請求可能的不一致
+    from datetime import datetime as _dt2
+    computed_at = _dt2.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    result = {"vix": vix_v}
-    for ticker in tickers:
+    price_tickers = ["SPY", "QQQ", "DIA", "SOXX"]
+    # 批量下載 price（auto_adjust=True）
+    raw_price = yf.download(price_tickers, period="400d", interval="1d",
+                            auto_adjust=True, progress=False)
+    close_all = raw_price["Close"].copy()
+    close_all.columns = [c[-1] if isinstance(c, tuple) else str(c)
+                         for c in close_all.columns]
+    close_all.index = pd.to_datetime(close_all.index).tz_localize(None)
+
+    # VIX 單獨下載（auto_adjust=False）
+    vix_raw = yf.download("^VIX", period="5d", interval="1d",
+                          auto_adjust=False, progress=False)
+    vix_s = vix_raw["Close"].squeeze().dropna()
+    vix_v = round(float(vix_s.iloc[-1]), 2)
+
+    result = {"vix": vix_v, "computed_at": computed_at}
+    for ticker in price_tickers:
         try:
-            raw      = yf.download(ticker, period="400d", interval="1d",
-                                   auto_adjust=True, progress=False)
-            price_s  = raw["Close"].squeeze().dropna()
-            price_s.index = pd.to_datetime(price_s.index).tz_localize(None)
+            price_s  = close_all[ticker].dropna()
             ema60    = price_s.ewm(span=60, adjust=False).mean()
             sma200   = price_s.rolling(200).mean()
             price    = round(float(price_s.iloc[-1]), 2)
@@ -316,9 +327,19 @@ try:
     from datetime import datetime as _dt
     _hour_key = _dt.now().strftime("%Y-%m-%d-%H")
     ALL_DATA, bt_start, bt_end = compute_backtest(_hour_key)
-    LIVE = fetch_live()
+    LIVE = fetch_live(_hour_key)
     vix_v     = LIVE["vix"]
     vix_color = "#f87171" if vix_v > 25 else "#fbbf24" if vix_v > 18 else "#4ade80"
+
+    # ── DEBUG BAR（診斷用，確認 fetch_live 何時執行）─────────────────────
+    st.markdown(
+        f"<div style='background:#0f2027;border:1px solid #1e3a5f;border-radius:6px;"
+        f"padding:5px 12px;margin-bottom:8px;font-size:0.68rem;color:#475569'>"
+        f"🕐 <b style='color:#64748b'>行情資料計算時間</b>：{LIVE.get('computed_at','?')} "
+        f"&nbsp;｜&nbsp; <b style='color:#64748b'>cache key</b>：{_hour_key}"
+        f"</div>",
+        unsafe_allow_html=True
+    )
 
     BEAR_WARN = """<div style="background:#1c0a00;border:1px solid #854d0e;border-radius:8px;
                    padding:8px 14px;color:#fde68a;font-size:0.78rem;margin-bottom:10px">
