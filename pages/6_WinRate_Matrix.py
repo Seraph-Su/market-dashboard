@@ -65,9 +65,11 @@ INDEX_CONFIG = [
 
 # ── Backtest computation (cached 1 hour) ──────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
-def compute_backtest():
-    # period="max" 讓 yfinance 每次帶入當下 Unix timestamp 作為 period2
-    # → URL 每次不同 → 不會命中 HTTP 快取 → 資料永遠最新
+def compute_backtest(hour_key: str):
+    # hour_key = "YYYY-MM-DD-HH"：每小時 cache key 不同，強制 Streamlit 重新呼叫
+    # period="9999d" 會傳 range=9999d 給 Yahoo（非 period1/period2 絕對時間戳）
+    # → Yahoo 相對當下時間計算 → 不會被伺服器端快取 → 資料永遠最新
+    # ⚠️ period="max" 是唯一例外：它會轉成固定 period1/period2，Yahoo CDN 會快取 → 禁用
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
 
     def _fix(df):
@@ -76,12 +78,12 @@ def compute_backtest():
         c.index = pd.to_datetime(c.index).tz_localize(None)
         return c
 
-    raw = yf.download(tickers, period="max",
+    raw = yf.download(tickers, period="9999d",
                       interval="1d", auto_adjust=True, progress=False)
     close = _fix(raw)
 
     # VIX
-    vix_raw = yf.download("^VIX", period="max",
+    vix_raw = yf.download("^VIX", period="9999d",
                            interval="1d", auto_adjust=False, progress=False)
     vix = vix_raw["Close"].squeeze().dropna()
     vix.index = pd.to_datetime(vix.index).tz_localize(None)
@@ -311,7 +313,9 @@ with col_refresh:
 st.markdown("---")
 
 try:
-    ALL_DATA, bt_start, bt_end = compute_backtest()
+    from datetime import datetime as _dt
+    _hour_key = _dt.now().strftime("%Y-%m-%d-%H")
+    ALL_DATA, bt_start, bt_end = compute_backtest(_hour_key)
     LIVE = fetch_live()
     vix_v     = LIVE["vix"]
     vix_color = "#f87171" if vix_v > 25 else "#fbbf24" if vix_v > 18 else "#4ade80"
