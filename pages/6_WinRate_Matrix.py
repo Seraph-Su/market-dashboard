@@ -63,11 +63,11 @@ INDEX_CONFIG = [
     {"key": "SOXX", "label": "費城半導體指數",   "icon": "🔬", "tab": "🔬 費城半導體"},
 ]
 
-# ── Backtest computation (cached 7 days) ───────────────────────────────
+# ── Backtest computation (cached 1 hour) ──────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
-def compute_backtest(today_str: str):
-    # today_str 讓 Streamlit cache key 每天不同
-    # 策略：歷史走快取（穩定不變），最近 10 天用 period= 相對參數強制拿新資料
+def compute_backtest():
+    # period="max" 讓 yfinance 每次帶入當下 Unix timestamp 作為 period2
+    # → URL 每次不同 → 不會命中 HTTP 快取 → 資料永遠最新
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
 
     def _fix(df):
@@ -76,26 +76,15 @@ def compute_backtest(today_str: str):
         c.index = pd.to_datetime(c.index).tz_localize(None)
         return c
 
-    # 歷史資料（可走 yfinance 快取，舊資料不會變）
-    raw_hist  = yf.download(tickers, start="1993-01-01", end=today_str,
-                             interval="1d", auto_adjust=True, progress=False)
-    # 最近 10 天用相對 period：每天 URL 不同 → yfinance 必定重新下載
-    raw_fresh = yf.download(tickers, period="10d",
-                             interval="1d", auto_adjust=True, progress=False)
+    raw = yf.download(tickers, period="max",
+                      interval="1d", auto_adjust=True, progress=False)
+    close = _fix(raw)
 
-    close = _fix(raw_hist)
-    close.update(_fix(raw_fresh))          # 用最新資料覆蓋歷史末尾
-
-    # VIX 同樣策略
-    vix_hist  = yf.download("^VIX", start="1993-01-01", end=today_str,
-                              interval="1d", auto_adjust=False, progress=False)
-    vix_fresh = yf.download("^VIX", period="10d",
-                              interval="1d", auto_adjust=False, progress=False)
-    vix = vix_hist["Close"].squeeze().dropna()
+    # VIX
+    vix_raw = yf.download("^VIX", period="max",
+                           interval="1d", auto_adjust=False, progress=False)
+    vix = vix_raw["Close"].squeeze().dropna()
     vix.index = pd.to_datetime(vix.index).tz_localize(None)
-    vix_f = vix_fresh["Close"].squeeze().dropna()
-    vix_f.index = pd.to_datetime(vix_f.index).tz_localize(None)
-    vix.update(vix_f)
 
     # date range info
     start_date = close.index[0].date()
@@ -153,8 +142,8 @@ def compute_backtest(today_str: str):
 
 # ── Live data (cached 1 hour) ──────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入即時行情中…")
-def fetch_live(hour_str: str):
-    # hour_str = "YYYY-MM-DD-HH"：讓 Streamlit cache key 每小時不同，確保每小時刷新
+def fetch_live():
+    # period= 相對參數：yfinance 每次帶入當下時間戳 → URL 不同 → 保證拿新資料
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
     vix = yf.download("^VIX", period="5d", interval="1d",
                       auto_adjust=False, progress=False)["Close"].squeeze().dropna()
@@ -322,10 +311,8 @@ with col_refresh:
 st.markdown("---")
 
 try:
-    from datetime import datetime
-    _now = datetime.now()
-    ALL_DATA, bt_start, bt_end = compute_backtest(_now.strftime("%Y-%m-%d"))
-    LIVE = fetch_live(_now.strftime("%Y-%m-%d-%H"))
+    ALL_DATA, bt_start, bt_end = compute_backtest()
+    LIVE = fetch_live()
     vix_v     = LIVE["vix"]
     vix_color = "#f87171" if vix_v > 25 else "#fbbf24" if vix_v > 18 else "#4ade80"
 
