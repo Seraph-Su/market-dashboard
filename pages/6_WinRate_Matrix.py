@@ -64,16 +64,14 @@ INDEX_CONFIG = [
 ]
 
 # ── Backtest computation (cached 7 days) ───────────────────────────────
-@st.cache_data(ttl=24 * 3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
-def compute_backtest():
-    from datetime import date
+@st.cache_data(ttl=3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
+def compute_backtest(today_str: str):
+    # today_str 作為參數傳入，使 Streamlit cache key 每天不同，確保每次重跑都拿到最新資料
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
-    # 使用動態 end date：cache key 每天不同，強制 yfinance 繞過其內部 SQLite 快取
-    today = date.today().strftime("%Y-%m-%d")
 
-    raw = yf.download(tickers, start="1993-01-01", end=today,
+    raw = yf.download(tickers, start="1993-01-01", end=today_str,
                       interval="1d", auto_adjust=True, progress=False)
-    vix_raw = yf.download("^VIX", start="1993-01-01", end=today,
+    vix_raw = yf.download("^VIX", start="1993-01-01", end=today_str,
                            interval="1d", auto_adjust=False, progress=False)
     vix = vix_raw["Close"].squeeze().dropna()
     vix.index = pd.to_datetime(vix.index).tz_localize(None)
@@ -305,7 +303,8 @@ with col_refresh:
 st.markdown("---")
 
 try:
-    ALL_DATA, bt_start, bt_end = compute_backtest()
+    from datetime import date
+    ALL_DATA, bt_start, bt_end = compute_backtest(date.today().strftime("%Y-%m-%d"))
     LIVE = fetch_live()
     vix_v     = LIVE["vix"]
     vix_color = "#f87171" if vix_v > 25 else "#fbbf24" if vix_v > 18 else "#4ade80"
