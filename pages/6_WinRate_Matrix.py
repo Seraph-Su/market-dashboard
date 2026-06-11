@@ -64,7 +64,7 @@ INDEX_CONFIG = [
 ]
 
 # ── Backtest computation (cached 7 days) ───────────────────────────────
-@st.cache_data(ttl=7 * 24 * 3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
+@st.cache_data(ttl=24 * 3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
 def compute_backtest():
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
 
