@@ -66,20 +66,36 @@ INDEX_CONFIG = [
 # ── Backtest computation (cached 7 days) ───────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
 def compute_backtest(today_str: str):
-    # today_str 作為 Streamlit cache key 的一部分：每天不同 → 每天重新計算
-    # end=today_str 讓 yfinance 的 SQLite cache key 每天不同 → 強制重新下載
+    # today_str 讓 Streamlit cache key 每天不同
+    # 策略：歷史走快取（穩定不變），最近 10 天用 period= 相對參數強制拿新資料
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
 
-    raw = yf.download(tickers, start="1993-01-01", end=today_str,
-                      interval="1d", auto_adjust=True, progress=False)
-    vix_raw = yf.download("^VIX", start="1993-01-01", end=today_str,
-                           interval="1d", auto_adjust=False, progress=False)
-    vix = vix_raw["Close"].squeeze().dropna()
-    vix.index = pd.to_datetime(vix.index).tz_localize(None)
+    def _fix(df):
+        c = df["Close"].copy()
+        c.columns = [x[-1] if isinstance(x, tuple) else str(x) for x in c.columns]
+        c.index = pd.to_datetime(c.index).tz_localize(None)
+        return c
 
-    close = raw["Close"].copy()
-    close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
-    close.index = pd.to_datetime(close.index).tz_localize(None)
+    # 歷史資料（可走 yfinance 快取，舊資料不會變）
+    raw_hist  = yf.download(tickers, start="1993-01-01", end=today_str,
+                             interval="1d", auto_adjust=True, progress=False)
+    # 最近 10 天用相對 period：每天 URL 不同 → yfinance 必定重新下載
+    raw_fresh = yf.download(tickers, period="10d",
+                             interval="1d", auto_adjust=True, progress=False)
+
+    close = _fix(raw_hist)
+    close.update(_fix(raw_fresh))          # 用最新資料覆蓋歷史末尾
+
+    # VIX 同樣策略
+    vix_hist  = yf.download("^VIX", start="1993-01-01", end=today_str,
+                              interval="1d", auto_adjust=False, progress=False)
+    vix_fresh = yf.download("^VIX", period="10d",
+                              interval="1d", auto_adjust=False, progress=False)
+    vix = vix_hist["Close"].squeeze().dropna()
+    vix.index = pd.to_datetime(vix.index).tz_localize(None)
+    vix_f = vix_fresh["Close"].squeeze().dropna()
+    vix_f.index = pd.to_datetime(vix_f.index).tz_localize(None)
+    vix.update(vix_f)
 
     # date range info
     start_date = close.index[0].date()
