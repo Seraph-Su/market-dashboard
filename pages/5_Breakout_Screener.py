@@ -162,11 +162,11 @@ def detect_signal(df, offset=0):
     # 單一條件
     return make_record("A｜K棒盤整突破" if cond_a else ema_type)
 
-def _download_batch(tickers, start, end):
+def _download_batch(tickers, period):
     """批次下載，回傳 {ticker: df} 字典"""
     stock_data = {}
     try:
-        raw = yf.download(tickers, start=start, end=end,
+        raw = yf.download(tickers, period=period, interval="1d",
                           auto_adjust=True, progress=False)
         if isinstance(raw.columns, pd.MultiIndex):
             for ticker in tickers:
@@ -192,7 +192,7 @@ def _download_batch(tickers, start, end):
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def run_screener(universe: str):
+def run_screener(universe: str, day_key: str):
     if universe == "S&P 500":
         tickers = fetch_sp500_tickers()
     elif universe == "全美股":
@@ -200,15 +200,17 @@ def run_screener(universe: str):
     else:
         tickers = NASDAQ100
 
-    end_str   = datetime.today().strftime("%Y-%m-%d")
-    start_str = (datetime.today() - timedelta(days=460)).strftime("%Y-%m-%d")
-
-    # 全美股分批下載（每批 150 支，避免逾時）
+    # 用 period 相對期間，讓 Yahoo 送 range= 參數（不固定時間戳，不被 CDN 快取）
+    # 460 個交易日約 = 500d；500d > 460 交易日，確保 EMA260 有足夠資料
     BATCH = 150 if universe == "全美股" else len(tickers)
     stock_data = {}
     for i in range(0, len(tickers), BATCH):
         batch = tickers[i:i+BATCH]
-        stock_data.update(_download_batch(batch, start_str, end_str))
+        stock_data.update(_download_batch(batch, "500d"))
+
+    # 取得實際資料的最後一個交易日
+    actual_dates = [df.index[-1] for df in stock_data.values() if len(df) > 0]
+    last_data_date = str(max(actual_dates).date()) if actual_dates else day_key
 
     SCAN_DAYS = 5   # 往回掃描幾個交易日
     rows = []
@@ -227,7 +229,7 @@ def run_screener(universe: str):
                     rows.append(sig)
 
     if not rows:
-        return pd.DataFrame()
+        return pd.DataFrame(), last_data_date
 
     df_out = pd.DataFrame(rows)
     # 排序：先觸發日期（新→舊），再訊號類型（B > C > A），再突破幅度
@@ -239,17 +241,14 @@ def run_screener(universe: str):
     df_out.index += 1
     cols = ["觸發日期", "代號", "訊號類型", "收盤價", "突破幅度", "量比",
             "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
-    return df_out[cols]
+    return df_out[cols], last_data_date
 
 # ── Chart data for hover tooltips ────────────────────────────────
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_chart_data(tickers: tuple) -> dict:
-    """只針對結果股票下載 130 天資料，計算三條均線"""
-    end   = datetime.today()
-    start = end - timedelta(days=400)   # 需足夠讓 EMA260 收斂
-    raw   = yf.download(list(tickers), start=start.strftime("%Y-%m-%d"),
-                        end=end.strftime("%Y-%m-%d"),
-                        auto_adjust=True, progress=False)
+    """只針對結果股票下載 400 天資料，計算三條均線"""
+    raw = yf.download(list(tickers), period="400d", interval="1d",
+                      auto_adjust=True, progress=False)
     result = {}
     for ticker in tickers:
         try:
@@ -403,6 +402,9 @@ function positionTooltip(e) {{
 
 
 # ── Page ──────────────────────────────────────────────────────────
+from datetime import datetime as _dt
+_day_key = _dt.now().strftime("%Y-%m-%d")
+
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
     st.markdown("## 📡 均線收斂突破選股")
@@ -485,9 +487,7 @@ EMA20 / EMA60 在回調期間重新糾結後突破。
 try:
     wait = "約需 3–5 分鐘" if universe_key == "全美股" else "約需 30–60 秒"
     with st.spinner(f"掃描 {universe_key} 中，{wait}（結果會快取至明日）…"):
-        result = run_screener(universe_key)
-
-    as_of = datetime.today().strftime("%Y-%m-%d")
+        result, as_of = run_screener(universe_key, _day_key)
 
     if result.empty:
         st.info(f"今日 {universe_key} 無符合條件的訊號。")
