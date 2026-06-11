@@ -4,6 +4,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 from scipy import stats
+import requests as _requests
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -66,19 +67,23 @@ INDEX_CONFIG = [
 # ── Backtest computation (cached 7 days) ───────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
 def compute_backtest(today_str: str):
-    # today_str 作為參數傳入，使 Streamlit cache key 每天不同，確保每次重跑都拿到最新資料
+    # today_str 傳入使 Streamlit cache key 每天不同
+    # 使用無 cache 的 requests.Session，完全繞過 yfinance 的 SQLite 磁碟快取
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
+    sess = _requests.Session()
 
-    raw = yf.download(tickers, start="1993-01-01", end=today_str,
-                      interval="1d", auto_adjust=True, progress=False)
-    vix_raw = yf.download("^VIX", start="1993-01-01", end=today_str,
-                           interval="1d", auto_adjust=False, progress=False)
-    vix = vix_raw["Close"].squeeze().dropna()
+    close_frames = {}
+    for ticker in tickers:
+        hist = yf.Ticker(ticker, session=sess).history(
+            start="1993-01-01", end=today_str, auto_adjust=True, repair=False)
+        hist.index = pd.to_datetime(hist.index).tz_localize(None)
+        close_frames[ticker] = hist["Close"].dropna()
+    close = pd.DataFrame(close_frames)
+
+    vix_hist = yf.Ticker("^VIX", session=sess).history(
+        start="1993-01-01", end=today_str, auto_adjust=False, repair=False)
+    vix = vix_hist["Close"].dropna()
     vix.index = pd.to_datetime(vix.index).tz_localize(None)
-
-    close = raw["Close"].copy()
-    close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
-    close.index = pd.to_datetime(close.index).tz_localize(None)
 
     # date range info
     start_date = close.index[0].date()
@@ -136,18 +141,23 @@ def compute_backtest(today_str: str):
 
 # ── Live data (cached 1 hour) ──────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入即時行情中…")
-def fetch_live():
+def fetch_live(hour_str: str):
+    # hour_str = "YYYY-MM-DD-HH"：讓 Streamlit cache key 每小時不同
+    # 使用無 cache 的 session 繞過 yfinance SQLite 快取
+    sess = _requests.Session()
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
-    vix = yf.download("^VIX", period="5d", interval="1d",
-                      auto_adjust=False, progress=False)["Close"].squeeze().dropna()
-    vix_v = round(float(vix.iloc[-1]), 2)
+
+    vix_hist = yf.Ticker("^VIX", session=sess).history(
+        period="5d", auto_adjust=False, repair=False)
+    vix_v = round(float(vix_hist["Close"].dropna().iloc[-1]), 2)
 
     result = {"vix": vix_v}
     for ticker in tickers:
         try:
-            raw   = yf.download(ticker, period="400d", interval="1d",
-                                 auto_adjust=True, progress=False)
-            price_s  = raw["Close"].squeeze().dropna()
+            hist    = yf.Ticker(ticker, session=sess).history(
+                period="400d", auto_adjust=True, repair=False)
+            price_s = hist["Close"].dropna()
+            price_s.index = pd.to_datetime(price_s.index).tz_localize(None)
             ema60    = price_s.ewm(span=60, adjust=False).mean()
             sma200   = price_s.rolling(200).mean()
             price    = round(float(price_s.iloc[-1]), 2)
@@ -303,9 +313,10 @@ with col_refresh:
 st.markdown("---")
 
 try:
-    from datetime import date
-    ALL_DATA, bt_start, bt_end = compute_backtest(date.today().strftime("%Y-%m-%d"))
-    LIVE = fetch_live()
+    from datetime import datetime
+    _now = datetime.now()
+    ALL_DATA, bt_start, bt_end = compute_backtest(_now.strftime("%Y-%m-%d"))
+    LIVE = fetch_live(_now.strftime("%Y-%m-%d-%H"))
     vix_v     = LIVE["vix"]
     vix_color = "#f87171" if vix_v > 25 else "#fbbf24" if vix_v > 18 else "#4ade80"
 
