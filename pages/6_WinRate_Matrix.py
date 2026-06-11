@@ -66,12 +66,15 @@ INDEX_CONFIG = [
 # ── Backtest computation (cached 7 days) ───────────────────────────────
 @st.cache_data(ttl=24 * 3600, show_spinner="計算歷史回測矩陣中（首次約需 5 秒）…")
 def compute_backtest():
+    from datetime import date
     tickers = ["SPY", "QQQ", "DIA", "SOXX"]
+    # 使用動態 end date：cache key 每天不同，強制 yfinance 繞過其內部 SQLite 快取
+    today = date.today().strftime("%Y-%m-%d")
 
-    raw = yf.download(tickers, period="max", interval="1d",
-                      auto_adjust=True, progress=False)
-    vix_raw = yf.download("^VIX", period="max", interval="1d",
-                           auto_adjust=False, progress=False)
+    raw = yf.download(tickers, start="1993-01-01", end=today,
+                      interval="1d", auto_adjust=True, progress=False)
+    vix_raw = yf.download("^VIX", start="1993-01-01", end=today,
+                           interval="1d", auto_adjust=False, progress=False)
     vix = vix_raw["Close"].squeeze().dropna()
     vix.index = pd.to_datetime(vix.index).tz_localize(None)
 
