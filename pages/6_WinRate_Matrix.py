@@ -99,17 +99,16 @@ def compute_backtest(hour_key: str):
         price  = price.reindex(shared)
         v      = vix.reindex(shared)
 
-        ema60  = price.ewm(span=60,  adjust=False).mean()
-        ema260 = price.ewm(span=260, adjust=False).mean()
+        ema60  = price.ewm(span=60, adjust=False).mean()
+        sma200 = price.rolling(200).mean()
         dev_pct = (price - ema60) / ema60 * 100
         fwd21  = price.shift(-21) / price - 1
         fwd63  = price.shift(-63) / price - 1
-        above  = price > ema260
+        above  = price > sma200
 
         df = pd.DataFrame({
             "vix": v, "dev": dev_pct, "above": above,
             "fwd21": fwd21, "fwd63": fwd63,
-            "month": price.index.month,
         }).dropna()
 
         ticker_data = {}
@@ -126,12 +125,8 @@ def compute_backtest(hour_key: str):
                     n    = len(rets)
                     if n < 3:
                         continue
-                    wins  = rets[rets > 0]
-                    loses = rets[rets <= 0]
-                    wr       = round(float((rets > 0).mean() * 100), 1)
-                    avg      = round(float(rets.mean() * 100), 2)
-                    avg_win  = round(float(wins.mean()  * 100), 2) if len(wins)  > 0 else 0.0
-                    avg_loss = round(float(loses.mean() * 100), 2) if len(loses) > 0 else 0.0
+                    wr  = round(float((rets > 0).mean() * 100), 1)
+                    avg = round(float(rets.mean() * 100), 2)
                     # Binomial test vs 50%
                     successes = int((rets > 0).sum())
                     binom_p   = float(stats.binomtest(
@@ -139,27 +134,11 @@ def compute_backtest(hour_key: str):
                     agg.append({
                         "dev": dev_b, "vix": vix_b,
                         "wr": wr, "avg": avg, "n": n,
-                        "avg_win": avg_win, "avg_loss": avg_loss,
                         "sig": int(binom_p < 0.05),
                         "binom_p": round(binom_p, 4),
                     })
             ticker_data[key] = agg
         all_data[ticker] = ticker_data
-
-        # ── 月份季節效應（1m，EMA260 之上，跨全部 VIX/乖離桶）──
-        sub_above = df[df["above"] == True]
-        overall_wr = round(float((sub_above["fwd21"] > 0).mean() * 100), 1) if len(sub_above) > 0 else 50.0
-        month_data = {}
-        for m in range(1, 13):
-            rets = sub_above[sub_above["month"] == m]["fwd21"].dropna()
-            if len(rets) >= 5:
-                month_data[m] = {
-                    "wr":  round(float((rets > 0).mean() * 100), 1),
-                    "avg": round(float(rets.mean() * 100), 2),
-                    "n":   len(rets),
-                }
-        ticker_data["month_wr"]      = month_data
-        ticker_data["overall_1m_wr"] = overall_wr
 
     return all_data, str(start_date), str(end_date)
 
@@ -190,15 +169,15 @@ def fetch_live(hour_key: str):
     for ticker in price_tickers:
         try:
             price_s  = close_all[ticker].dropna()
-            ema60    = price_s.ewm(span=60,  adjust=False).mean()
-            ema260   = price_s.ewm(span=260, adjust=False).mean()
+            ema60    = price_s.ewm(span=60, adjust=False).mean()
+            sma200   = price_s.rolling(200).mean()
             price    = round(float(price_s.iloc[-1]), 2)
-            ema60_v  = round(float(ema60.iloc[-1]),  2)
-            ema260_v = round(float(ema260.iloc[-1]), 2)
+            ema60_v  = round(float(ema60.iloc[-1]), 2)
+            sma200_v = round(float(sma200.iloc[-1]), 2)
             dev      = round((price - ema60_v) / ema60_v * 100, 2)
             result[ticker] = {
-                "price": price, "ema60": ema60_v, "ema260": ema260_v,
-                "dev": dev, "above_ema260": bool(price > ema260_v),
+                "price": price, "ema60": ema60_v, "sma200": sma200_v,
+                "dev": dev, "above_sma200": bool(price > sma200_v),
                 "as_of": str(price_s.index[-1].date()),
                 "dev_bin": get_dev_bin(dev),
                 "vix_bin": get_vix_bin(vix_v),
@@ -270,19 +249,14 @@ def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin):
                 if r["n"] < 5:
                     inner = '<span style="color:#374151;font-size:0.9rem">—</span>'
                 else:
-                    win_s  = f'+{r["avg_win"]:.1f}%'
-                    loss_s = f'{r["avg_loss"]:.1f}%'
+                    avg_s     = f"+{r['avg']:.2f}%" if r["avg"] >= 0 else f"{r['avg']:.2f}%"
                     sig_badge = ('<span style="color:#f59e0b;font-size:0.55rem;'
                                  'position:absolute;top:3px;right:4px">★</span>'
                                  if r.get("sig") else "")
                     inner = (
                         f'<div style="font-size:1.05rem;font-weight:800;line-height:1.2">{r["wr"]:.0f}%</div>'
-                        f'<div style="font-size:0.60rem;margin-top:2px;opacity:0.9">'
-                        f'<span style="color:#4ade80">↑{win_s}</span>'
-                        f'<span style="color:#94a3b8;margin:0 2px">/</span>'
-                        f'<span style="color:#f87171">↓{loss_s}</span>'
-                        f'</div>'
-                        f'<div style="font-size:0.55rem;opacity:0.4;margin-top:1px">n={r["n"]}</div>'
+                        f'<div style="font-size:0.62rem;margin-top:1px;opacity:0.85">{avg_s}</div>'
+                        f'<div style="font-size:0.58rem;opacity:0.45;margin-top:1px">n={r["n"]}</div>'
                         f'{sig_badge}'
                     )
             else:
@@ -390,7 +364,7 @@ try:
 
             dev_bin = live["dev_bin"]
             vix_bin = live["vix_bin"]
-            above   = live["above_ema260"]
+            above   = live["above_sma200"]
 
             # ── Metric cards ───────────────────────────────────────────
             c1, c2, c3, c4, c5 = st.columns(5)
@@ -421,46 +395,23 @@ try:
                 </div>""", unsafe_allow_html=True)
             ma_color = "#4ade80" if above else "#f87171"
             ma_text  = "年線之上 ✓" if above else "年線之下 ✗"
-            ema260_dev = round((live["price"] / live["ema260"] - 1) * 100, 2)
+            sma_dev  = round((live["price"] / live["sma200"] - 1) * 100, 2)
             with c5:
                 st.markdown(f"""<div class="metric-card">
-                  <div style="font-size:0.68rem;color:#64748b">EMA260 年線狀態</div>
+                  <div style="font-size:0.68rem;color:#64748b">SMA200 年線狀態</div>
                   <div style="font-size:1.1rem;font-weight:700;color:{ma_color};margin:4px 0">{ma_text}</div>
-                  <div style="font-size:0.63rem;color:#475569">${live['ema260']:,.2f}（{'+' if ema260_dev>=0 else ''}{ema260_dev:.2f}%）</div>
+                  <div style="font-size:0.63rem;color:#475569">${live['sma200']:,.2f}（{'+' if sma_dev>=0 else ''}{sma_dev:.2f}%）</div>
                 </div>""", unsafe_allow_html=True)
 
             # ── Position banner ────────────────────────────────────────
             above_icon  = "🟢" if above else "🔴"
             above_label = "年線之上" if above else "年線之下"
             rec_note    = "📅/⚡ 年線之上 分頁" if above else "📅/⚡ 年線之下 分頁（注意：熊市勝率大幅下降）"
-
-            # 月份季節效應
-            from datetime import datetime as _dt3
-            cur_month = _dt3.now().month
-            MONTH_ZH  = {1:"一月",2:"二月",3:"三月",4:"四月",5:"五月",6:"六月",
-                         7:"七月",8:"八月",9:"九月",10:"十月",11:"十一月",12:"十二月"}
-            t_month_data    = ALL_DATA[ticker].get("month_wr", {})
-            t_overall_wr    = ALL_DATA[ticker].get("overall_1m_wr", 50.0)
-            cur_month_info  = t_month_data.get(cur_month)
-            if cur_month_info:
-                m_wr   = cur_month_info["wr"]
-                m_diff = round(m_wr - t_overall_wr, 1)
-                m_color = "#4ade80" if m_diff >= 3 else "#f87171" if m_diff <= -3 else "#94a3b8"
-                m_sign  = "+" if m_diff >= 0 else ""
-                m_badge = (f'<span style="background:#1e3a5f;border:1px solid #334155;'
-                           f'border-radius:6px;padding:2px 8px;font-size:0.68rem;color:#94a3b8">'
-                           f'📅 {MONTH_ZH[cur_month]}歷史勝率（1m）：'
-                           f'<b style="color:{m_color}">{m_wr:.1f}%</b>'
-                           f'<span style="color:{m_color};font-size:0.62rem"> ({m_sign}{m_diff}% vs 全月均 {t_overall_wr:.1f}%)</span>'
-                           f'&nbsp;n={cur_month_info["n"]}</span>')
-            else:
-                m_badge = ""
-
             st.markdown(f"""
             <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;
-                        padding:11px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px">
+                        padding:11px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
               <span style="font-size:1.5rem">{above_icon}</span>
-              <div style="flex:1">
+              <div>
                 <div style="font-size:0.82rem;color:#94a3b8">
                   <b style="color:#e2e8f0">{ticker} {above_label}</b>
                   &nbsp;｜&nbsp; 乖離率桶 <b style="color:#f59e0b">{dev_bin}</b>
@@ -469,7 +420,6 @@ try:
                 <div style="font-size:0.68rem;color:#475569;margin-top:3px">
                   橘色邊框 = 目前所在格子 ｜ 請優先參考 {rec_note}
                 </div>
-                {'<div style="margin-top:7px">' + m_badge + '</div>' if m_badge else ''}
               </div>
             </div>""", unsafe_allow_html=True)
 
@@ -530,7 +480,7 @@ try:
             ③ 搭配大盤壓力儀表板燈號做綜合判斷<br><br>
             <b style="color:#f87171">不適合做的事</b><br>
             ① 以精確勝率數字做機械化決策（重疊樣本使數字不可靠）<br>
-            ② 熊市（EMA260 年線之下）中跟著矩陣加碼（整體勝率大幅降低）<br>
+            ② 熊市（年線之下）中跟著矩陣加碼（整體勝率大幅降低）<br>
             ③ 把 n 當成獨立樣本數（真實有效 N 遠小於顯示值）
           </div>
         </div>""", unsafe_allow_html=True)
