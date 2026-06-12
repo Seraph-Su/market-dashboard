@@ -126,8 +126,12 @@ def compute_backtest(hour_key: str):
                     n    = len(rets)
                     if n < 3:
                         continue
-                    wr  = round(float((rets > 0).mean() * 100), 1)
-                    avg = round(float(rets.mean() * 100), 2)
+                    wins  = rets[rets > 0]
+                    loses = rets[rets <= 0]
+                    wr       = round(float((rets > 0).mean() * 100), 1)
+                    avg      = round(float(rets.mean() * 100), 2)
+                    avg_win  = round(float(wins.mean()  * 100), 2) if len(wins)  > 0 else 0.0
+                    avg_loss = round(float(loses.mean() * 100), 2) if len(loses) > 0 else 0.0
                     # Binomial test vs 50%
                     successes = int((rets > 0).sum())
                     binom_p   = float(stats.binomtest(
@@ -135,6 +139,7 @@ def compute_backtest(hour_key: str):
                     agg.append({
                         "dev": dev_b, "vix": vix_b,
                         "wr": wr, "avg": avg, "n": n,
+                        "avg_win": avg_win, "avg_loss": avg_loss,
                         "sig": int(binom_p < 0.05),
                         "binom_p": round(binom_p, 4),
                     })
@@ -265,14 +270,19 @@ def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin):
                 if r["n"] < 5:
                     inner = '<span style="color:#374151;font-size:0.9rem">—</span>'
                 else:
-                    avg_s     = f"+{r['avg']:.2f}%" if r["avg"] >= 0 else f"{r['avg']:.2f}%"
+                    win_s  = f'+{r["avg_win"]:.1f}%'
+                    loss_s = f'{r["avg_loss"]:.1f}%'
                     sig_badge = ('<span style="color:#f59e0b;font-size:0.55rem;'
                                  'position:absolute;top:3px;right:4px">★</span>'
                                  if r.get("sig") else "")
                     inner = (
                         f'<div style="font-size:1.05rem;font-weight:800;line-height:1.2">{r["wr"]:.0f}%</div>'
-                        f'<div style="font-size:0.62rem;margin-top:1px;opacity:0.85">{avg_s}</div>'
-                        f'<div style="font-size:0.58rem;opacity:0.45;margin-top:1px">n={r["n"]}</div>'
+                        f'<div style="font-size:0.60rem;margin-top:2px;opacity:0.9">'
+                        f'<span style="color:#4ade80">↑{win_s}</span>'
+                        f'<span style="color:#94a3b8;margin:0 2px">/</span>'
+                        f'<span style="color:#f87171">↓{loss_s}</span>'
+                        f'</div>'
+                        f'<div style="font-size:0.55rem;opacity:0.4;margin-top:1px">n={r["n"]}</div>'
                         f'{sig_badge}'
                     )
             else:
