@@ -99,50 +99,23 @@ def compute_backtest(hour_key: str):
         price  = price.reindex(shared)
         v      = vix.reindex(shared)
 
-        ema60  = price.ewm(span=60, adjust=False).mean()
-        sma200 = price.rolling(200).mean()
+        ema60  = price.ewm(span=60,  adjust=False).mean()
+        ema260 = price.ewm(span=260, adjust=False).mean()
         dev_pct = (price - ema60) / ema60 * 100
         fwd21  = price.shift(-21) / price - 1
         fwd63  = price.shift(-63) / price - 1
-        # Forward MAE：進場後 N 天內（t+1 ~ t+N）最低收盤價相對進場價的跌幅
-        # rolling(N).min() 在 t+N 位置 = min(price[t+1..t+N])，shift(-N) 對齊回 t
-        fmin21 = price.rolling(21).min().shift(-21)
-        fmin63 = price.rolling(63).min().shift(-63)
-        mae21  = np.minimum(fmin21 / price - 1, 0)   # ≤0；期間未跌破進場價則為 0
-        mae63  = np.minimum(fmin63 / price - 1, 0)
-        above  = price > sma200
-
-        # Time-to-Recovery：進場後第一次收盤價 ≥ 進場價所需天數
-        # 搜尋上限 252 天；999 = 252天內未回本；-1 = 尾端資料不足無法判定（右設限，排除統計）
-        arr   = price.values.astype(float)
-        n_obs = len(arr)
-        H     = 252
-        ttr_arr = np.full(n_obs, -1.0)
-        if n_obs > H:
-            from numpy.lib.stride_tricks import sliding_window_view
-            W    = sliding_window_view(arr, H + 1)        # W[t,k] = arr[t+k]
-            rec  = W[:, 1:] >= W[:, [0]]
-            has  = rec.any(axis=1)
-            first = rec.argmax(axis=1) + 1
-            ttr_arr[:n_obs - H] = np.where(has, first, 999.0)
-        # 尾端不足 252 天者：若可確認已回本則照算，否則維持 -1（設限）
-        for t in range(max(n_obs - H, 0), n_obs - 1):
-            hit = np.nonzero(arr[t + 1:] >= arr[t])[0]
-            if hit.size:
-                ttr_arr[t] = hit[0] + 1
-        ttr = pd.Series(ttr_arr, index=price.index)
+        above  = price > ema260
 
         df = pd.DataFrame({
             "vix": v, "dev": dev_pct, "above": above,
             "fwd21": fwd21, "fwd63": fwd63,
-            "mae21": mae21, "mae63": mae63,
-            "ttr": ttr,
+            "month": price.index.month,
         }).dropna()
 
         ticker_data = {}
-        for (label_above, horizon, col, mcol) in [
-            ("上", "3m", "fwd63", "mae63"), ("上", "1m", "fwd21", "mae21"),
-            ("下", "3m", "fwd63", "mae63"), ("下", "1m", "fwd21", "mae21"),
+        for (label_above, horizon, col) in [
+            ("上", "3m", "fwd63"), ("上", "1m", "fwd21"),
+            ("下", "3m", "fwd63"), ("下", "1m", "fwd21"),
         ]:
             key = f"{horizon}_{label_above}"
             sub = df[df["above"] == (label_above == "上")]
@@ -159,37 +132,29 @@ def compute_backtest(hour_key: str):
                     successes = int((rets > 0).sum())
                     binom_p   = float(stats.binomtest(
                         successes, n, p=0.5, alternative="two-sided").pvalue)
-                    # ── 下跌深度（MAE）統計 ──────────────────────────
-                    maes = cell[mcol].dropna() * 100   # 負值百分比
-                    mae_med = round(float(maes.median()), 2)
-                    mae_avg = round(float(maes.mean()), 2)
-                    mae_p95 = round(float(maes.quantile(0.05)), 2)  # 最差5%分位
-                    p5  = round(float((maes <= -5).mean()  * 100), 1)
-                    p10 = round(float((maes <= -10).mean() * 100), 1)
-                    # ── 回本時間（TTR）統計 ─────────────────────────
-                    tt  = cell["ttr"]
-                    tt  = tt[tt >= 1]            # 排除右設限樣本(-1)
-                    n_t = int(len(tt))
-                    if n_t >= 3:
-                        N_days  = 63 if horizon == "3m" else 21
-                        rec_n   = round(float((tt <= N_days).mean() * 100), 1)
-                        ttr_med = round(float(tt.median()), 1)
-                        ttr_p90 = round(float(tt.quantile(0.9)), 1)
-                        p_no252 = round(float((tt >= 999).mean() * 100), 1)
-                    else:
-                        rec_n = ttr_med = ttr_p90 = p_no252 = None
                     agg.append({
                         "dev": dev_b, "vix": vix_b,
                         "wr": wr, "avg": avg, "n": n,
                         "sig": int(binom_p < 0.05),
                         "binom_p": round(binom_p, 4),
-                        "mae_med": mae_med, "mae_avg": mae_avg,
-                        "mae_p95": mae_p95, "p5": p5, "p10": p10,
-                        "rec_n": rec_n, "ttr_med": ttr_med,
-                        "ttr_p90": ttr_p90, "p_no252": p_no252, "n_t": n_t,
                     })
             ticker_data[key] = agg
         all_data[ticker] = ticker_data
+
+        # ── 月份季節效應（1m，EMA260 之上，跨全部 VIX/乖離桶）──
+        sub_above = df[df["above"] == True]
+        overall_wr = round(float((sub_above["fwd21"] > 0).mean() * 100), 1) if len(sub_above) > 0 else 50.0
+        month_data = {}
+        for m in range(1, 13):
+            rets = sub_above[sub_above["month"] == m]["fwd21"].dropna()
+            if len(rets) >= 5:
+                month_data[m] = {
+                    "wr":  round(float((rets > 0).mean() * 100), 1),
+                    "avg": round(float(rets.mean() * 100), 2),
+                    "n":   len(rets),
+                }
+        ticker_data["month_wr"]      = month_data
+        ticker_data["overall_1m_wr"] = overall_wr
 
     return all_data, str(start_date), str(end_date)
 
@@ -220,15 +185,15 @@ def fetch_live(hour_key: str):
     for ticker in price_tickers:
         try:
             price_s  = close_all[ticker].dropna()
-            ema60    = price_s.ewm(span=60, adjust=False).mean()
-            sma200   = price_s.rolling(200).mean()
+            ema60    = price_s.ewm(span=60,  adjust=False).mean()
+            ema260   = price_s.ewm(span=260, adjust=False).mean()
             price    = round(float(price_s.iloc[-1]), 2)
-            ema60_v  = round(float(ema60.iloc[-1]), 2)
-            sma200_v = round(float(sma200.iloc[-1]), 2)
+            ema60_v  = round(float(ema60.iloc[-1]),  2)
+            ema260_v = round(float(ema260.iloc[-1]), 2)
             dev      = round((price - ema60_v) / ema60_v * 100, 2)
             result[ticker] = {
-                "price": price, "ema60": ema60_v, "sma200": sma200_v,
-                "dev": dev, "above_sma200": bool(price > sma200_v),
+                "price": price, "ema60": ema60_v, "ema260": ema260_v,
+                "dev": dev, "above_ema260": bool(price > ema260_v),
                 "as_of": str(price_s.index[-1].date()),
                 "dev_bin": get_dev_bin(dev),
                 "vix_bin": get_vix_bin(vix_v),
@@ -250,60 +215,19 @@ def cell_bg_text(wr, n):
     if wr >= 30: return "#3b1515", "#fca5a5"
     return "#7f1d1d", "#fecaca"
 
-def cell_bg_text_mae(mae_med, n):
-    # 以中位數 MAE 上色：跌得越淺越綠，越深越紅
-    if n < 5:          return "#111827", "#374151"
-    if mae_med >= -1:  return "#064e3b", "#6ee7b7"
-    if mae_med >= -2:  return "#14532d", "#4ade80"
-    if mae_med >= -3:  return "#1c3a1a", "#86efac"
-    if mae_med >= -4:  return "#2d2a05", "#fbbf24"
-    if mae_med >= -6:  return "#2d1a05", "#fdba74"
-    if mae_med >= -8:  return "#3b1515", "#fca5a5"
-    return "#7f1d1d", "#fecaca"
-
 # ── Matrix HTML builder ────────────────────────────────────────────────
-ROW_H = {"wr": 62, "mae": 78, "ttr": 78}
-
-def _fmt_days(x):
-    return "&gt;252" if x > 252 else f"{x:.0f}"
-
-def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin, mode="wr"):
+def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin):
     lookup = {(r["dev"], r["vix"]): r for r in data_list}
     present_devs = [d for d in DEV_BINS_ORDER if any(r["dev"] == d for r in data_list)]
     present_vix  = [v for v in VIX_BINS_ORDER if any(r["vix"] == v for r in data_list)]
 
-    if mode == "wr":
-        legend_items = [
-            ("≥95%","#064e3b","#6ee7b7"),("≥90%","#14532d","#4ade80"),
-            ("≥80%","#1c3a1a","#86efac"),("≥70%","#2d2a05","#fbbf24"),
-            ("≥60%","#1e3a5f","#93c5fd"),("≥50%","#1a1a3a","#a5b4fc"),
-            ("≥40%","#2d1a05","#fdba74"),("≥30%","#3b1515","#fca5a5"),
-            ("<30%","#7f1d1d","#fecaca"),("n<5","#111827","#374151"),
-        ]
-        legend_label = "勝率色標："
-        legend_note  = "橘框=當前位置 &nbsp;★=二項檢定 p&lt;0.05"
-    elif mode == "ttr":
-        legend_items = [
-            ("≥95%","#064e3b","#6ee7b7"),("≥90%","#14532d","#4ade80"),
-            ("≥80%","#1c3a1a","#86efac"),("≥70%","#2d2a05","#fbbf24"),
-            ("≥60%","#1e3a5f","#93c5fd"),("≥50%","#1a1a3a","#a5b4fc"),
-            ("≥40%","#2d1a05","#fdba74"),("≥30%","#3b1515","#fca5a5"),
-            ("<30%","#7f1d1d","#fecaca"),("n<5","#111827","#374151"),
-        ]
-        legend_label = "N天內回本率色標："
-        legend_note  = ("橘框=當前位置 &nbsp;｜&nbsp; "
-                        "回本 = 收盤價首次回到進場價以上（搜尋上限252天）")
-    else:
-        legend_items = [
-            ("≥-1%","#064e3b","#6ee7b7"),("≥-2%","#14532d","#4ade80"),
-            ("≥-3%","#1c3a1a","#86efac"),("≥-4%","#2d2a05","#fbbf24"),
-            ("≥-6%","#2d1a05","#fdba74"),("≥-8%","#3b1515","#fca5a5"),
-            ("<-8%","#7f1d1d","#fecaca"),("n<5","#111827","#374151"),
-        ]
-        legend_label = "中位數MAE色標："
-        legend_note  = ("橘框=當前位置 &nbsp;｜&nbsp; "
-                        "MAE = 進場後 N 天內最大續跌幅（收盤價計）")
-
+    legend_items = [
+        ("≥95%","#064e3b","#6ee7b7"),("≥90%","#14532d","#4ade80"),
+        ("≥80%","#1c3a1a","#86efac"),("≥70%","#2d2a05","#fbbf24"),
+        ("≥60%","#1e3a5f","#93c5fd"),("≥50%","#1a1a3a","#a5b4fc"),
+        ("≥40%","#2d1a05","#fdba74"),("≥30%","#3b1515","#fca5a5"),
+        ("<30%","#7f1d1d","#fecaca"),("n<5","#111827","#374151"),
+    ]
     legend_html = "".join(
         f'<span style="background:{bg};color:{fg};padding:2px 8px;border-radius:4px;'
         f'font-size:0.65rem;font-weight:600;border:1px solid {fg}22">{lbl}</span>'
@@ -336,29 +260,11 @@ def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin, mode="wr"):
             key = (dev_b, vix_b)
             is_curr_cell = (dev_b == curr_dev_bin and vix_b == curr_vix_bin)
             if key in lookup:
-                r = lookup[key]
-                if mode == "wr":
-                    bg, fg = cell_bg_text(r["wr"], r["n"])
-                elif mode == "ttr":
-                    if r.get("rec_n") is None:
-                        bg, fg = "#111827", "#374151"
-                    else:
-                        bg, fg = cell_bg_text(r["rec_n"], r["n_t"])
-                else:
-                    bg, fg = cell_bg_text_mae(r["mae_med"], r["n"])
-                if r["n"] < 5 or (mode == "ttr" and
-                                  (r.get("rec_n") is None or r["n_t"] < 5)):
+                r  = lookup[key]
+                bg, fg = cell_bg_text(r["wr"], r["n"])
+                if r["n"] < 5:
                     inner = '<span style="color:#374151;font-size:0.9rem">—</span>'
-                elif mode == "ttr":
-                    inner = (
-                        f'<div style="font-size:1.0rem;font-weight:800;line-height:1.2">{r["rec_n"]:.0f}%</div>'
-                        f'<div style="font-size:0.6rem;margin-top:2px;opacity:0.85">'
-                        f'中位 {_fmt_days(r["ttr_med"])} 天 ｜ P90 {_fmt_days(r["ttr_p90"])}</div>'
-                        f'<div style="font-size:0.58rem;margin-top:1px;opacity:0.7">'
-                        f'1年未回本 {r["p_no252"]:.0f}%</div>'
-                        f'<div style="font-size:0.55rem;opacity:0.45;margin-top:1px">n={r["n_t"]}</div>'
-                    )
-                elif mode == "wr":
+                else:
                     avg_s     = f"+{r['avg']:.2f}%" if r["avg"] >= 0 else f"{r['avg']:.2f}%"
                     sig_badge = ('<span style="color:#f59e0b;font-size:0.55rem;'
                                  'position:absolute;top:3px;right:4px">★</span>'
@@ -368,15 +274,6 @@ def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin, mode="wr"):
                         f'<div style="font-size:0.62rem;margin-top:1px;opacity:0.85">{avg_s}</div>'
                         f'<div style="font-size:0.58rem;opacity:0.45;margin-top:1px">n={r["n"]}</div>'
                         f'{sig_badge}'
-                    )
-                else:
-                    inner = (
-                        f'<div style="font-size:1.0rem;font-weight:800;line-height:1.2">{r["mae_med"]:.1f}%</div>'
-                        f'<div style="font-size:0.6rem;margin-top:2px;opacity:0.85">'
-                        f'均 {r["mae_avg"]:.1f} ｜ P95 {r["mae_p95"]:.1f}</div>'
-                        f'<div style="font-size:0.58rem;margin-top:1px;opacity:0.7">'
-                        f'跌&gt;5%:{r["p5"]:.0f}% &nbsp;&gt;10%:{r["p10"]:.0f}%</div>'
-                        f'<div style="font-size:0.55rem;opacity:0.45;margin-top:1px">n={r["n"]}</div>'
                     )
             else:
                 bg, fg = "#0a0f1a", "#1e293b"
@@ -396,7 +293,7 @@ def build_matrix_html(data_list, curr_dev_bin, curr_vix_bin, mode="wr"):
             )
         rows += f"<tr>{row_cells}</tr>"
 
-    table_h = 80 + len(present_vix) * ROW_H[mode]
+    table_h = 80 + len(present_vix) * 62
 
     return f"""<!DOCTYPE html><html lang="zh-TW"><head>
 <meta charset="UTF-8">
@@ -410,8 +307,8 @@ table{{border-collapse:collapse;width:max-content;min-width:100%}}
 tr:hover td:not([style*="sticky"]){{filter:brightness(1.25);transition:filter .1s}}
 </style></head><body>
 <div class="legend">
-  <span class="legend-lbl">{legend_label}</span>{legend_html}
-  <span style="margin-left:8px;font-size:0.62rem;color:#334155">{legend_note}</span>
+  <span class="legend-lbl">勝率色標：</span>{legend_html}
+  <span style="margin-left:8px;font-size:0.62rem;color:#334155">橘框=當前位置 &nbsp;★=二項檢定 p&lt;0.05</span>
 </div>
 <div class="wrap" style="max-height:{table_h}px">
 <table>
@@ -426,10 +323,10 @@ tr:hover td:not([style*="sticky"]){{filter:brightness(1.25);transition:filter .1
 # ────────────────────────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
-    st.markdown("## 📊 多指數勝率 × 下跌深度矩陣")
+    st.markdown("## 📊 多指數勝率矩陣")
     st.markdown(
         "<span style='color:#64748b;font-size:0.78rem'>"
-        "EMA60 乖離率 × VIX → 未來 1個月 / 3個月 勝率與下跌深度（MAE）&nbsp;｜&nbsp;"
+        "EMA60 乖離率 × VIX → 未來 1個月 / 3個月進場勝率 &nbsp;｜&nbsp;"
         "回測：2000年起至今 &nbsp;｜&nbsp;"
         "S&P500 &nbsp;·&nbsp; Nasdaq 100 &nbsp;·&nbsp; 道瓊工業 &nbsp;·&nbsp; 費城半導體"
         "</span>",
@@ -465,29 +362,10 @@ try:
                    ⚠️ 年線之下為熊市環境，整體勝率大幅下降。此分頁僅供極端情況參考，不建議在熊市中依此加碼。
                    </div>"""
 
-    MAE_INFO = """<div style="background:#0f2027;border:1px solid #1e3a5f;border-radius:8px;
-                  padding:8px 14px;color:#94a3b8;font-size:0.75rem;margin-bottom:10px;line-height:1.7">
-                  📉 <b style="color:#e2e8f0">下跌深度（MAE, Maximum Adverse Excursion）</b>：
-                  進場後 N 天內，收盤價相對進場價的最大續跌幅。<br>
-                  大字 = <b>中位數</b>（典型情境）｜ 均 = 平均 MAE ｜
-                  <b style="color:#f87171">P95 = 最差 5% 情境的跌幅</b>（可作為停損／壓力測試參考）｜
-                  跌&gt;5%、&gt;10% = 續跌超過該深度的歷史機率。
-                  </div>"""
-
-    TTR_INFO = """<div style="background:#0f2027;border:1px solid #1e3a5f;border-radius:8px;
-                  padding:8px 14px;color:#94a3b8;font-size:0.75rem;margin-bottom:10px;line-height:1.7">
-                  ⏱ <b style="color:#e2e8f0">回本時間（Time-to-Recovery）</b>：
-                  進場後收盤價<b>首次</b>回到進場價以上所需的交易日數（搜尋上限 252 天 ≈ 1 年）。<br>
-                  大字 = <b>N天內回本率</b>（3個月分頁 N=63、1個月分頁 N=21）｜
-                  中位 / P90 = 回本天數的中位數與 90% 分位 ｜
-                  <b style="color:#f87171">1年未回本</b> = 252 天內仍未回到進場價的歷史機率。<br>
-                  近期尚未回本且資料不足一年的樣本（右設限）已排除，n 為實際納入統計的樣本數。
-                  </div>"""
-
-    def _matrix_height(key, ticker, mode):
+    def _matrix_height(key, ticker):
         pv = [v for v in VIX_BINS_ORDER
               if any(r["vix"] == v for r in ALL_DATA[ticker][key])]
-        return 80 + len(pv) * (ROW_H[mode] + 1)
+        return 80 + len(pv) * 63
 
     # ── Index tabs ─────────────────────────────────────────────────────
     idx_tabs = st.tabs([c["tab"] for c in INDEX_CONFIG])
@@ -502,7 +380,7 @@ try:
 
             dev_bin = live["dev_bin"]
             vix_bin = live["vix_bin"]
-            above   = live["above_sma200"]
+            above   = live["above_ema260"]
 
             # ── Metric cards ───────────────────────────────────────────
             c1, c2, c3, c4, c5 = st.columns(5)
@@ -533,23 +411,46 @@ try:
                 </div>""", unsafe_allow_html=True)
             ma_color = "#4ade80" if above else "#f87171"
             ma_text  = "年線之上 ✓" if above else "年線之下 ✗"
-            sma_dev  = round((live["price"] / live["sma200"] - 1) * 100, 2)
+            ema260_dev = round((live["price"] / live["ema260"] - 1) * 100, 2)
             with c5:
                 st.markdown(f"""<div class="metric-card">
-                  <div style="font-size:0.68rem;color:#64748b">SMA200 年線狀態</div>
+                  <div style="font-size:0.68rem;color:#64748b">EMA260 年線狀態</div>
                   <div style="font-size:1.1rem;font-weight:700;color:{ma_color};margin:4px 0">{ma_text}</div>
-                  <div style="font-size:0.63rem;color:#475569">${live['sma200']:,.2f}（{'+' if sma_dev>=0 else ''}{sma_dev:.2f}%）</div>
+                  <div style="font-size:0.63rem;color:#475569">${live['ema260']:,.2f}（{'+' if ema260_dev>=0 else ''}{ema260_dev:.2f}%）</div>
                 </div>""", unsafe_allow_html=True)
 
             # ── Position banner ────────────────────────────────────────
             above_icon  = "🟢" if above else "🔴"
             above_label = "年線之上" if above else "年線之下"
             rec_note    = "📅/⚡ 年線之上 分頁" if above else "📅/⚡ 年線之下 分頁（注意：熊市勝率大幅下降）"
+
+            # 月份季節效應
+            from datetime import datetime as _dt3
+            cur_month = _dt3.now().month
+            MONTH_ZH  = {1:"一月",2:"二月",3:"三月",4:"四月",5:"五月",6:"六月",
+                         7:"七月",8:"八月",9:"九月",10:"十月",11:"十一月",12:"十二月"}
+            t_month_data    = ALL_DATA[ticker].get("month_wr", {})
+            t_overall_wr    = ALL_DATA[ticker].get("overall_1m_wr", 50.0)
+            cur_month_info  = t_month_data.get(cur_month)
+            if cur_month_info:
+                m_wr   = cur_month_info["wr"]
+                m_diff = round(m_wr - t_overall_wr, 1)
+                m_color = "#4ade80" if m_diff >= 3 else "#f87171" if m_diff <= -3 else "#94a3b8"
+                m_sign  = "+" if m_diff >= 0 else ""
+                m_badge = (f'<span style="background:#1e3a5f;border:1px solid #334155;'
+                           f'border-radius:6px;padding:2px 8px;font-size:0.68rem;color:#94a3b8">'
+                           f'📅 {MONTH_ZH[cur_month]}歷史勝率（1m）：'
+                           f'<b style="color:{m_color}">{m_wr:.1f}%</b>'
+                           f'<span style="color:{m_color};font-size:0.62rem"> ({m_sign}{m_diff}% vs 全月均 {t_overall_wr:.1f}%)</span>'
+                           f'&nbsp;n={cur_month_info["n"]}</span>')
+            else:
+                m_badge = ""
+
             st.markdown(f"""
             <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;
-                        padding:11px 18px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+                        padding:11px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px">
               <span style="font-size:1.5rem">{above_icon}</span>
-              <div>
+              <div style="flex:1">
                 <div style="font-size:0.82rem;color:#94a3b8">
                   <b style="color:#e2e8f0">{ticker} {above_label}</b>
                   &nbsp;｜&nbsp; 乖離率桶 <b style="color:#f59e0b">{dev_bin}</b>
@@ -558,21 +459,9 @@ try:
                 <div style="font-size:0.68rem;color:#475569;margin-top:3px">
                   橘色邊框 = 目前所在格子 ｜ 請優先參考 {rec_note}
                 </div>
+                {'<div style="margin-top:7px">' + m_badge + '</div>' if m_badge else ''}
               </div>
             </div>""", unsafe_allow_html=True)
-
-            # ── Mode toggle: 勝率 / 下跌深度 ────────────────────────────
-            mode_label = st.radio(
-                "矩陣類型", ["📈 勝率", "📉 下跌深度（MAE）", "⏱ 回本時間"],
-                horizontal=True, key=f"mode_{ticker}",
-                label_visibility="collapsed",
-            )
-            mode = ("mae" if mode_label.startswith("📉")
-                    else "ttr" if mode_label.startswith("⏱") else "wr")
-            if mode == "mae":
-                st.markdown(MAE_INFO, unsafe_allow_html=True)
-            elif mode == "ttr":
-                st.markdown(TTR_INFO, unsafe_allow_html=True)
 
             # ── Sub-tabs (4 scenarios) ─────────────────────────────────
             sub1, sub2, sub3, sub4 = st.tabs([
@@ -581,22 +470,22 @@ try:
             ])
             with sub1:
                 components.html(
-                    build_matrix_html(ALL_DATA[ticker]["3m_上"], dev_bin, vix_bin, mode),
-                    height=_matrix_height("3m_上", ticker, mode), scrolling=False)
+                    build_matrix_html(ALL_DATA[ticker]["3m_上"], dev_bin, vix_bin),
+                    height=_matrix_height("3m_上", ticker), scrolling=False)
             with sub2:
                 components.html(
-                    build_matrix_html(ALL_DATA[ticker]["1m_上"], dev_bin, vix_bin, mode),
-                    height=_matrix_height("1m_上", ticker, mode), scrolling=False)
+                    build_matrix_html(ALL_DATA[ticker]["1m_上"], dev_bin, vix_bin),
+                    height=_matrix_height("1m_上", ticker), scrolling=False)
             with sub3:
                 st.markdown(BEAR_WARN, unsafe_allow_html=True)
                 components.html(
-                    build_matrix_html(ALL_DATA[ticker]["3m_下"], dev_bin, vix_bin, mode),
-                    height=_matrix_height("3m_下", ticker, mode), scrolling=False)
+                    build_matrix_html(ALL_DATA[ticker]["3m_下"], dev_bin, vix_bin),
+                    height=_matrix_height("3m_下", ticker), scrolling=False)
             with sub4:
                 st.markdown(BEAR_WARN, unsafe_allow_html=True)
                 components.html(
-                    build_matrix_html(ALL_DATA[ticker]["1m_下"], dev_bin, vix_bin, mode),
-                    height=_matrix_height("1m_下", ticker, mode), scrolling=False)
+                    build_matrix_html(ALL_DATA[ticker]["1m_下"], dev_bin, vix_bin),
+                    height=_matrix_height("1m_下", ticker), scrolling=False)
 
     # ── Statistical significance section ──────────────────────────────
     st.markdown("---")
@@ -616,9 +505,7 @@ try:
             &nbsp;&nbsp;• 3個月視窗：n_eff ≈ n ÷ 63<br>
             &nbsp;&nbsp;• 1個月視窗：n_eff ≈ n ÷ 21<br><br>
             以 n_eff 校正後，幾乎所有格子的統計顯著性都消失。
-            <b>★ 標記反映的是歷史一致性，而非統計保證。</b><br><br>
-            <b style="color:#f87171">MAE 同樣受重疊影響</b>：一次大跌會被相鄰多日重複計入，
-            P95 分位與超跌機率在極端格子可能高估或低估，請以「量級」而非精確數字解讀。
+            <b>★ 標記反映的是歷史一致性，而非統計保證。</b>
           </div>
         </div>""", unsafe_allow_html=True)
     with sig_c2:
@@ -630,11 +517,10 @@ try:
             <b style="color:#86efac">適合做的事</b><br>
             ① 判斷目前環境的大方向（高VIX+負乖離歷史上普遍表現較好）<br>
             ② 跨指數比較：同一環境下，哪個指數歷史反彈幅度更強？<br>
-            ③ 用 <b>P95 MAE</b> 規劃停損位與最壞情境的部位承受度<br>
-            ④ 區分「勝率高但深跌風險大」vs「勝率普通但跌幅淺」的格子<br><br>
+            ③ 搭配大盤壓力儀表板燈號做綜合判斷<br><br>
             <b style="color:#f87171">不適合做的事</b><br>
-            ① 以精確勝率/MAE數字做機械化決策（重疊樣本使數字不可靠）<br>
-            ② 熊市（年線之下）中跟著矩陣加碼（整體勝率大幅降低）<br>
+            ① 以精確勝率數字做機械化決策（重疊樣本使數字不可靠）<br>
+            ② 熊市（EMA260 年線之下）中跟著矩陣加碼（整體勝率大幅降低）<br>
             ③ 把 n 當成獨立樣本數（真實有效 N 遠小於顯示值）
           </div>
         </div>""", unsafe_allow_html=True)
@@ -668,7 +554,7 @@ try:
     <div style="background:#1c1400;border:1px solid #854d0e;border-radius:8px;
                 padding:10px 16px;margin-top:4px;margin-bottom:6px;
                 color:#fde68a;font-size:0.82rem;font-weight:600">
-      ⚠️ 勝率與下跌深度僅為參考，過去統計數字不代表未來表現
+      ⚠️ 勝率僅為參考，過去統計數字不代表未來表現
     </div>
     <div style="background:#1e293b;border:1px solid #1e3a5f;border-radius:8px;
                 padding:10px 16px;margin-top:0">
@@ -676,12 +562,10 @@ try:
         📌 <b style="color:#64748b">統計說明</b>
         &nbsp;｜&nbsp; ① 相鄰日期樣本高度重疊（非獨立事件），實際信賴區間比 n 看起來更寬
         &nbsp;｜&nbsp; ② n &lt; 5 的格子統計意義有限，顯示「—」
-        &nbsp;｜&nbsp; ③ MAE 與回本時間均以收盤價計算，未含盤中低點，實際深度可能略深
-        &nbsp;｜&nbsp; ③-2 回本時間搜尋上限 252 天，超過以「&gt;252」表示；右設限樣本已排除
-        &nbsp;｜&nbsp; ④ 歷史表現不代表未來績效，建議搭配大盤壓力儀表板的燈號綜合判斷
-        &nbsp;｜&nbsp; ⑤ 數據含存活者偏差，各指數歷史成分股隨時間更換
-        &nbsp;｜&nbsp; ⑥ SOXX 自 2001 年起；其餘三指數自 2000 年起
-        &nbsp;｜&nbsp; ⑦ 回測區間：{bt_start} ～ {bt_end}（每週自動更新）
+        &nbsp;｜&nbsp; ③ 歷史表現不代表未來績效，建議搭配大盤壓力儀表板的燈號綜合判斷
+        &nbsp;｜&nbsp; ④ 數據含存活者偏差，各指數歷史成分股隨時間更換
+        &nbsp;｜&nbsp; ⑤ SOXX 自 2001 年起；其餘三指數自 2000 年起
+        &nbsp;｜&nbsp; ⑥ 回測區間：{bt_start} ～ {bt_end}（每週自動更新）
       </div>
     </div>""", unsafe_allow_html=True)
 
