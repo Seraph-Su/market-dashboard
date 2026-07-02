@@ -76,14 +76,42 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def build_pool_samples(tickers: tuple, horizon: int, period: str = "10y") -> pd.DataFrame:
-    """橫斷面彙總：把整個股票池的每日樣本疊起來，供新上市股借用統計"""
-    raw = yf.download(list(tickers), period=period, interval="1d",
-                      auto_adjust=True, progress=False)
-    frames = []
-    for t in tickers:
+    """橫斷面彙總：把整個股票池的每日樣本疊起來，供新上市股借用統計。
+    分批下載＋單檔補抓，避免整批被 Yahoo 限流時全軍覆沒。"""
+    frames, done = [], set()
+    BATCH = 6
+    for i in range(0, len(tickers), BATCH):
+        batch = list(tickers[i:i + BATCH])
         try:
-            d = pd.DataFrame({"Close": raw["Close"][t], "High": raw["High"][t],
-                              "Low": raw["Low"][t]}).dropna()
+            raw = yf.download(batch, period=period, interval="1d",
+                              auto_adjust=True, progress=False)
+            if raw is None or raw.empty:
+                continue
+            for t in batch:
+                try:
+                    if isinstance(raw.columns, pd.MultiIndex):
+                        d = pd.DataFrame({"Close": raw["Close"][t],
+                                          "High": raw["High"][t],
+                                          "Low": raw["Low"][t]}).dropna()
+                    else:
+                        d = raw[["Close", "High", "Low"]].dropna()
+                    if len(d) >= 400:
+                        frames.append(build_samples(d, horizon))
+                        done.add(t)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+    # 缺的單檔補抓一次
+    for t in set(tickers) - done:
+        try:
+            d = yf.download(t, period=period, interval="1d",
+                            auto_adjust=True, progress=False)
+            if d is None or d.empty:
+                continue
+            if isinstance(d.columns, pd.MultiIndex):
+                d.columns = d.columns.get_level_values(0)
+            d = d[["Close", "High", "Low"]].dropna()
             if len(d) >= 400:
                 frames.append(build_samples(d, horizon))
         except Exception:
@@ -222,7 +250,11 @@ try:
         src_note = f"統計來源：{ticker} 自身歷史，共 {len(samples)} 個樣本日"
 
     if samples.empty:
-        st.error("樣本不足，無法統計。請改用股票池統計或加長統計期間。")
+        if use_pool:
+            st.error("股票池資料下載失敗（可能被 Yahoo 暫時限流）。"
+                     "請稍等一分鐘後按「🔄 重新計算」再試。")
+        else:
+            st.error("樣本不足，無法統計。請勾選股票池統計或加長統計期間。")
         st.stop()
 
     # 趨勢濾網：區分「從高點跌下來」和「從低點漲回來」（距高點距離相同、含義相反）
