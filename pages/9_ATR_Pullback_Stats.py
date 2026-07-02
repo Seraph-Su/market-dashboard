@@ -13,9 +13,9 @@ ATR_BINS = [
     ("急擴張",   1.25,  np.inf, "#f87171"),
 ]
 POS_BINS = [
-    ("高點附近（≤5%）",   -0.05, 10.0),
-    ("回檔中（5~15%）",   -0.15, -0.05),
-    ("深回檔（>15%）",    -10.0, -0.15),
+    ("高點附近（≤5%）",    -0.05, 10.0),
+    ("距高點 5~15%",      -0.15, -0.05),
+    ("距高點 >15%",       -10.0, -0.15),
 ]
 QUICK = ["GLW", "NVDA", "AVGO", "AMD", "TSM", "MU", "VRT", "ANET", "PLTR", "AAPL"]
 DEFAULT_POOL = ("NVDA, AVGO, AMD, TSM, MU, MRVL, ASML, AMAT, LRCX, KLAC, "
@@ -190,7 +190,9 @@ try:
     st.markdown(
         f"<span style='background:{state_color}22;color:{state_color};"
         f"padding:4px 12px;border-radius:10px;font-size:0.85rem;font-weight:700'>"
-        f"目前狀態：{cur_atr_state} × {cur_pos_state} × {cur_trend}（EMA60 之{'上' if cur_trend == '上行' else '下'}）</span>"
+        f"目前狀態：{cur_atr_state} × {cur_pos_state} × {cur_trend}"
+        f"{'（低點回升）' if cur_trend == '上行' and cur_pos_state != POS_BINS[0][0] else ''}"
+        f"{'（高點回落）' if cur_trend == '下行' and cur_pos_state != POS_BINS[0][0] else ''}</span>"
         f"<span style='color:#475569;font-size:0.75rem'>"
         f"&nbsp;&nbsp;截至 {df.index[-1].date()}，共 {len(df)} 個交易日</span>",
         unsafe_allow_html=True,
