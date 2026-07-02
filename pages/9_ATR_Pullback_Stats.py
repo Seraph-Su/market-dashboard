@@ -18,6 +18,9 @@ POS_BINS = [
     ("深回檔（>15%）",    -10.0, -0.15),
 ]
 QUICK = ["GLW", "NVDA", "AVGO", "AMD", "TSM", "MU", "VRT", "ANET", "PLTR", "AAPL"]
+DEFAULT_POOL = ("NVDA, AVGO, AMD, TSM, MU, MRVL, ASML, AMAT, LRCX, KLAC, "
+                "ANET, VRT, SMCI, DELL, ORCL, PLTR, APP, CRWD, CEG")
+MIN_OWN_SAMPLES = 750   # 自身樣本日低於此數 → 預設改用股票池橫斷面統計
 
 # ── 資料與計算 ────────────────────────────────────────────────────
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -29,7 +32,7 @@ def fetch_ohlc(ticker: str, period: str) -> pd.DataFrame | None:
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     df = df[["Close", "High", "Low"]].dropna()
-    return df if len(df) >= 400 else None
+    return df if len(df) >= 280 else None
 
 def wilder_atr(df: pd.DataFrame, n: int) -> pd.Series:
     hi, lo, cl = df["High"], df["Low"], df["Close"]
@@ -68,6 +71,22 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
             "fwd":  clv[i + horizon] / clv[i] - 1,
         })
     return pd.DataFrame(rows)
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def build_pool_samples(tickers: tuple, horizon: int, period: str = "10y") -> pd.DataFrame:
+    """橫斷面彙總：把整個股票池的每日樣本疊起來，供新上市股借用統計"""
+    raw = yf.download(list(tickers), period=period, interval="1d",
+                      auto_adjust=True, progress=False)
+    frames = []
+    for t in tickers:
+        try:
+            d = pd.DataFrame({"Close": raw["Close"][t], "High": raw["High"][t],
+                              "Low": raw["Low"][t]}).dropna()
+            if len(d) >= 400:
+                frames.append(build_samples(d, horizon))
+        except Exception:
+            pass
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 def state_table(samples: pd.DataFrame, pos_state: str,
                 cur_atr_state: str | None) -> pd.DataFrame:
@@ -149,7 +168,7 @@ try:
     cl = df["Close"]
     exp_now = float(atr14.iloc[-1] / atr50.iloc[-1])
     atr_pct_now = float(atr14.iloc[-1] / cl.iloc[-1])
-    dist_now = float(cl.iloc[-1] / cl.rolling(252).max().iloc[-1] - 1)
+    dist_now = float(cl.iloc[-1] / cl.rolling(252, min_periods=60).max().iloc[-1] - 1)
     cur_atr_state = _atr_label(exp_now)
     cur_pos_state = _pos_label(dist_now)
     exp_series = atr14 / atr50
@@ -174,8 +193,35 @@ try:
     )
     st.markdown("---")
 
+    # 統計來源：自身歷史 or 股票池橫斷面（新上市股樣本不足時）
+    own_n = max(0, len(df) - 252 - horizon)
+    short_hist = own_n < MIN_OWN_SAMPLES
+    if short_hist:
+        st.warning(
+            f"⚠️ {ticker} 自身可統計樣本僅 {own_n} 個交易日（門檻 {MIN_OWN_SAMPLES}），"
+            f"單股統計不可靠，已預設改用同類股票池的橫斷面統計。")
+    use_pool = st.checkbox(
+        f"用同類股票池橫斷面統計（自身樣本 {own_n} 日）",
+        value=short_hist,
+        help="狀態（擴張度、距高點）仍用該股自己計算；各狀態格的回檔機率改為借用整個池的歷史。前提：池內個股與該股屬同類型。")
+    if use_pool:
+        pool_text = st.text_input("統計用股票池（逗號分隔）", value=DEFAULT_POOL)
+        pool = tuple(sorted({t.strip().upper() for t in pool_text.split(",")
+                             if t.strip() and t.strip().upper() != ticker}))
+        with st.spinner(f"下載 {len(pool)} 檔股票池資料中（快取至明日）…"):
+            samples = build_pool_samples(pool, horizon)
+        src_note = f"統計來源：股票池 {len(pool)} 檔 × 10 年橫斷面，共 {len(samples)} 個樣本日"
+    else:
+        samples = build_samples(df, horizon)
+        src_note = f"統計來源：{ticker} 自身歷史，共 {len(samples)} 個樣本日"
+
+    if samples.empty:
+        st.error("樣本不足，無法統計。請改用股票池統計或加長統計期間。")
+        st.stop()
+    st.markdown(f"<span style='color:#475569;font-size:0.75rem'>{src_note}</span>",
+                unsafe_allow_html=True)
+
     # 統計表：三個位置狀態各一張，目前所在的排最前
-    samples = build_samples(df, horizon)
     pos_order = sorted([p[0] for p in POS_BINS],
                        key=lambda p: 0 if p == cur_pos_state else 1)
     for pos in pos_order:
