@@ -74,6 +74,41 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         })
     return pd.DataFrame(rows)
 
+def pullback_episodes(df: pd.DataFrame, min_depth: float = 0.03) -> list:
+    """所有回檔事件（含尚未收復的）。resolved=True 表示已重新創高。"""
+    cl = df["Close"].values
+    peak_i, trough_i, eps = 0, 0, []
+    for i in range(1, len(cl)):
+        if cl[i] >= cl[peak_i]:
+            depth = 1 - cl[trough_i] / cl[peak_i]
+            if depth >= min_depth:
+                eps.append({"depth": depth, "resolved": True})
+            peak_i, trough_i = i, i
+        elif cl[i] < cl[trough_i]:
+            trough_i = i
+    depth = 1 - cl[trough_i] / cl[peak_i]      # 尾端未了結的回檔
+    if depth >= min_depth:
+        eps.append({"depth": depth, "resolved": False})
+    return eps
+
+def recovery_by_depth(all_eps: list,
+                      thresholds=(0.05, 0.08, 0.10, 0.15, 0.20, 0.30)) -> pd.DataFrame:
+    """P(最終收復前高 | 回檔曾觸及深度 ≥ X)"""
+    rows = []
+    for x in thresholds:
+        hit = [e for e in all_eps if e["depth"] >= x]
+        if not hit:
+            continue
+        n_res = sum(e["resolved"] for e in hit)
+        rows.append({
+            "回檔觸及深度": f"≥ {x*100:.0f}%",
+            "事件數": len(hit),
+            "已收復前高": n_res,
+            "尚未收復": len(hit) - n_res,
+            "收復率": f"{n_res / len(hit) * 100:.0f}%",
+        })
+    return pd.DataFrame(rows)
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def build_pool_samples(tickers: tuple, horizon: int, period: str = "10y") -> pd.DataFrame:
     """橫斷面彙總：把整個股票池的每日樣本疊起來，供新上市股借用統計。
@@ -299,6 +334,36 @@ try:
         f"「已經在跌」誤讀成「ATR 大所以要跌」。"
         f"</div>", unsafe_allow_html=True,
     )
+    st.markdown("---")
+
+    # ══ 回檔收復率（含未收復事件，無倖存者偏差）══════════════════
+    cur_dd_pct = -dist_now
+    st.markdown("#### 回檔收復率 vs 深度")
+    eps = pullback_episodes(df, min_depth=0.03)
+    if eps:
+        rec_tbl = recovery_by_depth(eps)
+        st.dataframe(rec_tbl.set_index("回檔觸及深度"), use_container_width=True)
+        if cur_dd_pct > 0.03:
+            hit = [e for e in eps if e["depth"] >= cur_dd_pct]
+            if hit:
+                n_res = sum(e["resolved"] for e in hit)
+                st.markdown(
+                    f"<span style='color:#60a5fa;font-size:0.8rem;font-weight:700'>"
+                    f"目前回檔 {cur_dd_pct*100:.1f}%：歷史上觸及此深度的 {len(hit)} 次中，"
+                    f"{n_res} 次最終收復前高（{n_res/len(hit)*100:.0f}%）</span>",
+                    unsafe_allow_html=True)
+        st.markdown(
+            "<div style='color:#334155;font-size:0.68rem'>"
+            "回答「回檔觸及 X% 之後，最終收復前高的機率」。含尚未收復的事件"
+            "（樣本截止時仍在進行的回檔），因此收復率是保守下限。"
+            "搭配上方狀態表使用：狀態表管接下來多顛，這張表管跌到這深度還回得來的機率。"
+            "統計用該股自身歷史，新上市股請謹慎解讀。"
+            "</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(
+            "<span style='color:#64748b;font-size:0.78rem'>期間內沒有 ≥3% 的回檔事件。</span>",
+            unsafe_allow_html=True)
+
     st.markdown("---")
 
     # 走勢圖：價格 + ATR 擴張度
