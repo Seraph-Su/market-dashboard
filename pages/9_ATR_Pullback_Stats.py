@@ -75,37 +75,44 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 def pullback_episodes(df: pd.DataFrame, min_depth: float = 0.03) -> list:
-    """所有回檔事件（含尚未收復的）。resolved=True 表示已重新創高。"""
+    """所有回檔事件（含尚未收復的）。resolved=True 表示已重新創高，
+    recover_days ＝ 從前高到重新創高的交易日數（水下時間）。"""
     cl = df["Close"].values
     peak_i, trough_i, eps = 0, 0, []
     for i in range(1, len(cl)):
         if cl[i] >= cl[peak_i]:
             depth = 1 - cl[trough_i] / cl[peak_i]
             if depth >= min_depth:
-                eps.append({"depth": depth, "resolved": True})
+                eps.append({"depth": depth, "recover_days": i - peak_i,
+                            "resolved": True})
             peak_i, trough_i = i, i
         elif cl[i] < cl[trough_i]:
             trough_i = i
     depth = 1 - cl[trough_i] / cl[peak_i]      # 尾端未了結的回檔
     if depth >= min_depth:
-        eps.append({"depth": depth, "resolved": False})
+        eps.append({"depth": depth, "recover_days": None, "resolved": False})
     return eps
 
 def recovery_by_depth(all_eps: list,
                       thresholds=(0.05, 0.08, 0.10, 0.15, 0.20, 0.30)) -> pd.DataFrame:
-    """P(最終收復前高 | 回檔曾觸及深度 ≥ X)"""
+    """限時收復率：P(N 個交易日內收復前高 | 回檔曾觸及深度 ≥ X)。
+    「最終收復」對現在位於高點附近的股票是套套邏輯（過去回檔按定義都收復了），
+    限時版把拖太久的解套計為失敗，才有辨識度。"""
     rows = []
     for x in thresholds:
         hit = [e for e in all_eps if e["depth"] >= x]
         if not hit:
             continue
-        n_res = sum(e["resolved"] for e in hit)
+        n = len(hit)
+        w60  = sum(1 for e in hit if e["resolved"] and e["recover_days"] <= 60)
+        w120 = sum(1 for e in hit if e["resolved"] and e["recover_days"] <= 120)
+        ever = sum(e["resolved"] for e in hit)
         rows.append({
             "回檔觸及深度": f"≥ {x*100:.0f}%",
-            "事件數": len(hit),
-            "已收復前高": n_res,
-            "尚未收復": len(hit) - n_res,
-            "收復率": f"{n_res / len(hit) * 100:.0f}%",
+            "事件數": n,
+            "60日內收復": f"{w60 / n * 100:.0f}%",
+            "120日內收復": f"{w120 / n * 100:.0f}%",
+            "最終收復": f"{ever / n * 100:.0f}%",
         })
     return pd.DataFrame(rows)
 
@@ -346,18 +353,22 @@ try:
         if cur_dd_pct > 0.03:
             hit = [e for e in eps if e["depth"] >= cur_dd_pct]
             if hit:
-                n_res = sum(e["resolved"] for e in hit)
+                n = len(hit)
+                w60 = sum(1 for e in hit if e["resolved"] and e["recover_days"] <= 60)
+                w120 = sum(1 for e in hit if e["resolved"] and e["recover_days"] <= 120)
                 st.markdown(
                     f"<span style='color:#60a5fa;font-size:0.8rem;font-weight:700'>"
-                    f"目前回檔 {cur_dd_pct*100:.1f}%：歷史上觸及此深度的 {len(hit)} 次中，"
-                    f"{n_res} 次最終收復前高（{n_res/len(hit)*100:.0f}%）</span>",
+                    f"目前回檔 {cur_dd_pct*100:.1f}%：歷史上觸及此深度 {n} 次，"
+                    f"60 日內收復 {w60/n*100:.0f}%、120 日內收復 {w120/n*100:.0f}%</span>",
                     unsafe_allow_html=True)
         st.markdown(
             "<div style='color:#334155;font-size:0.68rem'>"
-            "回答「回檔觸及 X% 之後，最終收復前高的機率」。含尚未收復的事件"
-            "（樣本截止時仍在進行的回檔），因此收復率是保守下限。"
-            "搭配上方狀態表使用：狀態表管接下來多顛，這張表管跌到這深度還回得來的機率。"
-            "統計用該股自身歷史，新上市股請謹慎解讀。"
+            "回答「回檔觸及 X% 之後，N 個交易日內收復前高的機率」。"
+            "重點看限時欄：「最終收復」對目前在高點附近的股票是套套邏輯——"
+            "過去的回檔按定義都收復了（不然它現在不會在高點），"
+            "限時版把拖太久的解套計為失敗，才能區分「很快回來」和「回得來但等不起」。"
+            "含尚未收復的進行中事件，收復率為保守下限。統計用該股自身歷史，"
+            "資料範圍跟隨上方「統計期間」設定，新上市股請謹慎解讀。"
             "</div>", unsafe_allow_html=True)
     else:
         st.markdown(
