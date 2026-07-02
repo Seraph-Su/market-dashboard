@@ -438,84 +438,6 @@ for active, prob, lift, title, desc in combos:
     </div>
     """, unsafe_allow_html=True)
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
-# ── 領頭股前哨 ────────────────────────────────────────────────────
-st.markdown('<div class="section-hdr">領頭股前哨（權值股隊形 · 不計入整體燈號）</div>', unsafe_allow_html=True)
-try:
-    _leader_list = fetch_leader_list()
-    _list_is_live = tuple(_leader_list) != tuple(FALLBACK_LEADERS)
-    L = fetch_leaders(_leader_list)
-    # 兩級判定：紅 = 2% 緩衝後仍 ≤4/8（歷史上僅對應大型頭部）；黃 = 無緩衝 ≤4/8
-    ldr_status = 'red' if L['h2'] <= 4 else 'yellow' if L['h0'] <= 4 else 'green'
-    spy_far_from_high = D['spy_dist_hi'] < -3.0
-    chips = "".join(
-        f'<span class="{"ldr-chip-up" if d["up0"] else "ldr-chip-down"}">'
-        f'{d["t"]} {"✓" if d["up0"] else "✗"} {d["dist"]:+.1f}%</span>'
-        for d in L['detail'])
-    if ldr_status == 'red':
-        ldr_title, ldr_desc = (
-            f"紅燈：隊形嚴重瓦解（無緩衝 {L['h0']}/{L['n']}，2%緩衝 {L['h2']}/{L['n']}）",
-            "2% 緩衝後仍過半破線——2016 年以來此狀態僅出現於 2022/1、2025/3、2026/3 三次大型頭部前。"
-            "建議執行部分減碼並準備避險，等待核心壓力訊號確認。")
-    elif ldr_status == 'yellow':
-        ldr_title, ldr_desc = (
-            f"黃燈：隊形出現裂痕（無緩衝 {L['h0']}/{L['n']} 站上 EMA60）",
-            "半數以上權值股跌破 EMA60 而指數仍在高位。回測（2016–2026 滾動權值名單）：此狀態下 60 日內"
-            "SPY 跌 5%+ 機率約 51%（基準 27%），誤報率約五成——對應動作：暫停新加碼、收緊移動停損。")
-    else:
-        ldr_title, ldr_desc = (
-            f"隊形完整（{L['h0']}/{L['n']} 站上 EMA60）",
-            "權值股中期趨勢健康，指數上漲有實質支撐。裂痕定義：無緩衝 ≤4 亮黃、2% 緩衝 ≤4 亮紅。")
-    if spy_far_from_high:
-        ldr_desc += f"　⚠ SPY 已距 252 日高 {D['spy_dist_hi']}%，前哨統計以高點附近為前提，此時參考壓力訊號為主。"
-    lc1, lc2 = st.columns([1.6, 1])
-    with lc1:
-        st.markdown(f"""
-        <div class="metric-card card-{ldr_status}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <span style="font-size:0.72rem;color:#94a3b8">領頭股健康度（收盤 vs EMA60）
-              <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">
-              {'名單每日自動更新' if _list_is_live else '⚠ 使用備援名單'}</span></span>
-            {BADGE[ldr_status]}
-          </div>
-          <div class="{VAL_CLASS[ldr_status]}" style="margin:4px 0 6px">{ldr_title}</div>
-          <div style="margin-bottom:6px">{chips}</div>
-          <div class="desc-text">{ldr_desc}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with lc2:
-        # 方向標籤：10日均線近兩週變化
-        _d10 = L['delta10']
-        if _d10 <= -0.5:
-            dir_txt, dir_col = f"↘ 惡化中（10日均兩週 {_d10:+.1f} 檔）", '#f87171'
-        elif _d10 >= 0.5:
-            dir_txt, dir_col = f"↗ 修復中（10日均兩週 {_d10:+.1f} 檔）", '#4ade80'
-        else:
-            dir_txt, dir_col = f"→ 持平（10日均兩週 {_d10:+.1f} 檔）", '#94a3b8'
-        st.markdown(
-            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
-            f'<span style="font-size:0.65rem;color:#475569">健康度近 60 日（灰＝每日 · 粗線＝10日均 · 虛線＝裂痕線）</span>'
-            f'<span style="font-size:0.72rem;font-weight:700;color:{dir_col}">{dir_txt}</span></div>',
-            unsafe_allow_html=True)
-        figL = go.Figure()
-        figL.add_trace(go.Scatter(
-            y=L['series'], mode='lines',
-            line=dict(color='#334155', width=1, shape='hv')))
-        figL.add_trace(go.Scatter(
-            y=L['ma_series'], mode='lines',
-            line=dict(color=dir_col, width=2.2)))
-        figL.add_hline(y=4, line=dict(color='#7f1d1d', width=1, dash='dot'))
-        figL.update_layout(
-            height=96, margin=dict(l=0, r=0, t=2, b=0),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            xaxis=dict(visible=False),
-            yaxis=dict(visible=False, range=[-0.3, L['n'] + 0.3]),
-            showlegend=False)
-        st.plotly_chart(figL, use_container_width=True,
-                        config={'displayModeBar': False}, key="chart_leaders")
-except Exception as _e:
-    st.markdown(f'<div class="uvxy-ok">領頭股前哨載入失敗（{_e}），不影響其他指標。</div>',
-                unsafe_allow_html=True)
-st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
 c1, c2, c3 = st.columns(3)
@@ -651,6 +573,84 @@ with y4:
           <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
           <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">查無資料</div>
         </div>""", unsafe_allow_html=True)
+# ── 領頭股前哨 ────────────────────────────────────────────────────
+st.markdown('<div class="section-hdr">領頭股前哨（權值股隊形 · 不計入整體燈號）</div>', unsafe_allow_html=True)
+try:
+    _leader_list = fetch_leader_list()
+    _list_is_live = tuple(_leader_list) != tuple(FALLBACK_LEADERS)
+    L = fetch_leaders(_leader_list)
+    # 兩級判定：紅 = 2% 緩衝後仍 ≤4/8（歷史上僅對應大型頭部）；黃 = 無緩衝 ≤4/8
+    ldr_status = 'red' if L['h2'] <= 4 else 'yellow' if L['h0'] <= 4 else 'green'
+    spy_far_from_high = D['spy_dist_hi'] < -3.0
+    chips = "".join(
+        f'<span class="{"ldr-chip-up" if d["up0"] else "ldr-chip-down"}">'
+        f'{d["t"]} {"✓" if d["up0"] else "✗"} {d["dist"]:+.1f}%</span>'
+        for d in L['detail'])
+    if ldr_status == 'red':
+        ldr_title, ldr_desc = (
+            f"紅燈：隊形嚴重瓦解（無緩衝 {L['h0']}/{L['n']}，2%緩衝 {L['h2']}/{L['n']}）",
+            "2% 緩衝後仍過半破線——2016 年以來此狀態僅出現於 2022/1、2025/3、2026/3 三次大型頭部前。"
+            "建議執行部分減碼並準備避險，等待核心壓力訊號確認。")
+    elif ldr_status == 'yellow':
+        ldr_title, ldr_desc = (
+            f"黃燈：隊形出現裂痕（無緩衝 {L['h0']}/{L['n']} 站上 EMA60）",
+            "半數以上權值股跌破 EMA60 而指數仍在高位。回測（2016–2026 滾動權值名單）：此狀態下 60 日內"
+            "SPY 跌 5%+ 機率約 51%（基準 27%），誤報率約五成——對應動作：暫停新加碼、收緊移動停損。")
+    else:
+        ldr_title, ldr_desc = (
+            f"隊形完整（{L['h0']}/{L['n']} 站上 EMA60）",
+            "權值股中期趨勢健康，指數上漲有實質支撐。裂痕定義：無緩衝 ≤4 亮黃、2% 緩衝 ≤4 亮紅。")
+    if spy_far_from_high:
+        ldr_desc += f"　⚠ SPY 已距 252 日高 {D['spy_dist_hi']}%，前哨統計以高點附近為前提，此時參考壓力訊號為主。"
+    lc1, lc2 = st.columns([1.6, 1])
+    with lc1:
+        st.markdown(f"""
+        <div class="metric-card card-{ldr_status}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <span style="font-size:0.72rem;color:#94a3b8">領頭股健康度（收盤 vs EMA60）
+              <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">
+              {'名單每日自動更新' if _list_is_live else '⚠ 使用備援名單'}</span></span>
+            {BADGE[ldr_status]}
+          </div>
+          <div class="{VAL_CLASS[ldr_status]}" style="margin:4px 0 6px">{ldr_title}</div>
+          <div style="margin-bottom:6px">{chips}</div>
+          <div class="desc-text">{ldr_desc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with lc2:
+        # 方向標籤：10日均線近兩週變化
+        _d10 = L['delta10']
+        if _d10 <= -0.5:
+            dir_txt, dir_col = f"↘ 惡化中（10日均兩週 {_d10:+.1f} 檔）", '#f87171'
+        elif _d10 >= 0.5:
+            dir_txt, dir_col = f"↗ 修復中（10日均兩週 {_d10:+.1f} 檔）", '#4ade80'
+        else:
+            dir_txt, dir_col = f"→ 持平（10日均兩週 {_d10:+.1f} 檔）", '#94a3b8'
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
+            f'<span style="font-size:0.65rem;color:#475569">健康度近 60 日（灰＝每日 · 粗線＝10日均 · 虛線＝裂痕線）</span>'
+            f'<span style="font-size:0.72rem;font-weight:700;color:{dir_col}">{dir_txt}</span></div>',
+            unsafe_allow_html=True)
+        figL = go.Figure()
+        figL.add_trace(go.Scatter(
+            y=L['series'], mode='lines',
+            line=dict(color='#334155', width=1, shape='hv')))
+        figL.add_trace(go.Scatter(
+            y=L['ma_series'], mode='lines',
+            line=dict(color=dir_col, width=2.2)))
+        figL.add_hline(y=4, line=dict(color='#7f1d1d', width=1, dash='dot'))
+        figL.update_layout(
+            height=96, margin=dict(l=0, r=0, t=2, b=0),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False, range=[-0.3, L['n'] + 0.3]),
+            showlegend=False)
+        st.plotly_chart(figL, use_container_width=True,
+                        config={'displayModeBar': False}, key="chart_leaders")
+except Exception as _e:
+    st.markdown(f'<div class="uvxy-ok">領頭股前哨載入失敗（{_e}），不影響其他指標。</div>',
+                unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
 x1, x2, x3 = st.columns(3)
