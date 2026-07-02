@@ -3,7 +3,6 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-
 st.markdown("""
 <style>
   .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
@@ -34,9 +33,10 @@ st.markdown("""
   .ov-yellow-title{color:#fbbf24; font-size:1.1rem; font-weight:700;}
   .ov-red-title  { color:#f87171; font-size:1.1rem; font-weight:700; }
   .section-hdr{ font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:6px; margin-top:4px; }
+  .ldr-chip-up   { background:#14532d; color:#4ade80; padding:2px 7px; border-radius:6px; font-size:0.68rem; font-weight:700; font-family:monospace; margin-right:4px; }
+  .ldr-chip-down { background:#7f1d1d; color:#f87171; padding:2px 7px; border-radius:6px; font-size:0.68rem; font-weight:700; font-family:monospace; margin-right:4px; }
 </style>
 """, unsafe_allow_html=True)
-
 # ── Data fetch ────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="載入最新市場數據中…")
 def fetch_data():
@@ -51,7 +51,6 @@ def fetch_data():
     close = raw['Close'].copy()
     # c[-1] 相容 ('Close','SPY') 及 ('SPY',) 等不同 yfinance 版本的 tuple 結構
     close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
-
     # ── CME 單獨下載 ───────────────────────────────────────────────
     cme_raw = yf.download("CME", period="400d", interval="1d",
                            auto_adjust=True, progress=False)
@@ -65,15 +64,11 @@ def fetch_data():
         close['CME'] = cme_close.reindex(close.index)
     else:
         close['CME'] = float('nan')
-
     close = close.dropna(how='all')
-
     sector_etfs = ['XLK','XLF','XLV','XLE','XLI','XLB','XLU','XLP','XLY']
-
     def s60(series):
         vals = series.iloc[-60:].tolist()
         return [round(v, 3) if not (v != v) else None for v in vals]
-
     spy    = close['SPY']
     ma200  = spy.rolling(200).mean()
     ma50   = spy.rolling(50).mean()
@@ -83,7 +78,6 @@ def fetch_data():
     vix      = close['^VIX']
     vix_ma20 = vix.rolling(20).mean()
     vix_vs_ma20_s = (vix / vix_ma20 - 1) * 100
-
     # ffill() 確保 CME 的 pct_change 不因個別缺值而炸掉
     cme_s     = (close['CME'].ffill().pct_change(10) - spy.pct_change(10)) * 100
     hyg_iei_s = (close['HYG'] / close['IEI']).pct_change(20) * 100
@@ -92,14 +86,13 @@ def fetch_data():
     vixr_s    = close['^VIX'] / close['^VIX3M']
     xlp_s     = (close['XLP'] / close['XLY']).pct_change(20) * 100
     rsp_s     = (close['RSP'] / spy).pct_change(60) * 100
-
+    # SPY 距 252 日高（領頭股前哨的適用前提判斷用）
+    spy_dist_hi = (spy / spy.rolling(252, min_periods=120).max() - 1) * 100
     # Sector breadth (vectorized)
     ma50_sec  = close[sector_etfs].rolling(50).mean()
     above     = close[sector_etfs] > ma50_sec
     breadth_s = above.sum(axis=1)
-
     latest = close.index[-1]
-
     def _safe(val, default=0.0, decimals=2):
         """NaN 安全轉換：避免 float(nan) 傳入後端導致顯示異常"""
         try:
@@ -107,7 +100,6 @@ def fetch_data():
             return default if pd.isna(f) else round(f, decimals)
         except Exception:
             return default
-
     return {
         'as_of':            str(latest.date()),
         'spy_price':        _safe(spy.iloc[-1]),
@@ -128,6 +120,7 @@ def fetch_data():
         'spy_vs_260ma':     _safe((spy.iloc[-1] / ma260.iloc[-1] - 1) * 100),
         'vix_vs_ma20':      _safe(vix_vs_ma20_s.iloc[-1]),
         'vix_ma20_val':     _safe(vix_ma20.iloc[-1]),
+        'spy_dist_hi':      _safe(spy_dist_hi.iloc[-1]),
         # Series
         'cme_series':     s60(cme_s),
         'hyg_iei_series': s60(hyg_iei_s),
@@ -140,7 +133,91 @@ def fetch_data():
         'spy60_series':      s60(spy60_s),
         'vix_ma20_series':   s60(vix_vs_ma20_s),
     }
+# ── 領頭股前哨資料 ─────────────────────────────────────────────────
+# 備援名單：Yahoo 篩選器失敗時使用（請偶爾手動核對）
+FALLBACK_LEADERS = ["NVDA", "GOOGL", "AAPL", "MSFT", "AMZN", "META", "AVGO", "TSLA"]
+# 同公司雙股別合併
+_SHARE_CLASS = {"GOOG": "GOOGL", "BRK-A": "BRK-B"}
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_sp500_members() -> set:
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                        headers=headers, timeout=30)
+    resp.raise_for_status()
+    df = pd.read_html(StringIO(resp.text))[0]
+    return set(df["Symbol"].str.replace(".", "-", regex=False).tolist())
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_leader_list(n: int = 8) -> tuple:
+    """每日自動抓 S&P 500 市值前 n 大（合併雙股別、過濾非成分股）。失敗回退備援名單。"""
+    try:
+        from yfinance import EquityQuery
+        q = EquityQuery('and', [
+            EquityQuery('gt', ['intradaymarketcap', 200_000_000_000]),
+            EquityQuery('eq', ['region', 'us']),
+        ])
+        res = yf.screen(q, size=25, sortField='intradaymarketcap', sortAsc=False)
+        try:
+            members = fetch_sp500_members()
+        except Exception:
+            members = None   # 維基抓不到就不過濾成分股
+        out, seen = [], set()
+        for x in res.get('quotes', []):
+            s = x.get('symbol', '')
+            if not s or '.' in s:
+                continue
+            s = _SHARE_CLASS.get(s, s)
+            if s in seen:
+                continue
+            if members is not None and s not in members:
+                continue   # 排除 TSM、SPCX 等非 S&P 500 成分（外國發行人/新上市）
+            seen.add(s)
+            out.append(s)
+            if len(out) >= n:
+                break
+        return tuple(out) if len(out) >= 6 else tuple(FALLBACK_LEADERS)
+    except Exception:
+        return tuple(FALLBACK_LEADERS)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_leaders(leaders: tuple):
+    """領頭股健康度：收盤站上 EMA60 的檔數（無緩衝＝黃燈用；2% 緩衝＝紅燈用）"""
+    raw = yf.download(list(leaders), period="400d", interval="1d",
+                      auto_adjust=True, progress=False)
+    close = raw['Close'].copy()
+    close.columns = [c[-1] if isinstance(c, tuple) else str(c) for c in close.columns]
+    close = close.dropna(how='all')
+    detail, above0_cols = [], {}
+    for t in leaders:
+        if t not in close.columns:
+            continue
+        c = close[t].dropna()
+        if len(c) < 80:
+            continue
+        e = c.ewm(span=60, adjust=False).mean()
+        above0_cols[t] = c > e
+        dist = float(c.iloc[-1] / e.iloc[-1] - 1) * 100
+        detail.append({
+            "t": t,
+            "dist": round(dist, 1),
+            "up0": dist > 0,          # 無緩衝：站上 EMA60
+            "up2": dist > -2.0,       # 2% 緩衝：跌破 EMA60 達 2% 以上才算破
+        })
+    h0 = sum(d["up0"] for d in detail)
+    h2 = sum(d["up2"] for d in detail)
+    h_all = pd.DataFrame(above0_cols).sum(axis=1)
+    h_ma10 = h_all.rolling(10).mean()
+    # 方向：10日均線近兩週（10個交易日）的變化量
+    delta10 = float(h_ma10.iloc[-1] - h_ma10.iloc[-11]) if len(h_ma10.dropna()) > 11 else 0.0
+    return {
+        "detail": detail, "h0": int(h0), "h2": int(h2), "n": len(detail),
+        "series": [int(x) for x in h_all.iloc[-60:].tolist()],
+        "ma_series": [round(float(x), 2) for x in h_ma10.iloc[-60:].tolist()],
+        "delta10": round(delta10, 2),
+    }
 # ── Status functions ──────────────────────────────────────────────
 def status(key, val):
     if key=='cme':   return 'red' if val>8 else 'yellow' if val>=5 else 'green'
@@ -154,7 +231,6 @@ def status(key, val):
     if key=='spy60':   return 'yellow' if val > 4.44 or val < -5 else 'green'
     if key=='vixma20': return 'yellow' if val > 0 else 'green'
     return 'green'
-
 # ── Win-rate lookup table ─────────────────────────────────────────
 _WR_TABLE = [
     {"dev":"5~10%","vix":"30~40","wr":100.0,"avg":8.11,"n":5},
@@ -191,7 +267,6 @@ _WR_TABLE = [
     {"dev":"5~10%","vix":"<12","wr":0.0,"avg":-5.47,"n":8},
 ]
 _WR_INDEX = {(r["dev"], r["vix"]): r for r in _WR_TABLE}
-
 # 20 日（1個月）持有勝率表（2000–2026，年線之上）
 _WR_TABLE_20D = [
     {"dev":"0~2%","vix":"30~40","wr":100.0,"avg":4.96,"n":7},
@@ -228,10 +303,8 @@ _WR_TABLE_20D = [
     {"dev":"5~10%","vix":"<12","wr":0.0,"avg":-3.92,"n":8},
 ]
 _WR_INDEX_20D = {(r["dev"], r["vix"]): r for r in _WR_TABLE_20D}
-
 def lookup_winrate_20d(dev, vix):
     return _WR_INDEX_20D.get((_dev_bucket(dev), _vix_bucket(vix)))
-
 def _dev_bucket(dev):
     if dev < -5:  return "<-5%"
     if dev < -2:  return "-5~-2%"
@@ -240,7 +313,6 @@ def _dev_bucket(dev):
     if dev < 5:   return "2~5%"
     if dev < 10:  return "5~10%"
     return ">10%"
-
 def _vix_bucket(vix):
     if vix < 12:  return "<12"
     if vix < 15:  return "12~15"
@@ -250,22 +322,18 @@ def _vix_bucket(vix):
     if vix < 30:  return "25~30"
     if vix < 40:  return "30~40"
     return ">40"
-
 def lookup_winrate(dev, vix):
     return _WR_INDEX.get((_dev_bucket(dev), _vix_bucket(vix)))
-
 BADGE = {
     'green':  '<span class="badge-green">正常</span>',
     'yellow': '<span class="badge-yellow">留意</span>',
     'red':    '<span class="badge-red">警示</span>',
 }
 VAL_CLASS = {'green':'val-green','yellow':'val-yellow','red':'val-red','neutral':'val-neutral'}
-
 def hex_to_rgba(hex_color, alpha=0.13):
     h = hex_color.lstrip('#')
     r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
     return f'rgba({r},{g},{b},{alpha})'
-
 def sparkline(series, color, height=55):
     fig = go.Figure(go.Scatter(
         y=series, mode='lines',
@@ -279,15 +347,12 @@ def sparkline(series, color, height=55):
         showlegend=False
     )
     return fig
-
 def color_for(key, st_val, inv=False):
     if st_val=='green':  return '#22c55e'
     if st_val=='yellow': return '#f59e0b'
     return '#ef4444'
-
 def fmt(val):
     return f"+{val}%" if val > 0 else f"{val}%"
-
 def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
     col_str = color_for('', st_val)
     note_html = f' <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">{note}</span>' if note else ''
@@ -305,7 +370,6 @@ def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
     """, unsafe_allow_html=True)
     st.plotly_chart(sparkline(series, col_str), use_container_width=True,
                     config={'displayModeBar':False}, key=f"chart_{title[:8]}")
-
 # ── Main ──────────────────────────────────────────────────────────
 D = fetch_data()
 st_cme  = status('cme',   D['cme_excess_10d'])
@@ -317,20 +381,17 @@ st_rsp  = status('rsp',   D['rsp_spy_60d'])
 st_br    = status('brdth', D['sector_breadth'])
 st_spy60   = status('spy60',   D['spy_vs_60ma'])
 st_vixma20 = status('vixma20', D['vix_vs_ma20'])
-
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
 core_statuses = [st_cme, st_xlp, st_iwm]
 n_red    = core_statuses.count('red')
 n_yellow = core_statuses.count('yellow')
 overall  = 'red' if n_red>=2 else 'yellow' if n_red>=1 or n_yellow>=2 else 'green'
-
 # Combo triggers
 cme_triggered = st_cme in ('yellow','red')
 combo1 = cme_triggered and st_iwm != 'green'
 combo2 = cme_triggered and st_xlp in ('yellow','red')
 combo3 = cme_triggered and st_iwm != 'green' and st_xlp in ('yellow','red')
 uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
-
 # ── Header ───────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
@@ -340,9 +401,7 @@ with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-
 st.markdown("---")
-
 # ── Overall ──────────────────────────────────────────────────────
 ov_map = {
     'green':  ('核心指標全數正常', '牛市動能健康，高β倉位無需調整'),
@@ -356,7 +415,6 @@ st.markdown(f"""
   <div style="color:#94a3b8;font-size:0.78rem;margin-top:4px">{ov_desc}</div>
 </div>
 """, unsafe_allow_html=True)
-
 # ── Combo panel ──────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
 combos = [
@@ -379,9 +437,85 @@ for active, prob, lift, title, desc in combos:
       </div>
     </div>
     """, unsafe_allow_html=True)
-
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
-
+# ── 領頭股前哨 ────────────────────────────────────────────────────
+st.markdown('<div class="section-hdr">領頭股前哨（權值股隊形 · 不計入整體燈號）</div>', unsafe_allow_html=True)
+try:
+    _leader_list = fetch_leader_list()
+    _list_is_live = tuple(_leader_list) != tuple(FALLBACK_LEADERS)
+    L = fetch_leaders(_leader_list)
+    # 兩級判定：紅 = 2% 緩衝後仍 ≤4/8（歷史上僅對應大型頭部）；黃 = 無緩衝 ≤4/8
+    ldr_status = 'red' if L['h2'] <= 4 else 'yellow' if L['h0'] <= 4 else 'green'
+    spy_far_from_high = D['spy_dist_hi'] < -3.0
+    chips = "".join(
+        f'<span class="{"ldr-chip-up" if d["up0"] else "ldr-chip-down"}">'
+        f'{d["t"]} {"✓" if d["up0"] else "✗"} {d["dist"]:+.1f}%</span>'
+        for d in L['detail'])
+    if ldr_status == 'red':
+        ldr_title, ldr_desc = (
+            f"紅燈：隊形嚴重瓦解（無緩衝 {L['h0']}/{L['n']}，2%緩衝 {L['h2']}/{L['n']}）",
+            "2% 緩衝後仍過半破線——2016 年以來此狀態僅出現於 2022/1、2025/3、2026/3 三次大型頭部前。"
+            "建議執行部分減碼並準備避險，等待核心壓力訊號確認。")
+    elif ldr_status == 'yellow':
+        ldr_title, ldr_desc = (
+            f"黃燈：隊形出現裂痕（無緩衝 {L['h0']}/{L['n']} 站上 EMA60）",
+            "半數以上權值股跌破 EMA60 而指數仍在高位。回測（2016–2026 滾動權值名單）：此狀態下 60 日內"
+            "SPY 跌 5%+ 機率約 51%（基準 27%），誤報率約五成——對應動作：暫停新加碼、收緊移動停損。")
+    else:
+        ldr_title, ldr_desc = (
+            f"隊形完整（{L['h0']}/{L['n']} 站上 EMA60）",
+            "權值股中期趨勢健康，指數上漲有實質支撐。裂痕定義：無緩衝 ≤4 亮黃、2% 緩衝 ≤4 亮紅。")
+    if spy_far_from_high:
+        ldr_desc += f"　⚠ SPY 已距 252 日高 {D['spy_dist_hi']}%，前哨統計以高點附近為前提，此時參考壓力訊號為主。"
+    lc1, lc2 = st.columns([1.6, 1])
+    with lc1:
+        st.markdown(f"""
+        <div class="metric-card card-{ldr_status}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <span style="font-size:0.72rem;color:#94a3b8">領頭股健康度（收盤 vs EMA60）
+              <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">
+              {'名單每日自動更新' if _list_is_live else '⚠ 使用備援名單'}</span></span>
+            {BADGE[ldr_status]}
+          </div>
+          <div class="{VAL_CLASS[ldr_status]}" style="margin:4px 0 6px">{ldr_title}</div>
+          <div style="margin-bottom:6px">{chips}</div>
+          <div class="desc-text">{ldr_desc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with lc2:
+        # 方向標籤：10日均線近兩週變化
+        _d10 = L['delta10']
+        if _d10 <= -0.5:
+            dir_txt, dir_col = f"↘ 惡化中（10日均兩週 {_d10:+.1f} 檔）", '#f87171'
+        elif _d10 >= 0.5:
+            dir_txt, dir_col = f"↗ 修復中（10日均兩週 {_d10:+.1f} 檔）", '#4ade80'
+        else:
+            dir_txt, dir_col = f"→ 持平（10日均兩週 {_d10:+.1f} 檔）", '#94a3b8'
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
+            f'<span style="font-size:0.65rem;color:#475569">健康度近 60 日（灰＝每日 · 粗線＝10日均 · 虛線＝裂痕線）</span>'
+            f'<span style="font-size:0.72rem;font-weight:700;color:{dir_col}">{dir_txt}</span></div>',
+            unsafe_allow_html=True)
+        figL = go.Figure()
+        figL.add_trace(go.Scatter(
+            y=L['series'], mode='lines',
+            line=dict(color='#334155', width=1, shape='hv')))
+        figL.add_trace(go.Scatter(
+            y=L['ma_series'], mode='lines',
+            line=dict(color=dir_col, width=2.2)))
+        figL.add_hline(y=4, line=dict(color='#7f1d1d', width=1, dash='dot'))
+        figL.update_layout(
+            height=96, margin=dict(l=0, r=0, t=2, b=0),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False, range=[-0.3, L['n'] + 0.3]),
+            showlegend=False)
+        st.plotly_chart(figL, use_container_width=True,
+                        config={'displayModeBar': False}, key="chart_leaders")
+except Exception as _e:
+    st.markdown(f'<div class="uvxy-ok">領頭股前哨載入失敗（{_e}），不影響其他指標。</div>',
+                unsafe_allow_html=True)
+st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
 c1, c2, c3 = st.columns(3)
@@ -391,21 +525,18 @@ with c1:
             else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
             else f"CME相對報酬中性，無明顯信號")
     card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
-
 xl_v = D['xlp_xly_20d']
 with c2:
     desc = (f"防禦板塊跑贏景氣循環 {xl_v}%，資金明顯轉向防禦" if st_xlp=='red'
             else f"防禦輪動初現（{xl_v}%），留意資金動向" if st_xlp=='yellow'
             else f"景氣循環領先（{fmt(xl_v)}），市場情緒偏進取")
     card("防禦輪動 XLP/XLY（20日）", fmt(xl_v), st_xlp, desc, D['xlp_series'], inv=True, lift="2.50x")
-
 iwm_v = D['iwm_spy_60d']
 with c3:
     desc = (f"小型股60日跑輸大型股 {abs(iwm_v)}%，風險偏好惡化" if st_iwm=='red'
             else f"小型股相對弱勢（{iwm_v}%），需觀察" if st_iwm=='yellow'
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
     card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
-
 # ── SPY 季線乖離率 ─────────────────────────────────────────────────
 if st_spy60 == 'yellow':
     st.markdown(f'<div class="uvxy-warn">⚡ <b>SPY 季線乖離率示警</b>——距 EMA60 偏離 {fmt(D["spy_vs_60ma"])}，已超過 90 分位（+4.44%），留意過熱修正風險</div>', unsafe_allow_html=True)
@@ -520,7 +651,6 @@ with y4:
           <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
           <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">查無資料</div>
         </div>""", unsafe_allow_html=True)
-
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
 x1, x2, x3 = st.columns(3)
@@ -540,7 +670,6 @@ with x3:
             else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
             else f"{br} 個板塊在50MA上，廣度健康")
     card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
-
 # ── Footer ────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown(
