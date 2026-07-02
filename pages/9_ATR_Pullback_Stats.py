@@ -53,11 +53,12 @@ def _pos_label(d: float) -> str:
     return POS_BINS[-1][0]
 
 def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
-    """每個交易日一個樣本：當日 ATR 擴張度、距高點位置、未來 horizon 日的回檔結果"""
+    """每個交易日一個樣本：當日 ATR 擴張度、距高點位置、趨勢方向、未來 horizon 日的回檔結果"""
     cl = df["Close"]
     clv = cl.values
     exp_ratio = (wilder_atr(df, 14) / wilder_atr(df, 50)).values
     dist_high = (cl / cl.rolling(252).max() - 1).values
+    ema60 = cl.ewm(span=60, adjust=False).mean().values
     rows = []
     for i in range(252, len(clv) - horizon):
         fwd = clv[i + 1: i + horizon + 1]
@@ -65,6 +66,7 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         rows.append({
             "atr_state": _atr_label(exp_ratio[i]),
             "pos_state": _pos_label(dist_high[i]),
+            "trend":     "上行" if clv[i] > ema60[i] else "下行",
             "mae":  mae,
             "pb5":  mae <= -0.05,
             "pb10": mae <= -0.10,
@@ -171,6 +173,8 @@ try:
     dist_now = float(cl.iloc[-1] / cl.rolling(252, min_periods=60).max().iloc[-1] - 1)
     cur_atr_state = _atr_label(exp_now)
     cur_pos_state = _pos_label(dist_now)
+    ema60_now = float(cl.ewm(span=60, adjust=False).mean().iloc[-1])
+    cur_trend = "上行" if float(cl.iloc[-1]) > ema60_now else "下行"
     exp_series = atr14 / atr50
     exp_pctile = float((exp_series < exp_now).mean() * 100)
     state_color = dict((n, c) for n, _, _, c in ATR_BINS)[cur_atr_state]
@@ -186,7 +190,7 @@ try:
     st.markdown(
         f"<span style='background:{state_color}22;color:{state_color};"
         f"padding:4px 12px;border-radius:10px;font-size:0.85rem;font-weight:700'>"
-        f"目前狀態：{cur_atr_state} × {cur_pos_state}</span>"
+        f"目前狀態：{cur_atr_state} × {cur_pos_state} × {cur_trend}（EMA60 之{'上' if cur_trend == '上行' else '下'}）</span>"
         f"<span style='color:#475569;font-size:0.75rem'>"
         f"&nbsp;&nbsp;截至 {df.index[-1].date()}，共 {len(df)} 個交易日</span>",
         unsafe_allow_html=True,
@@ -218,7 +222,21 @@ try:
     if samples.empty:
         st.error("樣本不足，無法統計。請改用股票池統計或加長統計期間。")
         st.stop()
-    st.markdown(f"<span style='color:#475569;font-size:0.75rem'>{src_note}</span>",
+
+    # 趨勢濾網：區分「從高點跌下來」和「從低點漲回來」（距高點距離相同、含義相反）
+    trend_opts = ["全部", "上行（EMA60 之上）", "下行（EMA60 之下）"]
+    trend_sel = st.radio(
+        "趨勢濾網", trend_opts, horizontal=True,
+        index=1 if cur_trend == "上行" else 2,
+        help="同樣是「距高點 -10%」，趨勢下行是從高點跌下來、上行是從低點漲回來，"
+             "歷史統計差異很大。預設選該股目前的趨勢方向。")
+    if trend_sel.startswith("上行"):
+        samples = samples[samples["trend"] == "上行"]
+    elif trend_sel.startswith("下行"):
+        samples = samples[samples["trend"] == "下行"]
+
+    st.markdown(f"<span style='color:#475569;font-size:0.75rem'>{src_note}"
+                f"（趨勢濾網後 {len(samples)} 個）</span>",
                 unsafe_allow_html=True)
 
     # 統計表：三個位置狀態各一張，目前所在的排最前
