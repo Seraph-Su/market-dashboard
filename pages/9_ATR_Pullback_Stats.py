@@ -377,6 +377,36 @@ try:
 
     st.markdown("---")
 
+    # ══ 各 ATR 狀態的報酬貢獻（判斷適不適合狀態調倉）════════════
+    st.markdown("#### 各 ATR 狀態的報酬貢獻")
+    r_ser = cl.pct_change()
+    state_prev = exp_series.shift(1)   # 前一日狀態決定今日歸屬，避免前視
+    last252 = set(df.index[-252:])
+    contrib_rows = []
+    for name, lo, hi, _c in ATR_BINS:
+        mask = state_prev.apply(lambda x: pd.notna(x) and lo <= x < hi)
+        r_all = r_ser[mask].dropna()
+        r_1y = r_ser[mask & df.index.isin(last252)].dropna()
+        contrib_rows.append({
+            "ATR 狀態": name,
+            "全期天數": len(r_all),
+            "全期累積報酬": "{:+.0f}%".format(((1 + r_all).prod() - 1) * 100) if len(r_all) else "—",
+            "近一年天數": len(r_1y),
+            "近一年累積": "{:+.1f}%".format(((1 + r_1y).prod() - 1) * 100) if len(r_1y) else "—",
+        })
+    st.dataframe(pd.DataFrame(contrib_rows).set_index("ATR 狀態"),
+                 use_container_width=True)
+    st.markdown(
+        "<div style='color:#334155;font-size:0.68rem'>"
+        "判讀：看漲幅長在哪種波動狀態裡。若集中在收縮／正常日（GLW 型：平靜時上漲、"
+        "狂暴時洗盤），急擴張減碼可改善風險調整報酬；若集中在急擴張日（SNDK 型：漲幅"
+        "與風暴共生），狀態調倉等於減碼行情本身，只能用小倉位＋移動停損＋高潮事件減碼應對。"
+        "歸屬以前一日狀態計算（無前視）。"
+        "</div>", unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
+
     # 走勢圖：價格 + ATR 擴張度
     st.markdown("#### 價格與 ATR 擴張度走勢（近 2 年）")
     tail = min(len(df), 500)
