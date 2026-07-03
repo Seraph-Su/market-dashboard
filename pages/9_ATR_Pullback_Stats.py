@@ -74,6 +74,23 @@ def build_samples(df: pd.DataFrame, horizon: int) -> pd.DataFrame:
         })
     return pd.DataFrame(rows)
 
+def find_pullbacks(df: pd.DataFrame, atr: pd.Series, min_depth: float = 0.03) -> list:
+    """已完成的回檔事件（創高→回落→再創高），深度以 % 與 ATR 倍數表示。劇本徽章用。"""
+    cl = df["Close"].values
+    atr_v = atr.values
+    peak_i, trough_i, out = 0, 0, []
+    for i in range(1, len(cl)):
+        if cl[i] >= cl[peak_i]:
+            depth = 1 - cl[trough_i] / cl[peak_i]
+            if depth >= min_depth:
+                a = atr_v[peak_i]
+                out.append({"depth": depth,
+                            "depth_atr": (cl[peak_i] - cl[trough_i]) / a if a > 0 else np.nan})
+            peak_i, trough_i = i, i
+        elif cl[i] < cl[trough_i]:
+            trough_i = i
+    return out
+
 def pullback_episodes(df: pd.DataFrame, min_depth: float = 0.03) -> list:
     """所有回檔事件（含尚未收復的）。resolved=True 表示已重新創高，
     recover_days ＝ 從前高到重新創高的交易日數（水下時間）。"""
@@ -267,6 +284,32 @@ try:
         f"&nbsp;&nbsp;截至 {df.index[-1].date()}，共 {len(df)} 個交易日</span>",
         unsafe_allow_html=True,
     )
+
+    # ── 劇本判定（風險端三指標：波動水位與叢聚具持續性，可作分軌依據）──
+    crack_share = float((exp_series.iloc[-252:] >= 1.25).mean())
+    _pbs = find_pullbacks(df, atr14, 0.03)
+    med_pb_atr = float(np.median([p["depth_atr"] for p in _pbs])) if _pbs else float("nan")
+    if crack_share >= 0.5:
+        pb_label, pb_color = "慢性風暴型", "#f87171"
+        pb_desc = ("近一年過半日子處於急擴張——回檔加碼軌的條件基本不會湊齊。"
+                   "劇本：ATR 定小倉進場、突破創高加小碼、移動停損抱趨勢、高點附近急擴張事件減碼。")
+    elif crack_share >= 0.2 or atr_pct_now >= 0.06:
+        pb_label, pb_color = "高波動輪轉型", "#fbbf24"
+        pb_desc = ("狀態會輪轉但波動偏高——雙軌加碼皆可用，"
+                   "倉位由 ATR 公式自動縮小、停損寬度對照下方回檔中位數（ATR 倍）。")
+    else:
+        pb_label, pb_color = "輪轉型", "#4ade80"
+        pb_desc = "狀態正常輪轉——雙軌加碼皆可用，耐心等「低波動回檔到季線」的高勝率設定出現。"
+    st.markdown(
+        f"<div style='margin-top:6px'>"
+        f"<span style='background:{pb_color}22;color:{pb_color};padding:4px 12px;"
+        f"border-radius:10px;font-size:0.85rem;font-weight:700'>劇本：{pb_label}</span>"
+        f"<span style='color:#475569;font-size:0.75rem'>&nbsp;&nbsp;"
+        f"急擴張占比（近一年）{crack_share*100:.0f}%｜ATR% {atr_pct_now*100:.1f}%"
+        + (f"｜回檔中位 {med_pb_atr:.1f}×ATR" if med_pb_atr == med_pb_atr else "")
+        + f"<br>{pb_desc}</span></div>",
+        unsafe_allow_html=True)
+
     st.markdown("---")
 
     # 統計來源：自身歷史 or 股票池橫斷面（新上市股樣本不足時）
@@ -398,10 +441,11 @@ try:
                  use_container_width=True)
     st.markdown(
         "<div style='color:#334155;font-size:0.68rem'>"
-        "判讀：看漲幅長在哪種波動狀態裡。若集中在收縮／正常日（GLW 型：平靜時上漲、"
-        "狂暴時洗盤），急擴張減碼可改善風險調整報酬；若集中在急擴張日（SNDK 型：漲幅"
-        "與風暴共生），狀態調倉等於減碼行情本身，只能用小倉位＋移動停損＋高潮事件減碼應對。"
-        "歸屬以前一日狀態計算（無前視）。"
+        "判讀：這是<b>歷史描述，不是加減碼時刻表</b>。持續性檢驗（池內 18 檔、前後半段對照）"
+        "顯示「哪個狀態賺錢」不延續（延續率 39%，隨機 33%，排序相關中位 -0.50）——"
+        "照歷史分布客製狀態調倉已驗證無效。此表的正確用途：了解該股過去的行為模式、"
+        "解釋近期報酬來源。ATR 狀態可持續預測的是<b>風險</b>（急擴張＝MAE 更深、路徑更顛），"
+        "請用於碼數與停損寬度，勿用於預測哪個狀態會賺錢。歸屬以前一日狀態計算（無前視）。"
         "</div>", unsafe_allow_html=True,
     )
 
