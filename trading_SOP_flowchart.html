@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交易 SOP 流程圖 · 順勢加碼系統</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#1a1f2e; --panel2:#111827; --border:#2d3748;
+    --ink:#e2e8f0; --ink2:#cbd5e1; --muted:#64748b;
+    --blue:#60a5fa; --green:#4ade80; --amber:#fbbf24; --red:#f87171; --slate:#94a3b8;
+    --violet:#c084fc; --teal:#2dd4bf;
+  }
+  html{ font-size:110%; }   /* 全域字級放大：想更大改 115%、想小回 100% */
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -140px,#141b2e 0%,transparent 70%),
+      var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;
+    display:flex; justify-content:center; padding:40px 16px 64px;
+  }
+  .wrap{max-width:880px; width:100%;}
+
+  header.top{text-align:center; margin-bottom:30px;}
+  header.top h1{font-size:1.4rem; letter-spacing:.16em; color:var(--blue); font-weight:800;}
+  header.top .sub{color:var(--muted); font-size:.72rem; margin-top:8px; line-height:1.7;}
+  .dash-link{
+    display:inline-flex; align-items:center; gap:7px; margin-top:16px;
+    background:#0b1220; border:1px solid var(--border); color:var(--blue);
+    text-decoration:none; padding:9px 16px; border-radius:999px;
+    font-size:.8rem; font-weight:600; transition:.15s;
+  }
+  .dash-link:hover{border-color:var(--blue); background:#101a2e;}
+  .dash-link .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+
+  .flow{display:flex; flex-direction:column; align-items:center;}
+  .arrow{width:2px; height:24px; background:linear-gradient(var(--border),var(--slate)); position:relative;}
+  .arrow::after{content:""; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%);
+    border-left:5px solid transparent; border-right:5px solid transparent; border-top:7px solid var(--slate);}
+
+  .pill{
+    background:var(--panel); border:1px solid var(--border); border-radius:999px;
+    padding:9px 22px; font-size:.82rem; letter-spacing:.05em; color:var(--slate);
+  }
+  .pill.start{color:#e2e8f0; border-color:var(--slate); font-weight:600;}
+
+  .node{
+    width:100%; background:var(--panel); border:1px solid var(--border);
+    border-left-width:4px; border-radius:12px; padding:18px 22px;
+    position:relative;
+  }
+  .node .head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:9px;}
+  .node .tag{font-size:.66rem; letter-spacing:.12em; color:var(--muted); font-weight:700;}
+  .node h2{font-size:1.02rem;}
+  .node p{font-size:.87rem; line-height:1.72; color:var(--ink2);}
+  .node p b{color:#f1f5f9;}
+  .node.blue{border-left-color:var(--blue);} .node.blue h2{color:var(--blue);}
+  .node.green{border-left-color:var(--green);} .node.green h2{color:var(--green);}
+  .node.amber{border-left-color:var(--amber);} .node.amber h2{color:var(--amber);}
+  .node.red{border-left-color:var(--red);} .node.red h2{color:var(--red);}
+  .node.teal{border-left-color:var(--teal);} .node.teal h2{color:var(--teal);}
+  .node.violet{border-left-color:var(--violet); background:linear-gradient(180deg,#1a1330,#141020);}
+  .node.violet h2{color:var(--violet);}
+
+  .stepno{
+    position:absolute; top:-11px; left:16px; background:var(--bg);
+    border:1px solid var(--border); color:var(--slate);
+    font-size:.64rem; font-weight:800; letter-spacing:.1em;
+    padding:2px 9px; border-radius:999px;
+  }
+
+  .layers{display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:2px 0 4px;}
+  .layers .lchip{font-size:.68rem; color:var(--slate); background:#0b1220;
+    border:1px solid var(--border); border-radius:999px; padding:4px 11px;}
+  .layers .lchip b{color:#e2e8f0;}
+
+  .matrix{width:100%; border-collapse:collapse; margin-top:12px; font-size:.74rem;}
+  .matrix th,.matrix td{border:1px solid #3a2d55; padding:7px 8px; text-align:center;}
+  .matrix th{background:#241a3d; color:#d8b4fe; font-weight:700;}
+  .matrix td:first-child{background:#1c1530; color:#e9d5ff; font-weight:600; text-align:left;}
+  .matrix td{color:#cbb8e6;}
+  .matrix .hi{background:#2a1f47; color:#f0abfc;}
+  .mcap{font-size:.7rem; color:#8b7aa8; margin-top:8px; line-height:1.6;}
+  .rules-v{margin-top:12px; display:grid; gap:7px;}
+  .rules-v .r{display:flex; gap:9px; font-size:.8rem; line-height:1.55; color:var(--ink2);}
+  .rules-v .r .n{flex:none; width:18px; height:18px; border-radius:5px; background:#3b2d5c; color:#e9d5ff; font-size:.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; margin-top:2px;}
+
+  .decision{
+    width:100%; text-align:center; background:var(--panel2);
+    border:1px dashed var(--slate); border-radius:12px; padding:16px 20px;
+  }
+  .decision .q{font-size:.7rem; letter-spacing:.14em; color:var(--muted); font-weight:700; margin-bottom:6px;}
+  .decision h2{font-size:1.0rem; color:var(--ink);}
+
+  .lights{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; width:100%;}
+  .light{border-radius:12px; padding:14px 16px; border:1px solid var(--border); background:var(--panel2);}
+  .light .lh{display:flex; align-items:center; gap:8px; font-weight:700; font-size:.9rem; margin-bottom:7px;}
+  .light .bulb{width:12px;height:12px;border-radius:50%;}
+  .light.g{border-color:#1f6b3a;} .light.g .bulb{background:var(--green);box-shadow:0 0 7px var(--green);} .light.g .lh{color:var(--green);}
+  .light.y{border-color:#7a5b12;} .light.y .bulb{background:var(--amber);box-shadow:0 0 7px var(--amber);} .light.y .lh{color:var(--amber);}
+  .light.r{border-color:#7a1f1f;} .light.r .bulb{background:var(--red);box-shadow:0 0 7px var(--red);} .light.r .lh{color:var(--red);}
+  .light p{font-size:.78rem; line-height:1.6; color:var(--ink2);}
+
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%;}
+  .branch-label{text-align:center; font-size:.72rem; color:var(--muted); letter-spacing:.1em; margin-bottom:-14px; margin-top:-4px;}
+
+  .moments{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+  .moment{background:#0b1220; border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .moment .mt{font-size:.8rem; font-weight:700; color:var(--green); margin-bottom:5px;}
+  .moment p{font-size:.77rem; line-height:1.55;}
+
+  .addmap{width:100%; border-collapse:collapse; margin-top:12px; font-size:.73rem;}
+  .addmap th,.addmap td{border:1px solid #234; padding:8px; text-align:center; line-height:1.4;}
+  .addmap th{background:#0f1a2e; color:var(--slate); font-weight:700; font-size:.68rem;}
+  .addmap td:first-child{background:#0f1a2e; color:var(--slate); font-weight:700; text-align:left; width:31%;}
+  .addmap .zg{background:#0f2318; color:#86efac; font-weight:700;}
+  .addmap .zy{background:#241d09; color:#fcd34d; font-weight:700;}
+  .addmap .zr{background:#2a1414; color:#fca5a5; font-weight:700;}
+  .addmap small{color:#93a3b8; font-weight:400;}
+
+  .gate{
+    width:100%; background:linear-gradient(90deg,#1c1408,#12100a); border:1px solid #7a5b12;
+    border-radius:12px; padding:15px 20px; text-align:center;
+  }
+  .gate .glabel{font-size:.68rem; letter-spacing:.14em; color:var(--amber); font-weight:700; margin-bottom:6px;}
+  .gate p{font-size:.86rem; line-height:1.6; color:var(--ink);}
+  .gate b{color:#fde68a;}
+
+  .clocks{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+  .clock{background:#0b1220; border:1px solid var(--border); border-radius:10px; padding:12px 14px;}
+  .clock .ct{font-size:.8rem; font-weight:700; margin-bottom:5px; display:flex; align-items:center; gap:7px;}
+  .clock.core .ct{color:var(--red);}
+  .clock.add .ct{color:var(--amber);}
+  .clock p{font-size:.77rem; line-height:1.55; color:var(--ink2);}
+
+  .tools{display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;}
+  .tool{
+    display:inline-flex; align-items:center; gap:6px; text-decoration:none;
+    background:#0b1220; border:1px solid var(--border); color:var(--slate);
+    font-size:.71rem; padding:5px 11px; border-radius:7px; transition:.15s;
+  }
+  .tool:hover{border-color:var(--blue); color:var(--blue);}
+  .tool .ic{font-size:.7rem; opacity:.8;}
+  .tool .num{background:#1e293b; color:#cbd5e1; border-radius:4px; padding:0 5px; font-weight:700;}
+
+  .mantra{
+    margin-top:30px; padding:18px 20px; text-align:center;
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    color:var(--slate); font-size:.8rem; line-height:1.9;
+  }
+  .mantra .big{color:#e2e8f0; letter-spacing:.05em; font-size:.88rem; font-weight:600;}
+  .mantra .warn{color:var(--muted); font-size:.7rem;}
+  footer.disc{text-align:center; color:var(--muted); font-size:.66rem; margin-top:18px; line-height:1.7;}
+
+  @media (max-width:640px){
+    .lights,.split,.moments,.clocks{grid-template-columns:1fr;}
+    .addmap td:first-child{width:auto;}
+  }
+  @media print{
+    body{background:#fff;color:#111;padding:0;}
+    .wrap{max-width:100%;}
+    .dash-link{display:none;}
+    .node,.decision,.pill,.gate,.light,.moment,.tool,.mantra,.clock{background:#fff !important;}
+    .node,.decision,.gate,.mantra,.light,.clock{border-color:#bbb !important;}
+    .node p,.node h2,.decision h2,.gate p,.light p,.moment p,.clock p{color:#222 !important;}
+    .tool{color:#333 !important;border-color:#ccc !important;}
+    .node.violet{background:#faf5ff !important;}
+    .matrix th{background:#f3e8ff !important;color:#333 !important;}
+    .matrix td,.matrix td:first-child{background:#fff !important;color:#333 !important;}
+    .matrix .hi{background:#f3e8ff !important;}
+    .addmap th,.addmap td,.addmap td:first-child{background:#fff !important;color:#333 !important;}
+    .addmap .zg{background:#e7f8ee !important;color:#166534 !important;}
+    .addmap .zy{background:#fdf6e3 !important;color:#92600a !important;}
+    .addmap .zr{background:#fdecec !important;color:#a12020 !important;}
+    .rules-v .r{color:#333 !important;} .rules-v .r .n{background:#e9d5ff !important;color:#333 !important;}
+    .mcap{color:#777 !important;}
+    .stepno{background:#fff !important;color:#333 !important;}
+    .arrow{background:#999;} .arrow::after{border-top-color:#999;}
+    .editbar,.edithint{display:none !important;}
+  }
+
+  /* 視覺編輯器工具列 */
+  .editbar{position:fixed; top:14px; right:14px; display:flex; gap:8px; z-index:9999;}
+  .editbar button{
+    font-family:inherit; font-size:.8rem; font-weight:700; cursor:pointer;
+    border:1px solid var(--border); background:#0b1220; color:var(--ink);
+    padding:9px 14px; border-radius:9px; box-shadow:0 4px 14px rgba(0,0,0,.4); transition:.15s;
+  }
+  .editbar button:hover{border-color:var(--teal); color:var(--teal);}
+  .editbar #btnSave{background:#0f2318; border-color:#1f6b3a; color:#86efac;}
+  .edithint{
+    position:fixed; left:50%; top:14px; transform:translateX(-50%); z-index:9999;
+    background:#0b1220; border:1px solid var(--teal); color:var(--teal);
+    font-size:.76rem; padding:8px 16px; border-radius:999px; display:none;
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+  }
+  body.is-editing .edithint{display:block;}
+  body.is-editing [data-k]{
+    outline:1px dashed var(--teal); outline-offset:3px; border-radius:3px;
+    cursor:text; background:rgba(45,212,191,.05);
+  }
+  body.is-editing [data-k]:hover{background:rgba(45,212,191,.12);}
+</style>
+</head>
+<body class="">
+
+<!-- ============================================================= -->
+<!-- ██  文案區 · 只改這裡就好  ██                                    -->
+<!--                                                                 -->
+<!--  這一整塊 C = { ... } 是「所有會顯示的文字」。                     -->
+<!--  想改字：找到對應的那一行，改「冒號後面、兩個 ` 反引號之間」的字。   -->
+<!--  規則：                                                          -->
+<!--   1. 只改反引號 ` ` 之間的內容，不要刪掉 key、冒號、逗號、反引號。   -->
+<!--   2. 想要某幾個字變粗體亮色 → 用 <b>字</b> 包起來。               -->
+<!--   3. 想換行 → 打 <br>。                                          -->
+<!--   4. 底下 body 的版面、顏色、表格框都不用動，改完存檔重整就生效。    -->
+<!-- ============================================================= -->
+<script id="copyblock">
+const C = {
+  h_title: `順勢加碼流程圖`,
+  h_sub: `順勢加碼系統 · 操作前由上而下走一遍 · 每步標註要看儀表板哪個數字 · 2026-07 修訂`,
+  h_dashlink: `開啟美股儀表板（9 號頁 · ATR Pullback）`,
+  h_layer1: `分層決策：<b>NII</b> 管大盤方向`,
+  h_layer2: `<b>領頭股燈號</b> 管結構頭部`,
+  h_layer3: `<b>個股 ATR</b> 管顛簸與停損`,
+  p_start: `開始：想動手之前`,
+  g0_step: `閘門 0 · 唯一領先層`,
+  g0_tag: `大盤方向 · NII`,
+  g0_h2: `NII 現在偏多還偏空？`,
+  g0_body: `NII 是這套系統裡<b>一切的根基</b>，大方向由它定調。<font color="#f1f5f9"><span style="caret-color: rgb(241, 245, 249);"><b>NII上漲（或平盤）時&nbsp;</b></span></font>→ 股市下跌，可能是買進機會。<font color="#f1f5f9"><span style="caret-color: rgb(241, 245, 249);"><b>NII 下跌時&nbsp;</b></span></font>→ 停止買所有新股和加碼，舊有股票跌破停損就抱現金。此時的回檔一律當「空頭進行式」，別急著抄底。<br><span style="color:var(--muted);font-size:.8rem;">NII 領先、燈號同步——NII 先轉、燈號後確認。兩者衝突時，方向以 NII 為準、執行細節看燈號。</span>`,
+  g1_q: `<br>`,
+  g1_h2: `NII確認大方向後，用領頭股燈號看大盤的結構如何`,
+  lg_h: `綠燈`,
+  lg_p: `前八大權值股多數在季線EMA(60)之上。<b>可買新股、可加碼</b>，可以看後續步驟。`,
+  ly_h: `黃燈`,
+  ly_p: `前八大權值股約一半在季線下方。<b>不買新股、不加碼、降槓桿（如果有用槓桿）</b>`,
+  lr_h: `紅燈`,
+  lr_p: `前八大權值股有一半不到季線下方2%。<b>不買新股、不加碼、降槓桿（如果有用槓桿）</b><br><span style="color:var(--violet)">但可能有逢低買進的機會 → 見下方逆勢通道。</span>`,
+  ln_p: `「領頭股燈號」亮黃燈、紅燈時只停止買新股和加碼，不管舊股。舊股的停損一率是「跌破支撐賣出」`,
+  ln_t1: `大盤壓力儀表板`,
+  ln_t2: `領頭股前哨`,
+  p_violet: `岔路 · NII上漲＋燈號紅＋深跌 = 進場機會`,
+  v_tag: `逆勢通道 · 與順勢分開的另一套錢`,
+  v_h2: `跌爛時：多指數勝率 × 下跌深度矩陣`,
+  v_p: `健康指標（燈號、breadth）是<b>確認型的落後訊號</b>，市場跌爛時它一定還是紅的。但<b>指數跌深＋恐慌飆高</b><b>是少見的逢低布局區</b>。這條通道專門承接這種機會，<b>只在 NII 上漲＋領頭股燈號紅燈＋大盤跌深時啟動；領頭股燈號亮綠燈時就順勢加碼就好。</b>`,
+  v_mhead: `VIX ＼ EMA60 乖離率`,
+  v_mc1: `≤ −10%<br>破季線很深`,
+  v_mc2: `−10~−5%`,
+  v_mc3: `−5~0%`,
+  v_mc4: `0~+5%`,
+  v_mc5: `+5% 以上`,
+  v_row1: `低 &lt;15`,
+  v_row2: `中 15~25`,
+  v_row3: `高 &gt;25 恐慌`,
+  v_mcap: `直欄＝<b style="color:#f0abfc">EMA60 乖離率</b>（離季線多遠，越左＝跌破季線越深）；橫列＝<b style="color:#f0abfc">VIX 恐慌指數</b>（越下越恐慌）。格子＝該情境「未來 1 或 3 個月歷史勝率」＋↑平均漲幅／↓平均跌幅(MAE)，<b>★＝統計顯著、橘框＝現在位置</b>。左下角高 VIX × 深跌破季線＝<b style="color:#f0abfc">逢低布局候選區</b>。<br>崩盤多半已跌破年線 →記得切到「<b>年線之下</b>」分頁看；想布局中線就切「<b>3 個月</b>」窗口。`,
+  v_rule1: `<b>分批進場</b>，不一次全下——接刀本來就接不到最低。`,
+  v_rule2: `<b>獨立資金上限</b>，跟順勢加碼的部位<b>分開記帳</b>，別讓抄底吃掉趨勢單的額度。`,
+  v_rule3: `<b>四個分頁都到位才算共振</b>：S&amp;P500 / Nasdaq100 / 道瓊 / 費半 都落在高勝率格，訊號才最強；只有一兩個到位＝打折，不動。`,
+  v_rule4: `一樣有停損，但用「<b>布局論點失效</b>」的位置（例如跌破前一重要低點），不是順勢那種跟著高點爬的移動停損。`,
+  v_rule5: `看的是「<b>跌到這格、往後贏面多大</b>」，<b>不是猜今天是不是底</b>；勝率門檻沒到就繼續等。`,
+  v_tool: `四大指數勝率矩陣`,
+  p_split: `NII 偏多＋綠燈才繼續順勢加碼 · 你要做的是哪一件？`,
+  a_branch: `路線 A`,
+  a_tag: `守則一`,
+  a_h2: `新進場：買多大？`,
+  a_p: `<b>看它離前波支撐多遠</b>：遠的買少、近的買多，讓<b>每筆虧起來一樣痛</b>。也可以參考ATR來設定（約 <b>2–3 個 ATR</b>，對照該股回檔中位數）。`,
+  a_t1: `ATR%`,
+  a_t2: `劇本徽章`,
+  a_t3: `回檔分位數`,
+  b_branch: `路線 B`,
+  b_tag: `守則二`,
+  b_h2: `加碼：什麼時候加？`,
+  b_p: `只有<b>兩個時刻加碼</b>，其他時間手綁好。位置決定「能不能考慮」，<b>ATR的放大程度決定「算不算數」</b>。`,
+  b_m1t: `① 創新高（加小資金）`,
+  b_m1p: `突破箱型創新高＋ATR波動正常時，加一點小資金。`,
+  b_m2t: `② 回季線站穩（加大資金）`,
+  b_m2p: `股價跌回季線＋ATR波動正常 → 風報比最佳，加大資金。`,
+  am_tag: `加碼判讀 · 乖離率 ＋ ATR 擴張度`,
+  am_h2: `同一個位置，波動一大、結論相反`,
+  am_p: `「離季線近」本身不夠——要看這個回檔的波動大不大。如果波動放大（就是ATR頁面的急擴張），那就是<b>一票否決</b>，不是扣分。位置再好，波動放大勝率就低，波動正常才是勝率才高、風險/報酬比才高。`,
+  am_ch1: `波動收縮<br><small>擴張度低 · ATR5&lt;ATR14 見頂回落</small>`,
+  am_ch2: `波動急速擴大<br><small>擴張度 &gt;1.25</small>`,
+  am_r1: `離季線近<br>`,
+  am_c11: `🟢 加大資金<br><small>已驗證的甜蜜點</small>`,
+  am_c12: `🔴 不加碼，先觀察<br><small>等波動平靜再說</small>`,
+  am_r2: `離季線遠、但創盤整後新高<br>`,
+  am_c21: `🟡 加小資金<br><small>突破保險 · 需曝險不足</small>`,
+  am_c22: `⛔ 減碼區<br><small>該減碼不該加碼</small>`,
+  am_t1: `加碼比例計算器`,
+  am_t2: `季線乖離率`,
+  am_t3: `擴張度`,
+  gt_label: `加碼唯一檢查 · 資格閘`,
+  gt_p: `就算<b>馬上打到（該加碼單自己的）停損，整筆單仍然賺錢</b>嗎？<br>成立才加碼；不成立，手綁好。`,
+  p_after: `部位建好之後 · 剩下的交給規則`,
+  s4_step: `守則四 · 核心部位和加碼部位的不同思維`,
+  s4_tag: `離場`,
+  s4_h2: `什麼時候賣出？——核心部位與加碼部位用不同的思維`,
+  s4_core_t: `🐢 核心單 · 中長期持有`,
+  s4_core_p: `只在<b>跌破前波支撐低點</b>才賣，趨勢破掉才出場。這是抱住多倍數行情的關鍵，別用移動停損把核心震下車。`,
+  s4_add_t: `⏱ 加碼單 · 快進快出`,
+  s4_add_p: `每筆加碼有<b>自己的停損價位</b>（近期小箱型低點或靠近季線），把風險鎖小。`,
+  s4_tool: `急擴張警報（1.25 或自身 P90）`,
+  ft: `綠色工具徽章可點擊，直接開啟儀表板對應頁面（9 = 9 號頁 ATR Pullback Stats；其餘工具在同一 app 側邊欄切換）`,
+};
+</script>
+<!-- ============  文案區結束 · 以下版面不用動  ============ -->
+
+<div class="editbar">
+  <button id="btnEdit">✏️ 編輯文字</button>
+  <button id="btnSave" style="display:none">💾 立即存檔</button>
+</div>
+<div class="edithint">直接點圖上的文字改 → 改完按「✅ 完成並存檔」，會自動下載新檔到你的「下載」資料夾</div>
+
+<div class="wrap">
+
+  <header class="top">
+    <h1 data-k="h_title"></h1>
+    <div class="sub" data-k="h_sub"></div>
+    <a class="dash-link" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener">
+      <span class="dot"></span><span data-k="h_dashlink"></span>
+    </a>
+    <div class="layers">
+      <span class="lchip" data-k="h_layer1"></span>
+      <span class="lchip" data-k="h_layer2"></span>
+      <span class="lchip" data-k="h_layer3"></span>
+    </div>
+  </header>
+
+  <div class="flow">
+
+    <div class="pill start" data-k="p_start"></div>
+    <div class="arrow"></div>
+
+    <div class="node teal">
+      <span class="stepno" data-k="g0_step"></span>
+      <div class="head"><span class="tag" data-k="g0_tag"></span><h2 data-k="g0_h2"></h2></div>
+      <p data-k="g0_body"></p>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="decision">
+      <div class="q" data-k="g1_q"></div>
+      <h2 data-k="g1_h2"></h2>
+    </div>
+    <div class="arrow"></div>
+
+    <div class="lights">
+      <div class="light g">
+        <div class="lh"><span class="bulb"></span><span data-k="lg_h"></span></div>
+        <p data-k="lg_p"></p>
+      </div>
+      <div class="light y">
+        <div class="lh"><span class="bulb"></span><span data-k="ly_h"></span></div>
+        <p data-k="ly_p"></p>
+      </div>
+      <div class="light r">
+        <div class="lh"><span class="bulb"></span><span data-k="lr_h"></span></div>
+        <p data-k="lr_p"></p>
+      </div>
+    </div>
+    <div class="node" style="border-left-color:var(--slate);margin-top:12px;">
+      <p style="font-size:.8rem;color:var(--slate);" data-k="ln_p"></p>
+      <div class="tools">
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/" target="_blank" rel="noopener"><span class="ic">▮</span><span data-k="ln_t1"></span></a>
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/" target="_blank" rel="noopener"><span class="ic">◎</span><span data-k="ln_t2"></span></a>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+    <div class="pill" style="border-color:var(--violet);color:var(--violet);" data-k="p_violet"></div>
+    <div class="arrow"></div>
+
+    <div class="node violet">
+      <div class="head"><span class="tag" data-k="v_tag"></span><h2 data-k="v_h2"></h2></div>
+      <p data-k="v_p"></p>
+
+      <table class="matrix">
+        <tbody><tr><th data-k="v_mhead"></th><th data-k="v_mc1"></th><th data-k="v_mc2"></th><th data-k="v_mc3"></th><th data-k="v_mc4"></th><th data-k="v_mc5"></th></tr>
+        <tr><td data-k="v_row1"></td><td>·</td><td>·</td><td>·</td><td>·</td><td>·</td></tr>
+        <tr><td data-k="v_row2"></td><td class="hi">候選</td><td class="hi">候選</td><td>·</td><td>·</td><td>·</td></tr>
+        <tr><td data-k="v_row3"></td><td class="hi">候選</td><td class="hi">候選</td><td>·</td><td>·</td><td>·</td></tr>
+      </tbody></table>
+      <div class="mcap" data-k="v_mcap"></div>
+
+      <div class="rules-v">
+        <div class="r"><span class="n">1</span><div data-k="v_rule1"></div></div>
+        <div class="r"><span class="n">2</span><div data-k="v_rule2"></div></div>
+        <div class="r"><span class="n">3</span><div data-k="v_rule3"></div></div>
+        <div class="r"><span class="n">4</span><div data-k="v_rule4"></div></div>
+        <div class="r"><span class="n">5</span><div data-k="v_rule5"></div></div>
+      </div>
+
+      <div class="tools">
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/WinRate_Matrix" target="_blank" rel="noopener"><span class="ic">▦</span><span data-k="v_tool"></span></a>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+    <div class="pill" data-k="p_split"></div>
+    <div class="arrow"></div>
+
+    <div class="split">
+      <div>
+        <div class="branch-label" data-k="a_branch"></div>
+        <div class="node blue" style="margin-top:18px;">
+          <div class="head"><span class="tag" data-k="a_tag"></span><h2 data-k="a_h2"></h2></div>
+          <p data-k="a_p"></p>
+          <div class="tools">
+            <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener"><span class="num">9</span><span data-k="a_t1"></span></a>
+            <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener"><span class="num">9</span><span data-k="a_t2"></span></a>
+            <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener"><span class="num">9</span><span data-k="a_t3"></span></a>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="branch-label" data-k="b_branch"></div>
+        <div class="node green" style="margin-top:18px;">
+          <div class="head"><span class="tag" data-k="b_tag"></span><h2 data-k="b_h2"></h2></div>
+          <p data-k="b_p"></p>
+          <div class="moments">
+            <div class="moment">
+              <div class="mt" data-k="b_m1t"></div>
+              <p data-k="b_m1p"></p>
+            </div>
+            <div class="moment">
+              <div class="mt" data-k="b_m2t"></div>
+              <p data-k="b_m2p"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <div class="node green">
+      <div class="head"><span class="tag" data-k="am_tag"></span><h2 data-k="am_h2"></h2></div>
+      <p style="margin-bottom:2px;" data-k="am_p"></p>
+      <table class="addmap">
+        <tbody><tr><th></th><th data-k="am_ch1"></th><th data-k="am_ch2"></th></tr>
+        <tr><td data-k="am_r1"></td><td class="zg" data-k="am_c11"></td><td class="zr" data-k="am_c12"></td></tr>
+        <tr><td data-k="am_r2"></td><td class="zy" data-k="am_c21"></td><td class="zr" data-k="am_c22"></td></tr>
+      </tbody></table>
+      <div class="tools">
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/" target="_blank" rel="noopener"><span class="ic">∑</span><span data-k="am_t1"></span></a>
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/EMA_Analysis" target="_blank" rel="noopener"><span class="ic">◷</span><span data-k="am_t2"></span></a>
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener"><span class="num">9</span><span data-k="am_t3"></span></a>
+      </div>
+    </div>
+
+    <div class="arrow"></div>
+
+    <div class="gate">
+      <div class="glabel" data-k="gt_label"></div>
+      <p data-k="gt_p"></p>
+    </div>
+
+    <div class="arrow"></div>
+    <div class="pill" data-k="p_after"></div>
+    <div class="arrow"></div>
+
+    <div class="node red">
+      <span class="stepno" data-k="s4_step"></span>
+      <div class="head"><span class="tag" data-k="s4_tag"></span><h2 data-k="s4_h2"></h2></div>
+      <div class="clocks">
+        <div class="clock core">
+          <div class="ct" data-k="s4_core_t"></div>
+          <p data-k="s4_core_p"></p>
+        </div>
+        <div class="clock add">
+          <div class="ct" data-k="s4_add_t"></div>
+          <p data-k="s4_add_p"></p>
+        </div>
+      </div>
+      <div class="tools">
+        <a class="tool" href="https://market-dashboard-ul3wiopuqopuqcmvoqgrpl.streamlit.app/ATR_Pullback_Stats" target="_blank" rel="noopener"><span class="num">9</span><span data-k="s4_tool"></span></a>
+      </div>
+    </div>
+
+  </div><!-- /flow -->
+
+
+  <footer class="disc" data-k="ft"></footer>
+
+</div>
+
+<!-- 渲染：把文案區的文字填進版面。不用動這段。 -->
+<script>
+  (function(){
+    document.querySelectorAll('[data-k]').forEach(function(el){
+      var k = el.getAttribute('data-k');
+      if (C && Object.prototype.hasOwnProperty.call(C, k)) el.innerHTML = C[k];
+    });
+  })();
+</script>
+
+<!-- 視覺編輯器：點「編輯文字」直接在圖上改，再「下載」存新檔。不用動這段。 -->
+<script>
+  (function(){
+    var editing=false;
+    var btnEdit=document.getElementById('btnEdit');
+    var btnSave=document.getElementById('btnSave');
+
+    function esc(v){ return v.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$\{/g,'\\${'); }
+
+    function doSave(){
+      var newC={};
+      document.querySelectorAll('[data-k]').forEach(function(el){
+        newC[el.getAttribute('data-k')] = el.innerHTML.trim();
+      });
+      var block='const C = {\n';
+      Object.keys(newC).forEach(function(k){ block += '  '+k+': `'+esc(newC[k])+'`,\n'; });
+      block += '};';
+
+      var root=document.documentElement.cloneNode(true);
+      root.querySelectorAll('[data-k]').forEach(function(el){
+        el.removeAttribute('contenteditable'); el.innerHTML='';
+      });
+      var b=root.querySelector('body'); if(b) b.classList.remove('is-editing');
+      var be=root.querySelector('#btnEdit'); if(be) be.textContent='✏️ 編輯文字';
+      var bs=root.querySelector('#btnSave'); if(bs) bs.setAttribute('style','display:none');
+      var cb=root.querySelector('#copyblock'); if(cb) cb.textContent='\n'+block+'\n';
+
+      var html='<!DOCTYPE html>\n'+root.outerHTML;
+      var blob=new Blob([html],{type:'text/html;charset=utf-8'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='trading_SOP_flowchart.html';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    btnEdit.addEventListener('click', function(){
+      if(!editing){
+        editing=true;
+        document.querySelectorAll('[data-k]').forEach(function(el){ el.setAttribute('contenteditable','true'); });
+        document.body.classList.add('is-editing');
+        btnEdit.textContent='✅ 完成並存檔';
+        btnSave.style.display='inline-block';
+      } else {
+        editing=false;
+        document.querySelectorAll('[data-k]').forEach(function(el){ el.removeAttribute('contenteditable'); });
+        document.body.classList.remove('is-editing');
+        btnEdit.textContent='✏️ 編輯文字';
+        btnSave.style.display='none';
+        doSave();   /* 按「完成」自動下載新檔 */
+      }
+    });
+
+    btnSave.addEventListener('click', doSave);
+  })();
+</script>
+
+
+</body></html>
