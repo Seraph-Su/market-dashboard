@@ -138,7 +138,6 @@ def fetch_data():
 FALLBACK_LEADERS = ["NVDA", "GOOGL", "AAPL", "MSFT", "AMZN", "META", "AVGO", "TSLA"]
 # 同公司雙股別合併
 _SHARE_CLASS = {"GOOG": "GOOGL", "BRK-A": "BRK-B"}
-
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_sp500_members() -> set:
     import requests
@@ -149,7 +148,6 @@ def fetch_sp500_members() -> set:
     resp.raise_for_status()
     df = pd.read_html(StringIO(resp.text))[0]
     return set(df["Symbol"].str.replace(".", "-", regex=False).tolist())
-
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_leader_list(n: int = 8) -> tuple:
     """每日自動抓 S&P 500 市值前 n 大（合併雙股別、過濾非成分股）。失敗回退備援名單。"""
@@ -181,7 +179,6 @@ def fetch_leader_list(n: int = 8) -> tuple:
         return tuple(out) if len(out) >= 6 else tuple(FALLBACK_LEADERS)
     except Exception:
         return tuple(FALLBACK_LEADERS)
-
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_leaders(leaders: tuple):
     """領頭股健康度：收盤站上 EMA60 的檔數（無緩衝＝黃燈用；2% 緩衝＝紅燈用）"""
@@ -382,16 +379,25 @@ st_br    = status('brdth', D['sector_breadth'])
 st_spy60   = status('spy60',   D['spy_vs_60ma'])
 st_vixma20 = status('vixma20', D['vix_vs_ma20'])
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
-core_statuses = [st_cme, st_xlp, st_iwm]
-n_red    = core_statuses.count('red')
-n_yellow = core_statuses.count('yellow')
-overall  = 'red' if n_red>=2 else 'yellow' if n_red>=1 or n_yellow>=2 else 'green'
-# Combo triggers
+
+# ── Combo triggers（先算，整體燈號要用）──
 cme_triggered = st_cme in ('yellow','red')
-combo1 = cme_triggered and st_iwm != 'green'
-combo2 = cme_triggered and st_xlp in ('yellow','red')
+combo1 = cme_triggered and st_iwm != 'green'                    # CME + 小型股弱勢
+combo2 = cme_triggered and st_xlp in ('yellow','red')           # 訊號1：CME + 防禦輪動 → 壓力否決
 combo3 = cme_triggered and st_iwm != 'green' and st_xlp in ('yellow','red')
 uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
+
+# ── 整體燈號：否決邏輯，不數燈 ──
+# 紅 = 任一 AND 組合成立（否決新倉）；黃 = 只有單燈亮（情境警示，不否決）；綠 = 全無
+core_statuses = [st_cme, st_xlp, st_iwm]
+n_lit = sum(1 for s in core_statuses if s != 'green')
+veto_active = combo1 or combo2
+if veto_active:
+    overall = 'red'
+elif n_lit >= 1:
+    overall = 'yellow'
+else:
+    overall = 'green'
 # ── Header ───────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
@@ -404,9 +410,14 @@ with col_refresh:
 st.markdown("---")
 # ── Overall ──────────────────────────────────────────────────────
 ov_map = {
-    'green':  ('核心指標全數正常', '牛市動能健康，高β倉位無需調整'),
-    'yellow': ('核心指標出現警示', '建議收緊止損或留意槓桿敞口'),
-    'red':    ('多項核心指標告警', '建議評估減碼高β倉位，啟動避險策略'),
+    'green':  ('無否決訊號',
+               '核心壓力指標全數安靜。能否進場／加碼由個股觸發與領頭股燈號決定，見下方「進場許可」。'),
+    'yellow': ('單一核心指標亮燈 — 情境警示，不構成否決',
+               '單燈不否決。回測：單獨「防禦輪動」亮時 SPY 一個月報酬反而最好（爬憂慮之牆）；'
+               '單獨 CME 亮對指數無害但對熱門動能股不利。動作：繫安全帶、不追延伸，但<b>不因單燈停止合規進場</b>。'),
+    'red':    ('壓力否決成立 — AND 組合觸發',
+               'CME 與防禦輪動／小型股弱勢同時亮。回測：此時新進場 EV 由 +15% 轉負、跌 5% 機率翻倍。'
+               '動作：<b>不開新倉、不加碼</b>；既有持倉交給停損，不預先賣出（提前減碼已驗證負 EV）。'),
 }
 ov_title, ov_desc = ov_map[overall]
 st.markdown(f"""
@@ -439,26 +450,33 @@ for active, prob, lift, title, desc in combos:
     """, unsafe_allow_html=True)
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Core indicators ───────────────────────────────────────────────
-st.markdown('<div class="section-hdr">核心預警指標（影響整體燈號 · 實證有效）</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-hdr">核心預警指標（否決燈 · 需 AND 組合才否決）</div>', unsafe_allow_html=True)
 c1, c2, c3 = st.columns(3)
 cme_v = D['cme_excess_10d']
 with c1:
     desc = (f"CME跑贏SPY {cme_v}%，警示區間（單獨倍率僅1.10x，須配合IWM/SPY同時觸發才有力）" if st_cme in ('yellow','red')
             else f"CME明顯跑輸（{cme_v}%），歷史看漲信號" if cme_v < -3
             else f"CME相對報酬中性，無明顯信號")
-    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True, lift="1.41x（單獨）/ 3.08x（+IWM）")
+    card("CME超額報酬（10日）", fmt(cme_v), st_cme, desc, D['cme_series'], inv=True,
+         lift="1.41x（單獨）/ 3.08x（+IWM）", note="否決燈 · 需與防禦輪動或小型股同亮")
 xl_v = D['xlp_xly_20d']
 with c2:
-    desc = (f"防禦板塊跑贏景氣循環 {xl_v}%，資金明顯轉向防禦" if st_xlp=='red'
-            else f"防禦輪動初現（{xl_v}%），留意資金動向" if st_xlp=='yellow'
-            else f"景氣循環領先（{fmt(xl_v)}），市場情緒偏進取")
-    card("防禦輪動 XLP/XLY（20日）", fmt(xl_v), st_xlp, desc, D['xlp_series'], inv=True, lift="2.50x")
+    if st_xlp in ('yellow','red') and not combo2:
+        desc = (f"防禦輪動 {xl_v}%，但 CME 未同亮 → 單燈情境、不否決。"
+                f"回測：單獨此燈亮時 SPY 一個月 +1.83%／勝率 73%（爬憂慮之牆），不是離場訊號")
+    elif st_xlp in ('yellow','red') and combo2:
+        desc = f"防禦輪動 {xl_v}% 且 CME 同亮 → 訊號1 成立，否決新倉"
+    else:
+        desc = f"景氣循環領先（{fmt(xl_v)}），市場情緒偏進取"
+    card("防禦輪動 XLP/XLY（20日）", fmt(xl_v), st_xlp, desc, D['xlp_series'], inv=True,
+         lift="2.50x", note="否決燈 · 需與 CME 同亮")
 iwm_v = D['iwm_spy_60d']
 with c3:
     desc = (f"小型股60日跑輸大型股 {abs(iwm_v)}%，風險偏好惡化" if st_iwm=='red'
             else f"小型股相對弱勢（{iwm_v}%），需觀察" if st_iwm=='yellow'
             else f"小型股同步（{fmt(iwm_v)}），風險偏好正常")
-    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'], lift="1.55x")
+    card("IWM/SPY 小型股（60日）", fmt(iwm_v), st_iwm, desc, D['iwm_series'],
+         lift="1.55x", note="否決燈 · 需與 CME 同亮")
 # ── SPY 季線乖離率 ─────────────────────────────────────────────────
 if st_spy60 == 'yellow':
     st.markdown(f'<div class="uvxy-warn">⚡ <b>SPY 季線乖離率示警</b>——距 EMA60 偏離 {fmt(D["spy_vs_60ma"])}，已超過 90 分位（+4.44%），留意過熱修正風險</div>', unsafe_allow_html=True)
@@ -575,6 +593,8 @@ with y4:
         </div>""", unsafe_allow_html=True)
 # ── 領頭股前哨 ────────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">領頭股前哨（權值股隊形 · 不計入整體燈號）</div>', unsafe_allow_html=True)
+ldr_status = None
+L = None
 try:
     _leader_list = fetch_leader_list()
     _list_is_live = tuple(_leader_list) != tuple(FALLBACK_LEADERS)
@@ -650,6 +670,43 @@ try:
 except Exception as _e:
     st.markdown(f'<div class="uvxy-ok">領頭股前哨載入失敗（{_e}），不影響其他指標。</div>',
                 unsafe_allow_html=True)
+
+# ── 進場許可總結：否決燈（AND）＋ 領頭股燈號（帶記憶）合成一個答案 ──
+st.markdown('<div class="section-hdr">進場許可（否決燈 × 領頭股燈號）</div>', unsafe_allow_html=True)
+if ldr_status is not None and L is not None:
+    _d10 = L['delta10']
+    if ldr_status == 'green':
+        ldr_open, ldr_reason = True,  f"領頭股綠燈（{L['h0']}/{L['n']}）"
+    elif ldr_status == 'yellow' and _d10 <= -0.5:
+        ldr_open, ldr_reason = True,  "惡化黃（綠→黃）：回測 EV ≈ 綠燈，仍屬開門狀態"
+    elif ldr_status == 'yellow':
+        ldr_open, ldr_reason = False, "修復黃（紅→黃）：回測 EV ≈ 紅燈，禁區，等真正轉綠"
+    else:
+        ldr_open, ldr_reason = False, f"領頭股紅燈（{L['h0']}/{L['n']}）"
+
+    can_enter = ldr_open and not veto_active
+    if can_enter:
+        box_cls, title = 'overall-green', '🟢 可開新倉／可評估加碼'
+        body = (f"領頭股：{ldr_reason}。壓力否決：未成立。"
+                f"→ 進場與否回到個股觸發（創 63 日新高／合規加碼點）與 R、Heat、保本閘門。")
+    elif veto_active:
+        _which = "、".join(x for x, ok in [("CME＋防禦輪動", combo2), ("CME＋小型股弱勢", combo1)] if ok)
+        box_cls, title = 'overall-red', '🔴 不開新倉、不加碼 — 壓力否決成立'
+        body = f"AND 組合觸發（{_which}）。持倉交給停損，不預先賣出。領頭股：{ldr_reason}。"
+    else:
+        box_cls, title = 'overall-yellow', '🟡 不開新倉 — 領頭股燈號未開門'
+        body = f"{ldr_reason}。壓力否決未成立，但領頭股燈號不在開門狀態（綠或惡化黃）。等燈號回綠。"
+    if n_lit >= 1 and not veto_active:
+        body += " 　※ 目前有單一壓力燈亮：屬情境警示，不否決，勿追延伸。"
+    st.markdown(f"""
+    <div class="{box_cls}" style="margin-bottom:14px">
+      <div style="font-size:1.05rem;font-weight:700;color:#e2e8f0">{title}</div>
+      <div style="color:#94a3b8;font-size:0.78rem;margin-top:6px">{body}</div>
+    </div>""", unsafe_allow_html=True)
+else:
+    st.markdown('<div class="uvxy-ok">領頭股資料未載入，無法合成進場許可；請以壓力否決與個股觸發判斷。</div>',
+                unsafe_allow_html=True)
+
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Context indicators ────────────────────────────────────────────
 st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
