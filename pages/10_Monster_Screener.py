@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import time
 import yfinance as yf
 from yfinance import EquityQuery as Q
 
@@ -18,7 +19,7 @@ EXCL_INDUSTRY_KW = ["Biotech", "Drug Manufacturers", "Pharmaceutical", "Gold", "
                     "Aluminum", "Other Industrial Metals", "Other Precious Metals", "Coking Coal", "Thermal Coal",
                     "Uranium", "Oil & Gas"]
 EXCH_OK = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS"}
-BATCH = 40
+BATCH = 25
 
 
 # ── 資料 ─────────────────────────────────────────────────────────
@@ -47,35 +48,45 @@ def screen_universe(min_cap_b: float, min_52w: float) -> pd.DataFrame:
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_prices(tickers: tuple, period: str = "1y") -> dict:
-    """分批下載 OHLC，失敗單檔補抓；回傳 {ticker: DataFrame}。"""
+    """分批下載 OHLC（被限流時暫停重試一次）；缺太多時不逐檔補抓，避免卡死。回傳 {ticker: DataFrame}。"""
     out = {}
     tk = list(tickers)
     for i in range(0, len(tk), BATCH):
         ch = tk[i:i + BATCH]
-        try:
-            raw = yf.download(ch, period=period, interval="1d", auto_adjust=True,
-                              progress=False, threads=False, group_by="ticker")
-        except Exception:
-            raw = None
+        raw = None
+        for attempt in range(2):
+            try:
+                raw = yf.download(ch, period=period, interval="1d", auto_adjust=True,
+                                  progress=False, threads=False, group_by="ticker")
+                if raw is not None and not raw.empty:
+                    break
+            except Exception:
+                raw = None
+            time.sleep(3)          # 疑似限流：等一下再試
+        if raw is None or raw.empty:
+            continue
         for t in ch:
             try:
-                d = raw[t] if (raw is not None and len(ch) > 1) else raw
+                d = raw[t] if len(ch) > 1 else raw
+                if isinstance(d.columns, pd.MultiIndex):
+                    d.columns = d.columns.get_level_values(0)
                 d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
                 if len(d) >= 130:
                     out[t] = d
             except Exception:
                 pass
     missing = [t for t in tk if t not in out]
-    for t in missing:
-        try:
-            d = yf.download(t, period=period, interval="1d", auto_adjust=True, progress=False, threads=False)
-            if isinstance(d.columns, pd.MultiIndex):
-                d.columns = d.columns.get_level_values(0)
-            d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
-            if len(d) >= 130:
-                out[t] = d
-        except Exception:
-            pass
+    if 0 < len(missing) <= 40:      # 少量缺漏才逐檔補抓
+        for t in missing:
+            try:
+                d = yf.download(t, period=period, interval="1d", auto_adjust=True, progress=False, threads=False)
+                if isinstance(d.columns, pd.MultiIndex):
+                    d.columns = d.columns.get_level_values(0)
+                d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
+                if len(d) >= 130:
+                    out[t] = d
+            except Exception:
+                pass
     return out
 
 
@@ -167,6 +178,13 @@ prog = st.progress(0, text=f"下載 {len(tickers)} 檔價格資料（首次約 2
 PX = fetch_prices(tickers)
 prog.progress(100, text=f"價格資料完成：{len(PX)} 檔")
 prog.empty()
+cov = sum(1 for t in univ["t"] if t in PX) / max(len(univ), 1)
+st.markdown(f"<span style='color:#475569;font-size:0.72rem'>篩選器候選 {len(univ)} 檔｜取得價格 {sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜資料截至 {max((PX[t].index[-1] for t in PX), default='—')}</span>",
+            unsafe_allow_html=True)
+if cov < 0.6:
+    st.warning(f"⚠️ 只取得 {cov*100:.0f}% 候選股的價格，很可能被 Yahoo 暫時限流——名單會不完整。請等 1～2 分鐘後按「🔄 重新掃描」。")
+    if cov < 0.2:
+        st.cache_data.clear()   # 幾乎全空的結果不要快取一整天
 
 # ── 3. 閘門 ──
 def close_of(t):
@@ -247,12 +265,10 @@ mon = order(pd.DataFrame(rows))
 st.markdown(f"#### 🦖 怪物股宇宙：{len(mon)} 檔（半年 > {mom_th}%）　🔔 觸發 {int((mon['觸發']=='🔔').sum()) if len(mon) else 0} 檔")
 if len(mon):
     st.dataframe(mon.set_index("代碼"), use_container_width=True, height=min(60 + 35 * len(mon), 600))
-    if gate_open and (mon["觸發"] == "🔔").any():
-        st.success("🔔 今日有觸發且閘門開：隔日開盤市價進。進場前——質化五題 ≥3 分、股數照表、本金 Heat ≤ 9%、單股 ≤ 帳戶 10%（怪物股加碼上限 20%）、同題材 ≤ 50～60%。")
     st.markdown(
         "<div style='color:#334155;font-size:0.68rem'>"
         "停損＝最近已確認擺盪低點（前後 3 日最低、低於現價 5% 以上），距離上限 25%；太近（<8%）的停損請改看更前一個結構低點——"
-        "停損寬度比任何加碼規則重要。股數 = R ÷（現價 − 停損）。名單只認突破，不做回調進場。"
+        "股數 = R ÷（現價 − 停損），為系統規則之計算示例。🔔 僅表示當日收盤創 63 日新高，為客觀條件標記，不構成任何投資建議。"
         "</div>", unsafe_allow_html=True)
 else:
     st.markdown("<span style='color:#64748b'>目前沒有合格的怪物股——這在慢牛年很正常，不是系統壞了。</span>", unsafe_allow_html=True)
