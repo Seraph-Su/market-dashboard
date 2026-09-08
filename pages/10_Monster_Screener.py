@@ -8,7 +8,7 @@ from yfinance import EquityQuery as Q
 # 🦖 怪物股選股器（順勢交易系統 規則一＋規則二）
 #   宇宙：美股普通股、市值 > $1B、過去半年漲幅 > 150%、剔除能源／礦業金屬／生技製藥
 #   觸發：今日收盤創 63 日新高；許可：領頭股燈號綠燈（≥5/8）且壓力否決未成立
-#   輸出：合格名單＋前波支撐停損＋1R 股數；另附「修復突破」候選（年線下→多頭排列）
+#   輸出：合格名單＋前波支撐停損＋1R 股數（修復突破候選在「均線收斂突破選股」頁）
 # ═══════════════════════════════════════════════════════════════════
 
 TOP8_FALLBACK = ["NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSLA"]
@@ -46,7 +46,7 @@ def screen_universe(min_cap_b: float, min_52w: float) -> pd.DataFrame:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def fetch_prices(tickers: tuple, period: str = "2y") -> dict:
+def fetch_prices(tickers: tuple, period: str = "1y") -> dict:
     """分批下載 OHLC，失敗單檔補抓；回傳 {ticker: DataFrame}。"""
     out = {}
     tk = list(tickers)
@@ -144,7 +144,7 @@ with col_refresh:
         st.rerun()
 st.markdown("---")
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 with c1:
     mom_th = st.slider("半年漲幅門檻（%）", 100, 300, 150, 10,
                        help="回測：>150% 均 +0.44R／勝率 48%；100～150% 反而最弱（勝率 34%）。門檻不建議下修。")
@@ -152,9 +152,6 @@ with c2:
     min_cap = st.selectbox("最低市值（$B）", [1.0, 2.0, 5.0, 10.0], index=0)
 with c3:
     r_usd = st.number_input("R（美元，帳戶 1%）", min_value=1.0, value=930.0, step=10.0)
-with c4:
-    show_recovery = st.checkbox("同時列出修復突破候選", value=True,
-                                help="120 日內曾收在年線下、今日站回 價>月>季>年 多頭排列（第三引擎；需再過「產業龍頭」質化門檻）")
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
@@ -165,7 +162,7 @@ if univ.empty:
 
 # ── 2. 價格 ──
 top8 = list(top8_by_cap())
-tickers = tuple(dict.fromkeys(univ["t"].tolist() + top8 + MACRO))
+tickers = tuple(dict.fromkeys(univ["t"].tolist() + top8 + TOP8_FALLBACK + MACRO))
 prog = st.progress(0, text=f"下載 {len(tickers)} 檔價格資料（首次約 2～4 分鐘，之後快取）…")
 PX = fetch_prices(tickers)
 prog.progress(100, text=f"價格資料完成：{len(PX)} 檔")
@@ -176,7 +173,9 @@ def close_of(t):
     return PX[t]["Close"].ffill() if t in PX else None
 
 n_above, n_prev, have = 0, 0, 0
-for t in top8:
+for t in top8 + [x for x in TOP8_FALLBACK if x not in top8]:   # 缺資料時用備援名單補到 8 檔
+    if have >= 8:
+        break
     c = close_of(t)
     if c is None or len(c) < 80:
         continue
@@ -207,7 +206,7 @@ if not gate_open:
     st.warning("閘門關：下方名單僅供觀察，不開新倉。等燈號轉綠／否決解除後，再看當日有無 🔔 觸發。")
 
 # ── 4. 名單 ──
-rows, rec_rows, excluded = [], [], []
+rows, excluded = [], []
 for _, x in univ.iterrows():
     t = x["t"]
     if t not in PX:
@@ -218,15 +217,8 @@ for _, x in univ.iterrows():
     if px < 5 or len(c) < 130:
         continue
     r6 = px / float(c.iloc[-126]) - 1
-    e20 = c.ewm(span=20, adjust=False).mean(); e60 = c.ewm(span=60, adjust=False).mean()
-    e260 = c.ewm(span=260, adjust=False).mean() if len(c) >= 300 else None
-    is_monster = r6 >= mom_th / 100
-    is_recovery = False
-    if show_recovery and e260 is not None:
-        stack = (c > e20) & (e20 > e60) & (e60 > e260)
-        was_below = bool((c.iloc[-121:-1] < e260.iloc[-121:-1]).any())
-        is_recovery = bool(stack.iloc[-1]) and was_below and r6 >= 0.3
-    if not (is_monster or is_recovery):
+    e60 = c.ewm(span=60, adjust=False).mean()
+    if r6 < mom_th / 100:
         continue
     sec, ind = fetch_sector(t)
     if sec in EXCL_SECTOR or any(k.lower() in ind.lower() for k in EXCL_INDUSTRY_KW):
@@ -242,16 +234,7 @@ for _, x in univ.iterrows():
                 距季線=f"{(px/e60.iloc[-1]-1)*100:+.0f}%", ATR=f"{a14/px*100:.1f}%",
                 停損=round(stop, 2), 停損距=f"{(px/stop-1)*100:.0f}%", 停損日=str(stop_dt) if stop_dt else "—",
                 股數_1R=sh, 名目=f"{sh*px:,.0f}", 產業=ind[:22])
-    if is_monster:
-        rows.append(base)
-    if is_recovery and not is_monster:
-        yl = float(e260.iloc[-1])
-        sd = max(px / yl - 1, 0.10)
-        rec_rows.append(dict(代碼=t, 名稱=x["name"][:18], 半年=f"{r6*100:+.0f}%", 市值B=round(x["cap"], 1), 價=round(px, 2),
-                             距年線=f"{(px/yl-1)*100:+.0f}%", 距季線=f"{(px/e60.iloc[-1]-1)*100:+.0f}%",
-                             距63日高=f"{(px/hi63-1)*100:+.1f}%", 觸發="🔔" if px >= hi63 else "",
-                             年線停損=round(yl, 2), 股數_1R=int(r_usd / (px * sd)), 名目=f"{int(r_usd/(px*sd))*px:,.0f}",
-                             產業=ind[:22]))
+    rows.append(base)
 
 def order(df_):
     if df_.empty:
@@ -274,21 +257,6 @@ if len(mon):
 else:
     st.markdown("<span style='color:#64748b'>目前沒有合格的怪物股——這在慢牛年很正常，不是系統壞了。</span>", unsafe_allow_html=True)
 
-if show_recovery:
-    rec = order(pd.DataFrame(rec_rows))
-    st.markdown("---")
-    st.markdown(f"#### 🔁 修復突破候選：{len(rec)} 檔（年線下 → 站回多頭排列，半年 ≥30%，未達怪物門檻）")
-    if len(rec):
-        st.dataframe(rec.set_index("代碼"), use_container_width=True, height=min(60 + 35 * len(rec), 500))
-        st.markdown(
-            "<div style='color:#334155;font-size:0.68rem'>"
-            "第三引擎：出場＝收盤跌破年線；股數 = R ÷ max(現價 − 年線, 10%×現價)（部位 ≤ 帳戶 10%）；"
-            "質化門檻＝產業龍頭（尾部風險 −31R → −8R）；額度與怪物股獨立（修復 ≤6 檔）。燈號對此類無鑑別力，不套用。"
-            "此候選表用「當日多頭排列且 120 日內曾破年線」判定，不要求今日剛站上，請自行確認站回日期。"
-            "</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<span style='color:#64748b'>目前沒有修復突破候選。</span>", unsafe_allow_html=True)
-
 if excluded:
     st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>產業剔除（能源／礦業金屬／生技製藥）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
@@ -302,8 +270,6 @@ with st.expander("📖 規則與依據"):
 **規則三（多大、停損）**：R＝帳戶 1%，停損＝最新前波支撐低點，股數＝R ÷ 停損距離。停損只往上移。破了就走、不破就抱。停損出場後再創新高＝重進場。
 
 **規則四（幾檔）**：最多 9 檔，本金 Heat ≤ 9%。同一天多檔觸發時各給 1R，讓停損去篩；名額不夠用題材籠子分（一個題材 3～4 檔）。
-
-**修復突破（第三引擎）**：年線下 → 站回 價>月>季>年；跌破年線出；產業龍頭限定；與怪物股額度獨立。崩盤後的修復年主場（2016、2020、2023、2025）。
 
 ⚠️ 篩選器用 52 週漲幅 >50% 粗篩，極端情況（半年漲 150% 但 52 週仍 <50%）會漏掉；歷史回測有倖存者偏差；本頁不構成投資建議。
 """)
