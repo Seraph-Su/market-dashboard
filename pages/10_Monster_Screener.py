@@ -166,6 +166,10 @@ with c3:
 with c4:
     excl_ipo = st.checkbox("剔除上市未滿一年", value=True,
                            help="2019～2025 年 IPO 回測：上市 <1 年進場均 −0.10R、勝率 26%、怪物率 ~4%；老牌股 +0.44R／48%／10.6%。")
+ipo_exempt_txt = st.text_input("例外：分拆／重新上市的老公司（逗號分隔，不視為新股）",
+                               value="SNDK, GEV, SOLV, SOLS, Q, VSNT",
+                               help="回測樣本只含真正的 IPO，不含分拆與重新掛牌；這些公司有完整營運歷史，不適用新股結論。DELL 2018 年重新上市、資料已滿一年，不受影響。")
+ipo_exempt = {s.strip().upper() for s in ipo_exempt_txt.split(",") if s.strip()}
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
@@ -242,7 +246,7 @@ for _, x in univ.iterrows():
     if r6 < mom_th / 100:
         continue
     # 上市未滿一年：抓 1 年資料卻不足 ~240 個交易日（回測：<1 年 IPO 均 −0.10R／勝率 26%，老牌股 +0.44R／48%）
-    if excl_ipo and len(c) < 240:
+    if excl_ipo and len(c) < 240 and t not in ipo_exempt:
         excluded_ipo.append(f"{t}（{len(c)} 日）")
         continue
     sec, ind = fetch_sector(t)
@@ -284,7 +288,7 @@ if excluded:
     st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>產業剔除（能源／礦業金屬／生技製藥）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
 if excluded_ipo:
-    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日）：{'、'.join(excluded_ipo)}</div>",
+    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
                 unsafe_allow_html=True)
 
 with st.expander("📖 規則與依據"):
