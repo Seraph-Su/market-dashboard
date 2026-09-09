@@ -146,7 +146,7 @@ with col_title:
     st.markdown("## 🦖 怪物股選股器")
     st.markdown(
         "<span style='color:#64748b;font-size:0.78rem'>"
-        "宇宙＝市值 > $1B、半年漲幅 > 150%、非能源／礦業／生技　｜　觸發＝今日創 63 日新高　｜　"
+        "宇宙＝市值 > $1B、半年漲幅 > 150%、上市滿一年、非能源／礦業／生技　｜　觸發＝今日創 63 日新高　｜　"
         "許可＝領頭股綠燈且壓力否決未成立　｜　資料每日快取"
         "</span>", unsafe_allow_html=True)
 with col_refresh:
@@ -155,7 +155,7 @@ with col_refresh:
         st.rerun()
 st.markdown("---")
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
     mom_th = st.slider("半年漲幅門檻（%）", 100, 300, 150, 10,
                        help="回測：>150% 均 +0.44R／勝率 48%；100～150% 反而最弱（勝率 34%）。門檻不建議下修。")
@@ -163,6 +163,9 @@ with c2:
     min_cap = st.selectbox("最低市值（$B）", [1.0, 2.0, 5.0, 10.0], index=0)
 with c3:
     r_usd = st.number_input("R（美元，帳戶 1%）", min_value=1.0, value=930.0, step=10.0)
+with c4:
+    excl_ipo = st.checkbox("剔除上市未滿一年", value=True,
+                           help="2019～2025 年 IPO 回測：上市 <1 年進場均 −0.10R、勝率 26%、怪物率 ~4%；老牌股 +0.44R／48%／10.6%。")
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
@@ -224,7 +227,7 @@ if not gate_open:
     st.warning("閘門關：下方名單僅供觀察，不開新倉。等燈號轉綠／否決解除後，再看當日有無 🔔 觸發。")
 
 # ── 4. 名單 ──
-rows, excluded = [], []
+rows, excluded, excluded_ipo = [], [], []
 for _, x in univ.iterrows():
     t = x["t"]
     if t not in PX:
@@ -237,6 +240,10 @@ for _, x in univ.iterrows():
     r6 = px / float(c.iloc[-126]) - 1
     e60 = c.ewm(span=60, adjust=False).mean()
     if r6 < mom_th / 100:
+        continue
+    # 上市未滿一年：抓 1 年資料卻不足 ~240 個交易日（回測：<1 年 IPO 均 −0.10R／勝率 26%，老牌股 +0.44R／48%）
+    if excl_ipo and len(c) < 240:
+        excluded_ipo.append(f"{t}（{len(c)} 日）")
         continue
     sec, ind = fetch_sector(t)
     if sec in EXCL_SECTOR or any(k.lower() in ind.lower() for k in EXCL_INDUSTRY_KW):
@@ -276,10 +283,13 @@ else:
 if excluded:
     st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>產業剔除（能源／礦業金屬／生技製藥）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
+if excluded_ipo:
+    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日）：{'、'.join(excluded_ipo)}</div>",
+                unsafe_allow_html=True)
 
 with st.expander("📖 規則與依據"):
     st.markdown(f"""
-**規則一（買什麼）**：市值 > ${min_cap:g}B、半年漲幅 > {mom_th}%、非能源／礦業／生技製藥。依據：半年 >150% 的股票，六個月內再漲 >100% 的機率 7.4%（隨機 0.7%）；100～150% 區間勝率 34%、EV +0.10R，>150% 勝率 48%、EV +0.44R、怪物率 10.6%。高動能生技 EV −0.17R、勝率 25%，所有產業最差。
+**規則一（買什麼）**：市值 > ${min_cap:g}B、半年漲幅 > {mom_th}%、上市滿一年、非能源／礦業／生技製藥。依據：半年 >150% 的股票，六個月內再漲 >100% 的機率 7.4%（隨機 0.7%）；100～150% 區間勝率 34%、EV +0.10R，>150% 勝率 48%、EV +0.44R、怪物率 10.6%。高動能生技 EV −0.17R、勝率 25%，所有產業最差。上市未滿一年的 IPO（2019～2025 年 1,003 檔）觸發後均 −0.10R、勝率 26%、怪物率約 4%——前波低點未經驗證、閉鎖期解禁供給，故剔除。
 
 **規則二（何時買）**：收盤創 63 日新高那天觸發，隔日開盤進；領頭股 ≥5/8 站上季線為綠燈才開新倉。綠燈 EV +17.7%、紅燈 +3.2%，差在怪物率（8.9% vs 4.7%）不在勝率。壓力否決＝CME/SPY 10 日 ≥+5% **且** XLP/XLY 20 日 >+1% 同時成立，綠燈也不開；單燈亮不否決。
 
