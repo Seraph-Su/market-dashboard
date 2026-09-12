@@ -9,10 +9,10 @@ from pathlib import Path
 #   利潤曝險＝停損在進場價之上、回吐的只是帳面獲利（監控，不設限）
 #   另檢查：檔數 ≤9、單股 ≤10%、題材 ≤50~60%、保本地板
 # ═══════════════════════════════════════════════════════════════════
-COLS = ["代碼", "題材", "股數", "進場價", "停損價", "現價(手動)"]
+COLS = ["代碼", "題材", "股數", "進場價", "停損價"]        # 現價由 yfinance 自動帶入，不手動輸入
 STORE = Path(__file__).with_name(".positions.json")      # 自動存檔（與本頁同目錄）
 def blank_row() -> pd.DataFrame:
-    return pd.DataFrame([["", "", 0, 0.0, 0.0, 0.0]], columns=COLS)
+    return pd.DataFrame([["", "", 0, 0.0, 0.0]], columns=COLS)
 def load_positions() -> pd.DataFrame:
     try:
         if STORE.exists():
@@ -27,7 +27,7 @@ def load_positions() -> pd.DataFrame:
     return blank_row()
 def save_positions(df: pd.DataFrame) -> None:
     try:
-        keep = df[df["代碼"].astype(str).str.strip() != ""]
+        keep = df[df["代碼"].map(clean_code) != ""]
         STORE.write_text(keep.to_json(orient="records", force_ascii=False), encoding="utf-8")
     except Exception:
         pass          # 唯讀環境就只靠 session（重新整理會回到上次存檔）
@@ -51,16 +51,19 @@ def fetch_last(tickers: tuple) -> dict:
         return out
     except Exception:
         return {}
+def clean_code(v) -> str:
+    t = str(v).strip().upper()
+    return "" if t in ("", "NAN", "NONE", "<NA>") else t
 def compute(df: pd.DataFrame, px_map: dict) -> pd.DataFrame:
     d = df.copy()
-    d = d[d["代碼"].astype(str).str.strip() != ""]
+    d["代碼"] = d["代碼"].map(clean_code)
+    d = d[d["代碼"] != ""]
     if d.empty:
         return d
-    d["代碼"] = d["代碼"].astype(str).str.strip().str.upper()
-    for c in ["股數", "進場價", "停損價", "現價(手動)"]:
+    for c in ["股數", "進場價", "停損價"]:
         d[c] = pd.to_numeric(d[c], errors="coerce").fillna(0.0)
-    d["現價"] = [m if m > 0 else px_map.get(t, np.nan) for t, m in zip(d["代碼"], d["現價(手動)"])]
-    d["現價"] = d["現價"].fillna(d["進場價"])            # 抓不到價就用進場價，避免整頁掛掉
+    d["現價"] = [px_map.get(t, np.nan) for t in d["代碼"]]
+    d["現價"] = pd.to_numeric(d["現價"], errors="coerce").fillna(d["進場價"])   # 抓不到價就用進場價，避免整頁掛掉
     d["市值"] = d["股數"] * d["現價"]
     d["單批曝險"] = (d["股數"] * (d["現價"] - d["停損價"])).clip(lower=0)   # 停損已在現價之上＝0
     d["停損處損益"] = d["股數"] * (d["停損價"] - d["進場價"])
@@ -120,7 +123,7 @@ with hdr:
     st.markdown("#### 持倉明細")
     st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
                 "直接在表格輸入，最後一列是空白列——填進去就會自動長出新的一列。"
-                "「現價(手動)」填 0 = 自動抓最新收盤。加碼單另開一列（同一個代碼可以有多列），填該筆自己的進場價與停損價。"
+                "「現價」與「距停損%」自動帶入最新收盤（15 分鐘快取），不用也不能手動填。加碼單另開一列（同一個代碼可以有多列），填該筆自己的進場價與停損價。"
                 "每次修改會自動存檔。</span>", unsafe_allow_html=True)
 with btn1:
     if st.button("➕ 加一列", use_container_width=True):
@@ -131,27 +134,42 @@ with btn2:
         st.session_state.pos = blank_row()
         save_positions(st.session_state.pos)
         st.rerun()
-edited = st.data_editor(
-    st.session_state.pos, num_rows="dynamic", use_container_width=True, key="editor",
+# 先用目前存的代碼抓價，帶進表格當唯讀欄位
+cur_tickers = tuple(sorted({c for c in st.session_state.pos["代碼"].map(clean_code) if c}))
+with st.spinner("抓取最新收盤價…"):
+    px_map = fetch_last(cur_tickers)
+view = st.session_state.pos.copy()
+view["現價"] = [px_map.get(clean_code(t), np.nan) for t in view["代碼"]]
+view["距停損%"] = [(sp / pxv - 1) * 100 if (pxv and pxv == pxv and sp) else np.nan
+                   for pxv, sp in zip(view["現價"], pd.to_numeric(view["停損價"], errors="coerce"))]
+edited_view = st.data_editor(
+    view, num_rows="dynamic", use_container_width=True, key="editor",
+    disabled=["現價", "距停損%"],
     column_config={
         "股數": st.column_config.NumberColumn(format="%.0f"),
         "進場價": st.column_config.NumberColumn(format="%.2f"),
         "停損價": st.column_config.NumberColumn(format="%.2f"),
-        "現價(手動)": st.column_config.NumberColumn(format="%.2f", help="0 = 自動抓"),
+        "現價": st.column_config.NumberColumn(format="%.2f", help="自動帶入最新收盤（15 分鐘快取），不可編輯"),
+        "距停損%": st.column_config.NumberColumn(format="%+.1f%%", help="停損價 ÷ 現價 − 1"),
     })
-if not edited.equals(st.session_state.pos):      # 有改動才寫檔
+edited = edited_view[COLS]
+if not edited.equals(st.session_state.pos):      # 有改動才寫檔，並重跑以帶出新代碼的現價
     save_positions(edited)
+    st.session_state.pos = edited
+    new_t = {c for c in edited["代碼"].map(clean_code) if c}
+    if new_t - set(cur_tickers):
+        st.rerun()
 st.session_state.pos = edited
-tickers = tuple(sorted({str(t).strip().upper() for t in edited["代碼"] if str(t).strip()}))
-with st.spinner("抓取最新收盤價…"):
-    px_map = fetch_last(tickers)
+tickers = tuple(sorted({c for c in edited["代碼"].map(clean_code) if c}))
+if set(tickers) - set(px_map):
+    px_map.update(fetch_last(tuple(sorted(set(tickers) - set(px_map)))))
 d = compute(edited, px_map)
 if d.empty:
     st.info("請先在上表輸入持倉。")
     st.stop()
 missing = [t for t in tickers if t not in px_map]
 if missing:
-    st.warning(f"⚠️ 抓不到現價（已用進場價替代，請在「現價(手動)」填入）：{'、'.join(missing)}")
+    st.warning(f"⚠️ 抓不到現價（已用進場價替代，請確認代碼是否正確）：{'、'.join(missing)}")
 # ── 彙總 ──
 n_names = d["代碼"].nunique()
 principal_heat = d["本金曝險"].sum()
