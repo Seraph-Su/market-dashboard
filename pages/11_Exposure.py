@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import yfinance as yf
-from io import BytesIO
+from pathlib import Path
 # ═══════════════════════════════════════════════════════════════════
 # 🌡️ 總曝險計算器（順勢交易系統 規則四：曝險與部位上限）
 #   本金曝險＝所有部位同時打到停損、會傷到「本金」的總額（閘門依據，≤ 帳戶 9%）
@@ -10,12 +10,27 @@ from io import BytesIO
 #   另檢查：檔數 ≤9、單股 ≤10%、題材 ≤50~60%、保本地板
 # ═══════════════════════════════════════════════════════════════════
 COLS = ["代碼", "策略", "批次", "題材", "股數", "進場價", "停損價", "現價(手動)"]
-DEMO = pd.DataFrame([
-    ["CRWD", "修復", "基本倉", "資安",   64,  140.93, 150.0, 0.0],
-    ["GEV",  "動能", "基本倉", "電力",    4, 1024.03, 850.0, 0.0],
-    ["GLW",  "動能", "基本倉", "光纖",   44,  200.14, 160.0, 0.0],
-    ["SNDK", "動能", "基本倉", "記憶體",  3, 1126.97, 1250.0, 0.0],
-], columns=COLS)
+STORE = Path(__file__).with_name(".positions.json")      # 自動存檔（與本頁同目錄）
+def blank_row() -> pd.DataFrame:
+    return pd.DataFrame([["", "動能", "基本倉", "", 0, 0.0, 0.0, 0.0]], columns=COLS)
+def load_positions() -> pd.DataFrame:
+    try:
+        if STORE.exists():
+            df = pd.read_json(STORE)
+            for c in COLS:
+                if c not in df.columns:
+                    df[c] = "" if c in ("代碼", "策略", "批次", "題材") else 0
+            df = df[COLS]
+            return pd.concat([df, blank_row()], ignore_index=True) if len(df) else blank_row()
+    except Exception:
+        pass
+    return blank_row()
+def save_positions(df: pd.DataFrame) -> None:
+    try:
+        keep = df[df["代碼"].astype(str).str.strip() != ""]
+        STORE.write_text(keep.to_json(orient="records", force_ascii=False), encoding="utf-8")
+    except Exception:
+        pass          # 唯讀環境就只靠 session（重新整理會回到上次存檔）
 @st.cache_data(ttl=900, show_spinner=False)
 def fetch_last(tickers: tuple) -> dict:
     """最新收盤價（15 分鐘快取）。"""
@@ -97,20 +112,25 @@ st.markdown(f"<span style='color:#94a3b8;font-size:0.8rem'>R = 帳戶 {r_pct*100
             f"<b style='color:#e2e8f0'>${r_usd:,.0f}</b>　｜　本金曝險上限 = ${acct*heat_cap_pct:,.0f}"
             f"　｜　單股上限 = ${acct*name_cap_pct:,.0f}　｜　題材上限 = ${acct*theme_cap_pct:,.0f}</span>",
             unsafe_allow_html=True)
-# ── 持倉輸入 ──
-st.markdown("#### 持倉明細")
-st.markdown("<span style='color:#64748b;font-size:0.72rem'>直接在表格編輯（可新增列）。「現價(手動)」填 0 = 自動抓最新收盤。"
-            "加碼單請另開一列、批次選「加碼」，填該筆自己的進場價與停損價。</span>", unsafe_allow_html=True)
-up = st.file_uploader("匯入 CSV（欄位：" + "、".join(COLS) + "）", type=["csv"])
+# ── 持倉輸入（全部在網頁上手動輸入；自動存檔，重新整理不會不見）──
 if "pos" not in st.session_state:
-    st.session_state.pos = DEMO.copy()
-if up is not None and not st.session_state.get("_uploaded", False):
-    try:
-        st.session_state.pos = pd.read_csv(up)[COLS]
-        st.session_state._uploaded = True
-        st.success("已匯入。")
-    except Exception as e:
-        st.error(f"匯入失敗：{e}")
+    st.session_state.pos = load_positions()
+hdr, btn1, btn2 = st.columns([4, 1, 1])
+with hdr:
+    st.markdown("#### 持倉明細")
+    st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
+                "直接在表格輸入，最後一列是空白列——填進去就會自動長出新的一列。"
+                "「現價(手動)」填 0 = 自動抓最新收盤。加碼單請另開一列、批次選「加碼」，填該筆自己的進場價與停損價。"
+                "每次修改會自動存檔。</span>", unsafe_allow_html=True)
+with btn1:
+    if st.button("➕ 加一列", use_container_width=True):
+        st.session_state.pos = pd.concat([st.session_state.pos, blank_row()], ignore_index=True)
+        st.rerun()
+with btn2:
+    if st.button("🗑 全部清空", use_container_width=True):
+        st.session_state.pos = blank_row()
+        save_positions(st.session_state.pos)
+        st.rerun()
 edited = st.data_editor(
     st.session_state.pos, num_rows="dynamic", use_container_width=True, key="editor",
     column_config={
@@ -121,6 +141,8 @@ edited = st.data_editor(
         "停損價": st.column_config.NumberColumn(format="%.2f"),
         "現價(手動)": st.column_config.NumberColumn(format="%.2f", help="0 = 自動抓"),
     })
+if not edited.equals(st.session_state.pos):      # 有改動才寫檔
+    save_positions(edited)
 st.session_state.pos = edited
 tickers = tuple(sorted({str(t).strip().upper() for t in edited["代碼"] if str(t).strip()}))
 with st.spinner("抓取最新收盤價…"):
@@ -202,7 +224,7 @@ st.dataframe(show.style.format({"進場價": "{:.2f}", "停損價": "{:.2f}", "�
                                 "停損處損益": "{:+,.0f}", "未實現": "{:+,.0f}"}),
              use_container_width=True, height=min(60 + 35 * len(show), 500))
 csv = st.session_state.pos.to_csv(index=False).encode("utf-8-sig")
-st.download_button("⬇️ 下載目前持倉 CSV（下次用匯入還原）", csv, "持倉.csv", "text/csv")
+st.download_button("⬇️ 下載持倉 CSV（備份用，非必要）", csv, "持倉.csv", "text/csv")
 # ── 新倉試算 ──
 st.markdown("---")
 st.markdown("#### 🧪 新倉試算（開之前先過閘門）")
@@ -251,5 +273,5 @@ with st.expander("📖 定義與規則"):
 - **保本地板** = 起始本金 × (1 − 可容忍損失%)；最壞情況權益 = 袖權益 − 總曝險。破地板時只能出部位或等停損自然上移，**不可為了降低曝險把停損移到結構之外**（禁止事項）。
 - 額度獨立：動能 ≤9 檔、修復 ≤6 檔，本金曝險合計 ≤15%；同一檔兩策略合計 ≤ 帳戶 {name_cap_pct*100:.0f}%；同一題材 ≤ {theme_cap_pct*100:.0f}%。
 - 加碼單請獨立列出（批次＝加碼），初始停損＝加碼價 − 3×ATR14，之後只跟基本倉結構停損上移。
-- 資料只存在瀏覽器工作階段，重新整理會回到預設；請用下方「下載 CSV」保存，下次用「匯入 CSV」還原。
+- 持倉全部在本頁手動輸入，每次修改自動存檔於伺服器（重新整理、關掉再開都還在）。若儀表板重新部署或容器重啟，檔案可能被清掉，需要長期保存可用下方 CSV 備份。
 """)
