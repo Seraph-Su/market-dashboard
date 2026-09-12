@@ -9,17 +9,17 @@ from pathlib import Path
 #   利潤曝險＝停損在進場價之上、回吐的只是帳面獲利（監控，不設限）
 #   另檢查：檔數 ≤9、單股 ≤10%、題材 ≤50~60%、保本地板
 # ═══════════════════════════════════════════════════════════════════
-COLS = ["代碼", "策略", "批次", "題材", "股數", "進場價", "停損價", "現價(手動)"]
+COLS = ["代碼", "題材", "股數", "進場價", "停損價", "現價(手動)"]
 STORE = Path(__file__).with_name(".positions.json")      # 自動存檔（與本頁同目錄）
 def blank_row() -> pd.DataFrame:
-    return pd.DataFrame([["", "動能", "基本倉", "", 0, 0.0, 0.0, 0.0]], columns=COLS)
+    return pd.DataFrame([["", "", 0, 0.0, 0.0, 0.0]], columns=COLS)
 def load_positions() -> pd.DataFrame:
     try:
         if STORE.exists():
             df = pd.read_json(STORE)
             for c in COLS:
                 if c not in df.columns:
-                    df[c] = "" if c in ("代碼", "策略", "批次", "題材") else 0
+                    df[c] = "" if c in ("代碼", "題材") else 0
             df = df[COLS]
             return pd.concat([df, blank_row()], ignore_index=True) if len(df) else blank_row()
     except Exception:
@@ -120,7 +120,7 @@ with hdr:
     st.markdown("#### 持倉明細")
     st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
                 "直接在表格輸入，最後一列是空白列——填進去就會自動長出新的一列。"
-                "「現價(手動)」填 0 = 自動抓最新收盤。加碼單請另開一列、批次選「加碼」，填該筆自己的進場價與停損價。"
+                "「現價(手動)」填 0 = 自動抓最新收盤。加碼單另開一列（同一個代碼可以有多列），填該筆自己的進場價與停損價。"
                 "每次修改會自動存檔。</span>", unsafe_allow_html=True)
 with btn1:
     if st.button("➕ 加一列", use_container_width=True):
@@ -134,8 +134,6 @@ with btn2:
 edited = st.data_editor(
     st.session_state.pos, num_rows="dynamic", use_container_width=True, key="editor",
     column_config={
-        "策略": st.column_config.SelectboxColumn(options=["動能", "修復", "裁量"], width="small"),
-        "批次": st.column_config.SelectboxColumn(options=["基本倉", "加碼"], width="small"),
         "股數": st.column_config.NumberColumn(format="%.0f"),
         "進場價": st.column_config.NumberColumn(format="%.2f"),
         "停損價": st.column_config.NumberColumn(format="%.2f"),
@@ -180,7 +178,7 @@ bar("持倉檔數", n_names, max_pos, unit="n")
 bar("名目曝險 / 帳戶", notional / acct * 100, 100.0, unit="%")
 # 單股
 by_name = d.groupby("代碼").agg(市值=("市值", "sum"), 本金曝險=("本金曝險", "sum"),
-                                單批曝險=("單批曝險", "sum"), 批次數=("批次", "size")).sort_values("市值", ascending=False)
+                                單批曝險=("單批曝險", "sum"), 筆數=("代碼", "size")).sort_values("市值", ascending=False)
 by_name["佔帳戶%"] = by_name["市值"] / acct * 100
 over_name = by_name[by_name["佔帳戶%"] > name_cap_pct * 100]
 # 題材
@@ -198,11 +196,6 @@ with cB:
     st.dataframe(by_theme.round(2), use_container_width=True, height=min(60 + 35 * len(by_theme), 300))
     if len(over_theme):
         st.error(f"⛔ 超過題材上限 {theme_cap_pct*100:.0f}%：{'、'.join(over_theme.index)}")
-# 策略別
-by_strat = d.groupby("策略").agg(檔數=("代碼", "nunique"), 市值=("市值", "sum"),
-                                 本金曝險=("本金曝險", "sum"), 利潤曝險=("利潤曝險", "sum"))
-st.markdown("##### 策略別（動能 ≤9 檔、修復 ≤6 檔、合計本金曝險 ≤15%；裁量單獨記帳）")
-st.dataframe(by_strat.round(0), use_container_width=True)
 # ── 保本閘門 ──
 st.markdown("#### 保本閘門")
 g1, g2, g3, g4 = st.columns(4)
@@ -215,7 +208,7 @@ if gap < 0:
              f"降低曝險的方法只有：出掉部位、或等停損自然上移——**不可為了降低曝險把停損移到結構之外**。")
 # ── 明細 ──
 st.markdown("#### 逐筆明細")
-show = d[["代碼", "策略", "批次", "題材", "股數", "進場價", "停損價", "現價", "市值",
+show = d[["代碼", "題材", "股數", "進場價", "停損價", "現價", "市值",
           "距停損%", "單批曝險", "本金曝險", "利潤曝險", "停損處損益", "未實現"]].copy()
 show = show.sort_values("市值", ascending=False)
 st.dataframe(show.style.format({"進場價": "{:.2f}", "停損價": "{:.2f}", "現價": "{:.2f}",
@@ -271,7 +264,7 @@ with st.expander("📖 定義與規則"):
 - **本金曝險** = 停損價低於進場價的那部分損失＝股數 ×（進場價 − 停損價），只算還沒鎖住獲利的部位。**這是開新倉的唯一閘門，上限帳戶 {heat_cap_pct*100:.0f}%。**
 - **利潤曝險** = 單批曝險 − 本金曝險。停損已上移到成本之上，被打到只是回吐獲利，不傷本金，**監控但不設限**。
 - **保本地板** = 起始本金 × (1 − 可容忍損失%)；最壞情況權益 = 袖權益 − 總曝險。破地板時只能出部位或等停損自然上移，**不可為了降低曝險把停損移到結構之外**（禁止事項）。
-- 額度獨立：動能 ≤9 檔、修復 ≤6 檔，本金曝險合計 ≤15%；同一檔兩策略合計 ≤ 帳戶 {name_cap_pct*100:.0f}%；同一題材 ≤ {theme_cap_pct*100:.0f}%。
-- 加碼單請獨立列出（批次＝加碼），初始停損＝加碼價 − 3×ATR14，之後只跟基本倉結構停損上移。
+- 曝險是針對整桶金計算，不分策略；同一檔股票（含加碼單）合計 ≤ 帳戶 {name_cap_pct*100:.0f}%；同一題材 ≤ {theme_cap_pct*100:.0f}%。
+- 加碼單請獨立列出一列，初始停損＝加碼價 − 3×ATR14，之後只跟基本倉結構停損上移。
 - 持倉全部在本頁手動輸入，每次修改自動存檔於伺服器（重新整理、關掉再開都還在）。若儀表板重新部署或容器重啟，檔案可能被清掉，需要長期保存可用下方 CSV 備份。
 """)
