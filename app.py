@@ -15,6 +15,7 @@ pages = [
     st.Page("pages/9_ATR_Pullback_Stats.py", title="ATR 回檔機率", icon="🌡️"),
     st.Page("pages/10_Monster_Screener.py",  title="怪物股選股器", icon="🦖"),
     st.Page("pages/11_Exposure.py", title="總曝險計算器", icon="🌡️"),
+    st.Page("pages/13_ATR_Add.py", title="ATR 加碼計算器", icon="🎯"),
 ]
 pg = st.navigation(pages)
 pg.run()
