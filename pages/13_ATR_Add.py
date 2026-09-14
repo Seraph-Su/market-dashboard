@@ -156,7 +156,7 @@ st.markdown("## 🎯 ATR 加碼計算器（A＋T 自動檢測）")
 st.markdown(
     "<span style='color:#64748b;font-size:0.78rem'>"
     "輸入代碼與進場成本，每天自動檢測兩條加碼規則：<b>A 回季線</b>（距季線 −3%～+6% 且 ATR5 < ATR14）與 "
-    "<b>T 機械</b>（收盤 ≥ 上次進場價 + 2×ATR14，只套怪物股與修復龍頭）。"
+    "<b>T 機械</b>（收盤 ≥ 上次進場價 + 2×ATR14，只套怪物股與修復龍頭，且 ATR% ≤7%）。"
     "加碼單初始停損＝加碼價 − 3×ATR14，之後不追蹤、只跟基本倉結構停損上移。"
     "一律<b>收盤</b>判定、隔日開盤市價進。"
     "</span>", unsafe_allow_html=True)
@@ -176,6 +176,8 @@ with st.sidebar:
     a_hi = st.number_input("A 距季線上限 %", value=6.0, step=0.5) / 100
     a_ratio = st.number_input("A 需 ATR5/ATR14 <", value=1.0, step=0.05)
     a_veto = st.number_input("急擴張否決（比值 ≥）", value=1.3, step=0.05)
+    atr_max = st.number_input("T 波動上限：ATR% >", value=7.0, step=0.5,
+                              help="回測：ATR% >7% 的加碼 EV −0.31R；設 7% 上限後年化 4.71%→5.30%、每筆加碼 EV +0.053R→+0.125R。基本倉不受此限。") / 100
 st.markdown("#### 持倉")
 st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
             "只需要填<b>代碼</b>、<b>類型</b>、<b>進場日</b>、<b>進場價</b>（股數用來算加碼比例，可留 0）。"
@@ -268,7 +270,8 @@ for _, x in edited.iterrows():
     nxt = ref + step_n * atr
     t_today = bool(hist) and hist[-1]["訊號日"] == df.index[-1].date()
     t_ok_kind = kind in ("怪物股", "修復龍頭")
-    t_fire = t_today and t_ok_kind and allow
+    vol_ok = (atr / px) <= atr_max
+    t_fire = t_today and t_ok_kind and allow and vol_ok
     a_pos = a_lo <= m["dev60"] <= a_hi
     a_atr = ratio < a_ratio
     a_fire = a_pos and a_atr and allow
@@ -291,13 +294,15 @@ for _, x in edited.iterrows():
                      A條件=("✅ 成立" if a_fire else ("位置✓ ATR✗" if a_pos and not a_atr else
                                                     ("位置✗" if not a_pos else "閘門✗"))),
                      T起算價=round(ref, 2), T下一觸發=round(nxt, 2), 距觸發=f"{(nxt/px-1)*100:+.1f}%",
-                     T狀態=("🔔 今日觸發" if t_today else "未觸發") + ("" if t_ok_kind else "（不適用）"),
+                     T狀態=("🔔 今日觸發" if t_today else "未觸發") + ("" if t_ok_kind else "（類型不適用）")
+                           + ("" if vol_ok else f"（ATR {atr/px*100:.1f}% >{atr_max*100:g}%，不加碼）"),
                      加碼股數=add_sh, 加碼名目=f"{add_sh*px:,.0f}",
                      加碼停損=round(px - stop_n * atr, 2),
                      目前名目=f"{now_notional:,.0f}", 目前占比=f"{now_notional/acct*100:.1f}%",
                      加碼後占比=f"{after_notional/acct*100:.1f}%",
                      上限=f"{cap_pct*100:.0f}%" + ("　⛔ 已滿" if room_sh == 0 else ""),
-                     備註="近季線但 ATR 急擴張" if (a_pos and ratio >= a_veto) else ""))
+                     備註=("波動過大，T 不加" if not vol_ok else
+                           ("近季線但 ATR 急擴張" if (a_pos and ratio >= a_veto) else ""))))
     details[t] = dict(hist=hist, ep=ep, ed=str(ed_ts.date()), m=m,
                       sw=swing_low(df, px), add_sh=add_sh, kind=kind)
 if missing:
@@ -405,7 +410,8 @@ with st.expander("📖 規則與依據"):
 比值 ≥ {a_veto:g} 時即使位置對也不加。十檔怪物上 27 筆只被掃 6 筆；但怪物股很少回季線（在季線附近的日子 2～8%），
 修復股常觸發（92%）。
 
-**T 機械加碼**：收盤 ≥ 上次進場價 + {step_n:g}×ATR14 → 加 {add_r:g}R。**只套怪物股（半年 ≥150%）與修復龍頭**。
+**T 機械加碼**：收盤 ≥ 上次進場價 + {step_n:g}×ATR14 → 加 {add_r:g}R。**只套怪物股（半年 ≥150%）與修復龍頭，且 ATR% ≤ {atr_max*100:g}%**
+（波動上限，2026-09-14 新增：ATR% 7～10% 的加碼 EV −0.31R、>10% 為 −0.50R；設限後年化 4.71%→5.30%、每筆加碼 EV 翻 2.4 倍。基本倉不受此限——高波動股的基本倉 EV 反而最高）。
 次數不設上限，用名目上限控制（一般 {cap_normal*100:.0f}%、怪物股 {cap_monster*100:.0f}%）；財報前只砍加碼單。
 起算價＝上一次實際加碼的收盤價；錯過的不補、被掃的不下修。
 
