@@ -4,6 +4,82 @@ import numpy as np
 import yfinance as yf
 from pathlib import Path
 from yfinance import EquityQuery as Q
+
+# ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ────────────────────
+#   與 1_Dashboard.py / 6_WinRate_Matrix.py / 5_Breakout_Screener.py 同一套：
+#   根字級 16px → 20px，本頁所有 rem 一次放大 1.25 倍。
+#   ⚠️ st.data_editor（可編輯表格）是 canvas 繪製，字級不吃 CSS，
+#      需在專案根目錄 .streamlit/config.toml 設 [theme] baseFontSize = 20。
+#      唯讀表格已改用 big_table() 的 HTML 表格，字級才放得大。
+st.markdown("""
+<style>
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p  { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.25rem; }
+  [data-testid="stMarkdownContainer"] h5 { font-size: 1.1rem; }
+  [data-testid="stMetricValue"] { font-size: 1.85rem !important; }
+  [data-testid="stMetricLabel"] p { font-size: 0.98rem !important; }
+  [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] div { font-size: 0.95rem !important; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  [data-testid="stCheckbox"] label p, [data-testid="stRadio"] label p { font-size: 1rem !important; }
+  [data-testid="stAlert"] p { font-size: 1rem; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input, .stDateInput input,
+  [data-baseweb="select"] div, [data-baseweb="tag"] span, [data-baseweb="tab"] p { font-size: 1rem; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.08rem; font-weight: 600; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
+
+  /* 唯讀表格（big_table）：取代 st.dataframe，字級才能跟著放大 */
+  .bigtbl-wrap { overflow: auto; border: 1px solid #1e293b; border-radius: 8px; }
+  table.bigtbl { border-collapse: collapse; width: max-content; min-width: 100%; }
+  table.bigtbl th {
+    position: sticky; top: 0; z-index: 2; background: #0f172a; color: #64748b;
+    font-size: 0.88rem; font-weight: 600; text-align: right; white-space: nowrap;
+    padding: 10px 14px; border-bottom: 1px solid #1e293b;
+  }
+  table.bigtbl td {
+    font-size: 1rem; color: #cbd5e1; text-align: right; white-space: nowrap;
+    padding: 9px 14px; border-bottom: 1px solid #16202f;
+  }
+  table.bigtbl th.l, table.bigtbl td.l { text-align: left; }
+  table.bigtbl td.code { font-weight: 700; color: #e2e8f0; font-size: 1.08rem; }
+  table.bigtbl tr:hover td { background: #131c2b; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def big_table(df, height=520, show_index=True, fmt=None, left=()):
+    """大字級唯讀表格：st.dataframe 是 canvas 繪製、字級吃不到 CSS，改輸出 HTML 表格。
+    fmt：{欄名: "{:,.0f}"} 明確指定格式；未指定的浮點欄自動套千分位。
+    left：靠左對齊的欄名集合（文字欄）；index 一律靠左並加粗。"""
+    d = df.copy()
+    fmt = fmt or {}
+    for c in d.columns:
+        if c in fmt:
+            d[c] = d[c].map(lambda v, f=fmt[c]: "—" if pd.isna(v) else f.format(v))
+        elif pd.api.types.is_float_dtype(d[c]):
+            d[c] = d[c].map(lambda v: "—" if pd.isna(v)
+                            else (f"{v:,.0f}" if abs(v - round(v)) < 1e-9 else f"{v:,.2f}"))
+    head = (f'<th class="l">{d.index.name or ""}</th>' if show_index else "")
+    head += "".join(f'<th class="{"l" if c in left else ""}">{c}</th>' for c in d.columns)
+    body = ""
+    for i, row in d.iterrows():
+        tds = f'<td class="l code">{i}</td>' if show_index else ""
+        tds += "".join(f'<td class="{"l" if c in left else ""}">'
+                       f'{"" if pd.isna(row[c]) else row[c]}</td>' for c in d.columns)
+        body += f"<tr>{tds}</tr>"
+    st.markdown(f'<div class="bigtbl-wrap" style="max-height:{height}px">'
+                f'<table class="bigtbl"><thead><tr>{head}</tr></thead>'
+                f'<tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════════════
 # 🎯 ATR 加碼計算器（A＋T 自動檢測＋加碼比例）
 #   取代舊的「EMA 季線計算器」與「ATR 乖離計算器」兩頁。
@@ -154,7 +230,7 @@ def metrics_of(df: pd.DataFrame) -> dict:
 # ── Page ──────────────────────────────────────────────────────────
 st.markdown("## 🎯 ATR 加碼計算器（A＋T 自動檢測）")
 st.markdown(
-    "<span style='color:#64748b;font-size:0.78rem'>"
+    "<span style='color:#64748b;font-size:0.9rem'>"
     "輸入代碼與進場成本，每天自動檢測兩條加碼規則：<b>A 回季線</b>（距季線 −3%～+6% 且 ATR5 < ATR14）與 "
     "<b>T 機械</b>（收盤 ≥ 上次進場價 + 2×ATR14，只套怪物股與修復龍頭，且 ATR% ≤7%）。"
     "加碼單初始停損＝加碼價 − 3×ATR14，之後不追蹤、只跟基本倉結構停損上移。"
@@ -179,7 +255,7 @@ with st.sidebar:
     atr_max = st.number_input("T 波動上限：ATR% >", value=7.0, step=0.5,
                               help="回測：ATR% >7% 的加碼 EV −0.31R；設 7% 上限後年化 4.71%→5.30%、每筆加碼 EV +0.053R→+0.125R。基本倉不受此限。") / 100
 st.markdown("#### 持倉")
-st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
+st.markdown("<span style='color:#64748b;font-size:0.9rem'>"
             "只需要填<b>代碼</b>、<b>類型</b>、<b>進場日</b>、<b>進場價</b>（股數用來算加碼比例，可留 0）。"
             "「類型」決定 T 是否適用：怪物股（半年 ≥150%）與修復龍頭才開 T，一般動能股只看 A。"
             "「進場價」填 0 = 用進場日開盤價；「上次加碼價」填 0 = 由進場日自動推算。每次修改自動存檔。</span>",
@@ -328,8 +404,9 @@ if fired:
 else:
     st.markdown("<span style='color:#64748b'>今日沒有加碼訊號。等下一次收盤觸發，不追。</span>",
                 unsafe_allow_html=True)
-st.dataframe(res.set_index("代碼"), use_container_width=True, height=min(60 + 38 * len(res), 420))
-st.markdown("<div style='color:#334155;font-size:0.68rem'>"
+big_table(res.set_index("代碼"), height=min(72 + 48 * len(res), 500),
+          left={"類型", "A", "T", "訊號", "備註"})
+st.markdown("<div style='color:#334155;font-size:0.9rem'>"
             "「加碼股數」＝加碼 R ÷（停損寬度 × ATR14），並受單股名目上限（一般 10%、怪物股 20%）壓縮；"
             "上限已滿時顯示 ⛔。財報前只砍加碼單。本表為系統規則之計算，不構成投資建議。</div>",
             unsafe_allow_html=True)
@@ -353,12 +430,13 @@ for t, dd in details.items():
                   delta_color="off")
         d3.metric("距 63 日高", f"{(m['px']/m['hi63']-1)*100:+.1f}%", f"63 日高 {m['hi63']:.2f}", delta_color="off")
         if dd["hist"]:
-            st.dataframe(pd.DataFrame(dd["hist"]).set_index("訊號日"), use_container_width=True)
-            st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
+            big_table(pd.DataFrame(dd["hist"]).set_index("訊號日"), height=360,
+                      left={"狀態"})
+            st.markdown("<span style='color:#64748b;font-size:0.9rem'>"
                         "「已被掃」＝該筆加碼單的初始停損之後曾被觸及（基本倉不受影響）；"
                         "被掃不影響起算價，下一筆仍需站上「上次加碼價 + 間距」。</span>", unsafe_allow_html=True)
         else:
-            st.markdown("<span style='color:#64748b;font-size:0.78rem'>進場後尚無 T 觸發。</span>",
+            st.markdown("<span style='color:#64748b;font-size:0.9rem'>進場後尚無 T 觸發。</span>",
                         unsafe_allow_html=True)
 # ── 單檔快查（不必是持倉）──
 st.markdown("---")
@@ -388,7 +466,7 @@ if qt:
         cap_pct = cap_monster if q_kind == "怪物股" else cap_normal
         a_pos = a_lo <= m["dev60"] <= a_hi; a_atr = m["ratio"] < a_ratio
         st.markdown(
-            f"<div style='font-size:0.85rem;line-height:1.9'>"
+            f"<div style='font-size:0.9rem;line-height:1.9'>"
             f"月線 {m['e20']:.2f}（{m['dev20']*100:+.1f}%）｜季線 {m['e60']:.2f}（{m['dev60']*100:+.1f}%）｜"
             f"年線 {m['e260']:.2f}（{m['dev260']*100:+.1f}%）｜多頭排列 "
             f"{'✅' if m['px'] > m['e20'] > m['e60'] > m['e260'] else '✗'}<br>"
@@ -400,7 +478,7 @@ if qt:
             f"${acct*cap_pct:,.0f}（約 {int(acct*cap_pct/m['px'])} 股）<br>"
             f"基本倉參考：前波支撐 {sw:.2f}（{sw_dt}）→ 1R 股數 {base_sh} 股、名目 ${base_sh*m['px']:,.0f}"
             f"</div>" if not np.isnan(sw) else
-            f"<div style='font-size:0.85rem'>近 120 日無合格擺盪低點，基本倉停損請看更前面的結構。</div>",
+            f"<div style='font-size:0.9rem'>近 120 日無合格擺盪低點，基本倉停損請看更前面的結構。</div>",
             unsafe_allow_html=True)
 csv = st.session_state.add_pos.to_csv(index=False).encode("utf-8-sig")
 st.download_button("⬇️ 下載監控清單 CSV（備份用）", csv, "加碼監控清單.csv", "text/csv")
