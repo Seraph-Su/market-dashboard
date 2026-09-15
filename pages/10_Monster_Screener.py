@@ -137,18 +137,48 @@ def _index_universe() -> pd.DataFrame:
     return pd.DataFrame([{"t": t, "cap": float("nan"), "name": ""} for t in out])
 
 
-UNIV_FILE = "data/monster_universe.json"      # 由 build_universe.py 在本機產生後 commit 上來
+UNIV_FILE = "data/monster_universe.json"      # 由排程 sync_universe.py 產生後 commit 上來
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+def _univ_path():
+    """找 repo 裡的名單檔。st.navigation 下 __file__ 與工作目錄的關係不一定固定，
+    所以多試幾個位置：pages/ 的上一層、目前工作目錄、相對路徑。"""
+    from pathlib import Path as _P
+    cands = []
+    try:
+        cands.append(_P(__file__).resolve().parent.parent / UNIV_FILE)
+    except Exception:
+        pass
+    cands += [_P.cwd() / UNIV_FILE, _P(UNIV_FILE)]
+    for f in cands:
+        try:
+            if f.exists():
+                return f
+        except Exception:
+            pass
+    return None
+
+
+def _univ_sig() -> str:
+    """檔案簽章（路徑＋修改時間＋大小），當作快取 key 的一部分：
+    排程推上新名單、或檔案從無到有時，快取自動失效，不用等 24 小時或手動重啟。"""
+    f = _univ_path()
+    if f is None:
+        return "none"
+    try:
+        st_ = f.stat()
+        return f"{f}:{int(st_.st_mtime)}:{st_.st_size}"
+    except Exception:
+        return "err"
+
+
 def _file_universe(min_cap_b: float) -> tuple:
     """讀 repo 裡由排程產生的宇宙名單。雲端 IP 打不到 Yahoo screener，
-    但你自己電腦的住宅 IP 打得到——所以名單在本機算好 commit 上來，網頁只負責讀。
+    但沙盒／住宅 IP 打得到——所以名單由排程算好 commit 上來，網頁只負責讀。
     檔案不存在就回 (None, "")，自動往下一層走。"""
     import json, datetime as _dt
-    from pathlib import Path as _P
-    f = _P(__file__).resolve().parent.parent / UNIV_FILE      # repo 根目錄/data/...
-    if not f.exists():
+    f = _univ_path()
+    if f is None:
         return None, ""
     try:
         blob = json.loads(f.read_text(encoding="utf-8"))
@@ -166,7 +196,7 @@ def _file_universe(min_cap_b: float) -> tuple:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
+def screen_universe(min_cap_b: float, min_52w: float, _sig: str = "") -> tuple:
     """Yahoo 篩選器粗篩：市值 > min_cap、52 週漲幅 > min_52w（半年 >150% 的必要條件近似）。
     回傳 (DataFrame, 來源說明)。
 
@@ -210,6 +240,7 @@ def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
         return pd.DataFrame(keep), f"Yahoo 篩選器（{len(keep)} 檔候選）"
     fb = _index_universe()
     why = "（Yahoo 封鎖機房 IP 的 screener endpoint）" if last_err is not None else "（無回傳資料）"
+    # 備援結果不該鎖 24 小時：把 TTL 改短做不到（裝飾器固定），改用簽章讓新檔一到就失效
     return fb, ("⚠️ Yahoo 篩選器連線失敗 " + why +
                 f"——雲端 IP 常被限流。已改用備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體共 {len(fb)} 檔。"
                 "指數外的中小型怪物股這時候會漏掉，市值欄位也會是「—」。")
@@ -391,7 +422,7 @@ excl_tickers = {s.strip().upper() for s in excl_txt.split(",") if s.strip()}
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
-    univ, univ_note = screen_universe(min_cap, 50.0)
+    univ, univ_note = screen_universe(min_cap, 50.0, _univ_sig())   # 簽章變 → 快取失效
 if univ.empty:
     st.error("篩選器與備援名單都取不到資料（Yahoo 與 Wikipedia 同時失敗），請稍後再試。")
     st.stop()
