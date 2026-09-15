@@ -1,14 +1,21 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import yfinance as yf
 import requests
-import json
-from datetime import datetime, timedelta
 from io import StringIO
-# ── 股票清單 ──────────────────────────────────────────────────────
-# 備援名單：Wikipedia 抓不到時使用（2026 年版，可能已過期）
+# ═══════════════════════════════════════════════════════════════════
+# 🩹 修復觸發選股（順勢交易系統 第三引擎）
+#   觸發：過去 120 個交易日內至少一天收盤 < 年線(EMA260)，
+#         且今日是「收盤 > EMA20 > EMA60 > EMA260」的第一天（昨日尚未多頭排列）。
+#   出場：收盤跌破年線。尺寸：R ÷ max(進場價 − 年線, 10%×進場價)。
+#   不看量、不看當日漲幅。原本的 A/B/C/D 四種均線收斂突破訊號已於 2026-09-15 移除。
+# ═══════════════════════════════════════════════════════════════════
+BELOW_LOOKBACK = 120     # 幾個交易日內曾收在年線下
+SCAN_DAYS      = 10      # 往回列出幾個交易日的觸發
+MONSTER_TH     = 1.20    # 「曾怪物」：過去 250 日內半年漲幅曾 ≥120%
+MONSTER_LB     = 250
+MIN_RISK       = 0.10    # 尺寸下限：停損距離至少抓 10%
 NASDAQ100_FALLBACK = [
     "AAPL","MSFT","NVDA","AMZN","META","GOOGL","GOOG","TSLA","AVGO","COST",
     "NFLX","ASML","AMD","PEP","CSCO","ADBE","INTC","CMCSA","HON","AMGN",
@@ -18,22 +25,18 @@ NASDAQ100_FALLBACK = [
     "DXCM","BIIB","TEAM","ILMN","MRNA","ZS","CRWD","OKTA","DDOG","SNOW",
     "APP","PLTR","CEG","GEHC","TTD","ARM","DASH","MSTR","RBLX","ON",
 ]
+UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
 @st.cache_data(ttl=86400, show_spinner=False)
-def fetch_nasdaq100_tickers() -> tuple:
-    """
-    自動抓取最新 Nasdaq-100 成分股（Wikipedia「List of NASDAQ-100 companies」，每日快取）。
-    指數每年 12 月定期重組、期間亦有臨時更換；抓失敗時退回內建備援名單。
-    回傳 (清單, 來源說明)。
-    """
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+def fetch_nasdaq100() -> tuple:
+    """Nasdaq-100 成分股，每日自動更新（Wikipedia）；失敗回退備援名單。"""
     try:
-        resp = requests.get("https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies",
-                            headers=headers, timeout=30)
-        resp.raise_for_status()
-        for tb in pd.read_html(StringIO(resp.text)):
+        r = requests.get("https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies",
+                         headers=UA, timeout=30)
+        r.raise_for_status()
+        for tb in pd.read_html(StringIO(r.text)):
             cols = [str(c) for c in tb.columns]
             hit = [c for c in cols if "Ticker" in c or "Symbol" in c]
-            if not hit or len(tb) < 90:          # 成分股表應有 100 檔上下（含雙股別約 101~103）
+            if not hit or len(tb) < 90:
                 continue
             ser = tb[hit[0]].astype(str).str.strip().str.replace(".", "-", regex=False)
             out = [t for t in dict.fromkeys(ser.tolist())
@@ -44,257 +47,108 @@ def fetch_nasdaq100_tickers() -> tuple:
         pass
     return tuple(NASDAQ100_FALLBACK), f"內建備援名單（{len(NASDAQ100_FALLBACK)} 檔，可能已過期）"
 @st.cache_data(ttl=86400, show_spinner=False)
-def fetch_largecap_us_tickers(min_market_cap: int = 1_000_000_000) -> list:
-    """使用 yfinance EquityQuery 抓取市值 > min_market_cap 的全美股清單"""
+def fetch_sp500() -> tuple:
+    r = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", headers=UA, timeout=30)
+    r.raise_for_status()
+    df = pd.read_html(StringIO(r.text))[0]
+    return tuple(df["Symbol"].str.replace(".", "-", regex=False).tolist()), f"S&P 500（{len(df)} 檔）"
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_semis(min_cap: int = 1_000_000_000) -> tuple:
+    """費城半導體（SOX）概念宇宙：Yahoo 產業分類「Semiconductors」＋「Semiconductor Equipment & Materials」。
+    Wikipedia 沒有 SOX 成分表，改用產業篩選（自動更新，涵蓋 SOX 全部成分並略寬）。"""
     from yfinance import EquityQuery
-    q = EquityQuery('and', [
-        EquityQuery('gt', ['intradaymarketcap', min_market_cap]),
-        EquityQuery('eq', ['region', 'us']),
-    ])
-    tickers = []
-    for offset in range(0, 7000, 250):   # 全美股約 6400+ 支
+    out = []
+    for ind in ("Semiconductors", "Semiconductor Equipment & Materials"):
         try:
-            result = yf.screen(q, size=250, offset=offset)
-            quotes  = result.get('quotes', [])
-            tickers.extend(x['symbol'] for x in quotes if '.' not in x['symbol'])
-            if len(quotes) < 250:
+            q = EquityQuery("and", [EquityQuery("eq", ["region", "us"]),
+                                    EquityQuery("eq", ["industry", ind]),
+                                    EquityQuery("gt", ["intradaymarketcap", min_cap])])
+            res = yf.screen(q, size=250, sortField="intradaymarketcap", sortAsc=False)
+            for x in res.get("quotes", []):
+                sym = x.get("symbol", "")
+                # 排除 OTC 掛牌的外國股（ASMLF、TOELF 等五碼 F/Y 結尾代碼）
+                if not sym or "." in sym or len(sym) > 5:
+                    continue
+                if x.get("exchange") not in {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS"}:
+                    continue
+                out.append(sym)
+        except Exception:
+            pass
+    # Yahoo 把少數 SOX 成分歸到別的產業（光通訊、儲存），手動補回
+    out += ["COHR", "SNDK", "LITE", "AAOI"]
+    out = list(dict.fromkeys(out))
+    return tuple(out), f"半導體產業（{len(out)} 檔，Yahoo 產業分類＋SOX 補漏，每日更新）"
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_largecap(min_cap: int = 1_000_000_000) -> tuple:
+    from yfinance import EquityQuery
+    q = EquityQuery("and", [EquityQuery("gt", ["intradaymarketcap", min_cap]),
+                            EquityQuery("eq", ["region", "us"])])
+    out = []
+    for off in range(0, 7000, 250):
+        try:
+            res = yf.screen(q, size=250, offset=off)
+            qs = res.get("quotes", [])
+            out += [x["symbol"] for x in qs if "." not in x.get("symbol", ".")]
+            if len(qs) < 250:
                 break
         except Exception:
             break
-    return tickers
+    return tuple(dict.fromkeys(out)), f"全美股市值 >$1B（{len(out)} 檔）"
 @st.cache_data(ttl=86400, show_spinner=False)
-def fetch_sp500_tickers():
-    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
-    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-                        headers=headers, timeout=30)
-    resp.raise_for_status()
-    df = pd.read_html(StringIO(resp.text))[0]
-    return df["Symbol"].str.replace(".", "-", regex=False).tolist()
-# ── 核心選股邏輯 ──────────────────────────────────────────────────
-CFG = dict(
-    consolidation_days   = 14,
-    consolidation_range  = 0.16,
-    breakout_buffer      = 0.003,
-    ema_spread_threshold = 0.05,
-    ema_lookback         = 40,   # 20→40：收斂可能發生在 4~8 週前，視窗太短會漏訊號
-    volume_mult          = 1.3,
-)
-# ── 修復觸發（順勢交易系統第三引擎）參數 ─────────────────────────
-REC_CFG = dict(
-    below_lookback = 120,   # 過去 120 個交易日內至少一天收盤在年線下
-    scan_days      = 10,    # 往回列出幾個交易日內的修復觸發
-    monster_th     = 1.20,  # 「曾怪物」：過去 250 日內半年漲幅曾 ≥120%
-    monster_lb     = 250,
-    min_risk       = 0.10,  # 尺寸：R ÷ max(進場 − 年線, 10%×進場)
-)
-def add_emas(df):
-    df = df.copy()
-    df["ema20"]  = df["Close"].ewm(span=20,  adjust=False).mean()
-    df["ema60"]  = df["Close"].ewm(span=60,  adjust=False).mean()
-    df["ema260"] = df["Close"].ewm(span=260, adjust=False).mean()
-    if len(df) >= 300:
-        cols = ["ema20", "ema60", "ema260"]
-        df["ema_mode"] = "三線"
-    else:
-        cols = ["ema20", "ema60"]
-        df["ema_mode"] = "雙線"
-    df["ema_spread"] = (df[cols].max(axis=1) - df[cols].min(axis=1)) / df[cols].median(axis=1)
-    return df
-def detect_signal(df, offset=0):
-    """
-    offset=0 → 最新一天；offset=1 → 前一個交易日，以此類推。
-    """
-    cfg = CFG
-    n, rng, buf = cfg["consolidation_days"], cfg["consolidation_range"], cfg["breakout_buffer"]
-    vmult = cfg["volume_mult"]
-    spread_thr, ema_lb = cfg["ema_spread_threshold"], cfg["ema_lookback"]
-    # 把 df 截到目標日期
+def download(tickers: tuple) -> dict:
+    """500 日日線，分批下載。"""
+    out, tk = {}, list(tickers)
+    BATCH = 150
+    for i in range(0, len(tk), BATCH):
+        ch = tk[i:i + BATCH]
+        try:
+            raw = yf.download(ch, period="500d", interval="1d", auto_adjust=True, progress=False)
+        except Exception:
+            continue
+        for t in ch:
+            try:
+                if isinstance(raw.columns, pd.MultiIndex):
+                    d = pd.DataFrame({"Close": raw["Close"][t]}).dropna()
+                else:
+                    d = raw[["Close"]].dropna()
+                if len(d) >= 300:
+                    out[t] = d["Close"]
+            except Exception:
+                pass
+    return out
+def detect_recovery(c: pd.Series, offset: int = 0):
+    """修復觸發：120 日內曾收年線下，今日首次站上 價>月>季>年。"""
     if offset > 0:
-        df = df.iloc[:len(df) - offset]
-    if len(df) < max(n + 2, 65):
+        c = c.iloc[:len(c) - offset]
+    if len(c) < 300:
         return None
-    df = add_emas(df)
-    today  = df.iloc[-1]
-    consol = df.iloc[-(n + 1):-1]
-    close     = float(today["Close"])
-    avg_vol   = float(consol["Volume"].mean())
-    if avg_vol == 0:
-        return None
-    vol_ratio = float(today["Volume"]) / avg_vol
-    signal_type = None
-    day_gain    = (close - float(df.iloc[-2]["Close"])) / float(df.iloc[-2]["Close"])
-    consol_high = float(consol["High"].max())
-    consol_low  = float(consol["Low"].min())
-    consol_rng  = (consol_high - consol_low) / consol_low
-    def make_record(signal_type):
-        return {
-            "觸發日期":    str(df.index[-1].date()),
-            "訊號類型":    signal_type,
-            "收盤價":      round(close, 2),
-            "突破幅度":    f"{round((close / consol_high - 1) * 100, 2):+.2f}%",
-            "量比":        f"{vol_ratio:.1f}x",
-            "EMA收斂度":   f"{round(float(today['ema_spread']) * 100, 2):.2f}%",
-            "20日最小收斂":f"{round(float(df['ema_spread'].iloc[-ema_lb:].min()) * 100, 2):.2f}%",
-            "EMA20":       round(float(today["ema20"]), 2),
-            "均線模式":    str(today["ema_mode"]),
-            "_day_gain":   round(day_gain * 100, 2),
-        }
-    # 訊號 A：K棒盤整突破
-    cond_a = (consol_rng <= rng
-              and close > consol_high * (1 + buf)
-              and vol_ratio >= vmult)
-    # 訊號 B / C：EMA 收斂突破
-    recent     = df.iloc[-(ema_lb + 1):-1]
-    prev_close = float(df.iloc[-2]["Close"])
-    day_gain   = (close - prev_close) / prev_close
-    ema_was_tight  = recent["ema_spread"].min() < spread_thr
-    spread2 = abs(df["ema20"] - df["ema60"]) / df[["ema20","ema60"]].mean(axis=1)
-    ema2_was_tight = spread2.iloc[-(ema_lb + 1):-1].min() < spread_thr
-    recent_high = float(recent["High"].max())
-    broke_high  = close > recent_high * (1 + buf)
-    big_move    = day_gain > 0.02   # 3%→2%：防止緩慢回升的股票被漏掉
-    # 均線發散中偵測：EMA20 > EMA60，且兩者間距在過去 10 日持續擴大
-    ema20_now  = float(today["ema20"])
-    ema60_now  = float(today["ema60"])
-    spread2_now = spread2.iloc[-1]
-    spread2_10d_ago = spread2.iloc[-11] if len(spread2) >= 11 else spread2.iloc[0]
-    ema_diverging = (ema20_now > ema60_now) and (spread2_now > spread2_10d_ago * 1.2)
-    cond_bc = (ema_was_tight or ema2_was_tight or ema_diverging) and broke_high and big_move and vol_ratio >= vmult
-    if ema_was_tight:
-        ema_type = "B｜EMA三線收斂突破"
-    elif ema2_was_tight:
-        ema_type = "C｜EMA雙線收斂突破"
-    else:
-        ema_type = "D｜EMA均線發散突破"
-    if not cond_a and not cond_bc:
-        return None
-    # 兩個條件同時成立 → 兩筆獨立記錄
-    if cond_a and cond_bc:
-        return [make_record("A｜K棒盤整突破"), make_record(ema_type)]
-    # 單一條件
-    return make_record("A｜K棒盤整突破" if cond_a else ema_type)
-def detect_recovery(df, offset=0):
-    """
-    E｜修復觸發（順勢交易系統第三引擎）：
-      過去 120 個交易日內至少一天收盤 < 年線(EMA260)，且今日是「收盤 > EMA20 > EMA60 > EMA260」的第一天（昨日尚未多頭排列）。
-      不看量、不看漲幅。出場＝收盤跌破年線。附「曾怪物」標記（過去 250 日內半年漲幅曾 ≥120%；回測：EV +0.66R → +1.52R、勝率 33% → 44%）。
-    """
-    rc = REC_CFG
-    if offset > 0:
-        df = df.iloc[:len(df) - offset]
-    if len(df) < 300:                         # 年線需要足夠資料
-        return None
-    c = df["Close"]
-    e20  = c.ewm(span=20,  adjust=False).mean()
-    e60  = c.ewm(span=60,  adjust=False).mean()
+    e20 = c.ewm(span=20, adjust=False).mean()
+    e60 = c.ewm(span=60, adjust=False).mean()
     e260 = c.ewm(span=260, adjust=False).mean()
     al_today = c.iloc[-1] > e20.iloc[-1] > e60.iloc[-1] > e260.iloc[-1]
-    al_prev  = c.iloc[-2] > e20.iloc[-2] > e60.iloc[-2] > e260.iloc[-2]
+    al_prev = c.iloc[-2] > e20.iloc[-2] > e60.iloc[-2] > e260.iloc[-2]
     if not al_today or al_prev:
         return None
-    below = (c < e260).iloc[-(rc["below_lookback"] + 1):-1]
+    below = (c < e260).iloc[-(BELOW_LOOKBACK + 1):-1]
     if not below.any():
         return None
-    px = float(c.iloc[-1]); yr = float(e260.iloc[-1])
-    last_below = below[below].index[-1].date()
-    r126 = (c / c.shift(126) - 1)
-    r126_max = float(r126.iloc[-rc["monster_lb"]:].max()) if len(r126.dropna()) else float("nan")
-    was_monster = r126_max >= rc["monster_th"]
+    px, yr = float(c.iloc[-1]), float(e260.iloc[-1])
+    r126 = c / c.shift(126) - 1
+    r_max = float(r126.iloc[-MONSTER_LB:].max()) if len(r126.dropna()) else np.nan
     hi63 = float(c.iloc[-64:-1].max())
     return {
-        "觸發日期":   str(df.index[-1].date()),
-        "收盤價":     round(px, 2),
-        "年線":       round(yr, 2),
-        "距年線":     f"{(px / yr - 1) * 100:+.1f}%",
-        "最後收年線下": str(last_below),
-        "曾怪物":     (f"🦖 {r126_max*100:+.0f}%" if was_monster else f"{r126_max*100:+.0f}%") if not np.isnan(r126_max) else "—",
-        "距63日高":   f"{(px / hi63 - 1) * 100:+.1f}%",
-        "_risk":      max(px - yr, rc["min_risk"] * px),
-        "_monster":   bool(was_monster),
+        "觸發日": str(c.index[-1].date()),
+        "收盤": round(px, 2),
+        "年線": round(yr, 2),
+        "距年線%": round((px / yr - 1) * 100, 1),
+        "最後收年線下": str(below[below].index[-1].date()),
+        "曾怪物": (f"🦖 {r_max*100:+.0f}%" if r_max >= MONSTER_TH else f"{r_max*100:+.0f}%") if r_max == r_max else "—",
+        "距63日高%": round((px / hi63 - 1) * 100, 1),
+        "_risk": max(px - yr, MIN_RISK * px),
+        "_monster": bool(r_max >= MONSTER_TH) if r_max == r_max else False,
     }
-def _download_batch(tickers, period):
-    """批次下載，回傳 {ticker: df} 字典"""
-    stock_data = {}
-    try:
-        raw = yf.download(tickers, period=period, interval="1d",
-                          auto_adjust=True, progress=False)
-        if isinstance(raw.columns, pd.MultiIndex):
-            for ticker in tickers:
-                try:
-                    df = pd.DataFrame({
-                        "Close":  raw["Close"][ticker],
-                        "High":   raw["High"][ticker],
-                        "Low":    raw["Low"][ticker],
-                        "Volume": raw["Volume"][ticker],
-                    }).dropna()
-                    if len(df) >= 65:
-                        stock_data[ticker] = df
-                except Exception:
-                    pass
-        else:
-            # 單一股票
-            df = raw[["Close","High","Low","Volume"]].dropna()
-            if len(df) >= 65:
-                stock_data[tickers[0]] = df
-    except Exception:
-        pass
-    return stock_data
-@st.cache_data(ttl=86400, show_spinner=False)
-def run_screener(universe: str, day_key: str):
-    if universe == "S&P 500":
-        tickers = fetch_sp500_tickers()
-    elif universe == "全美股":
-        tickers = fetch_largecap_us_tickers(min_market_cap=1_000_000_000)
-    else:
-        tickers = list(fetch_nasdaq100_tickers()[0])
-    # 用 period 相對期間，讓 Yahoo 送 range= 參數（不固定時間戳，不被 CDN 快取）
-    # 460 個交易日約 = 500d；500d > 460 交易日，確保 EMA260 有足夠資料
-    BATCH = 150 if universe == "全美股" else len(tickers)
-    stock_data = {}
-    for i in range(0, len(tickers), BATCH):
-        batch = tickers[i:i+BATCH]
-        stock_data.update(_download_batch(batch, "500d"))
-    # 取得實際資料的最後一個交易日
-    actual_dates = [df.index[-1] for df in stock_data.values() if len(df) > 0]
-    last_data_date = str(max(actual_dates).date()) if actual_dates else day_key
-    SCAN_DAYS = 5   # 往回掃描幾個交易日
-    rows = []
-    seen = set()    # 同一支股票同一天同一訊號只記一次
-    rec_rows = []   # E｜修復觸發
-    for ticker, df in stock_data.items():
-        for offset in range(SCAN_DAYS):
-            result = detect_signal(df, offset=offset)
-            if result is None:
-                continue
-            records = result if isinstance(result, list) else [result]
-            for sig in records:
-                key = (ticker, sig["觸發日期"], sig["訊號類型"])
-                if key not in seen:
-                    seen.add(key)
-                    sig["代號"] = ticker
-                    rows.append(sig)
-        for offset in range(REC_CFG["scan_days"]):
-            r = detect_recovery(df, offset=offset)
-            if r is not None:
-                r["代號"] = ticker
-                rec_rows.append(r)
-    rec_df = pd.DataFrame(rec_rows)
-    if not rows:
-        return pd.DataFrame(), last_data_date, rec_df
-    df_out = pd.DataFrame(rows)
-    # 排序：先觸發日期（新→舊），再訊號類型（B > C > A），再突破幅度
-    order = {"B｜EMA三線收斂突破": 0, "C｜EMA雙線收斂突破": 1, "D｜EMA均線發散突破": 2, "A｜K棒盤整突破": 3}
-    df_out["_order"] = df_out["訊號類型"].map(order)
-    df_out = df_out.sort_values(["觸發日期", "_order", "_day_gain"],
-                                ascending=[False, True, False])
-    df_out = df_out.drop(columns=["_order", "_day_gain"]).reset_index(drop=True)
-    df_out.index += 1
-    cols = ["觸發日期", "代號", "訊號類型", "收盤價", "突破幅度", "量比",
-            "EMA收斂度", "20日最小收斂", "EMA20", "均線模式"]
-    return df_out[cols], last_data_date, rec_df
 @st.cache_data(ttl=86400, show_spinner=False)
 def fetch_industry(tickers: tuple) -> dict:
-    """只針對修復觸發的股票抓產業與市值（龍頭判斷用；市值排名由使用者自判）。"""
     out = {}
     for t in tickers:
         try:
@@ -303,302 +157,114 @@ def fetch_industry(tickers: tuple) -> dict:
         except Exception:
             out[t] = ("", 0.0)
     return out
-# ── Chart data for hover tooltips ────────────────────────────────
-@st.cache_data(ttl=86400, show_spinner=False)
-def fetch_chart_data(tickers: tuple) -> dict:
-    """只針對結果股票下載 400 天資料，計算三條均線"""
-    raw = yf.download(list(tickers), period="400d", interval="1d",
-                      auto_adjust=True, progress=False)
-    result = {}
-    for ticker in tickers:
-        try:
-            if isinstance(raw.columns, pd.MultiIndex):
-                closes = raw["Close"][ticker].dropna()
-            else:
-                closes = raw["Close"].dropna()
-            df = closes.to_frame("Close")
-            df["EMA20"]  = df["Close"].ewm(span=20,  adjust=False).mean()
-            df["EMA60"]  = df["Close"].ewm(span=60,  adjust=False).mean()
-            df["EMA260"] = df["Close"].ewm(span=260, adjust=False).mean()
-            df = df.tail(90)
-            result[ticker] = {
-                "dates": [str(d.date()) for d in df.index],
-                "close": [round(v, 2) for v in df["Close"].tolist()],
-                "ema20": [round(v, 2) for v in df["EMA20"].tolist()],
-                "ema60": [round(v, 2) for v in df["EMA60"].tolist()],
-                "ema260":[round(v, 2) for v in df["EMA260"].tolist()],
-            }
-        except Exception:
-            pass
-    return result
-def build_hover_table(result_df: pd.DataFrame, chart_data_dict: dict) -> str:
-    sig_colors = {
-        "B｜EMA三線收斂突破": "#a5b4fc",
-        "C｜EMA雙線收斂突破": "#67e8f9",
-        "D｜EMA均線發散突破": "#86efac",
-        "A｜K棒盤整突破":    "#94a3b8",
-    }
-    rows_html = ""
-    for _, row in result_df.iterrows():
-        ticker    = row["代號"]
-        sig_color = sig_colors.get(row["訊號類型"], "#94a3b8")
-        has_chart = ticker in chart_data_dict
-        bp        = str(row["突破幅度"])
-        bp_color  = "#4ade80" if "+" in bp else "#f87171"
-        ticker_td = (
-            f'<td class="ticker-cell" data-ticker="{ticker}" '
-            f'style="color:#60a5fa;font-weight:700;font-family:monospace;cursor:crosshair">{ticker}</td>'
-            if has_chart else
-            f'<td style="color:#60a5fa;font-weight:700;font-family:monospace">{ticker}</td>'
-        )
-        rows_html += f"""<tr>
-          <td style="color:#64748b">{row['觸發日期']}</td>
-          {ticker_td}
-          <td style="color:{sig_color};font-size:0.8em;font-weight:600">{row['訊號類型']}</td>
-          <td style="text-align:right">{row['收盤價']}</td>
-          <td style="text-align:right;color:{bp_color}">{bp}</td>
-          <td style="text-align:right;color:#fbbf24">{row['量比']}</td>
-          <td style="text-align:right;color:#94a3b8">{row['EMA收斂度']}</td>
-          <td style="text-align:right;color:#64748b">{row['20日最小收斂']}</td>
-          <td style="text-align:right;color:#64748b">{row['EMA20']}</td>
-          <td style="text-align:right;color:#475569;font-size:0.78em">{row['均線模式']}</td>
-        </tr>"""
-    chart_json = json.dumps(chart_data_dict, ensure_ascii=False)
-    table_height = min(700, 80 + len(result_df) * 37)
-    return f"""<!DOCTYPE html><html><head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-  * {{ box-sizing:border-box; margin:0; padding:0; }}
-  body {{ background:transparent; font-family:-apple-system,sans-serif; color:#e2e8f0; font-size:0.84em; }}
-  table {{ width:100%; border-collapse:collapse; }}
-  th {{ padding:7px 10px; text-align:left; background:#0f172a; color:#64748b;
-        font-size:0.72em; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }}
-  td {{ padding:7px 10px; border-bottom:1px solid #1e293b; white-space:nowrap; }}
-  tr:hover td {{ background:rgba(255,255,255,0.02); }}
-  #chartTooltip {{
-    display:none; position:fixed; z-index:9999;
-    background:#1e293b; border:1px solid #334155; border-radius:12px;
-    padding:14px; width:390px;
-    box-shadow:0 8px 32px rgba(0,0,0,0.6); pointer-events:none;
-  }}
-  #tooltipTitle {{ color:#93c5fd; font-size:0.95em; font-weight:700;
-                   margin-bottom:8px; font-family:monospace; letter-spacing:.05em; }}
-  #tooltipLegend {{ color:#64748b; font-size:0.72em; margin-bottom:6px; }}
-</style>
-</head><body>
-<div id="chartTooltip">
-  <div id="tooltipTitle"></div>
-  <div id="tooltipLegend">收盤 &nbsp;│&nbsp; <span style="color:#60a5fa">EMA20</span> &nbsp;│&nbsp; <span style="color:#f59e0b">EMA60</span> &nbsp;│&nbsp; <span style="color:#f87171">EMA260</span></div>
-  <canvas id="tooltipCanvas" width="362" height="200"></canvas>
-</div>
-<div style="height:{table_height}px;overflow-y:auto">
-<table>
-  <thead><tr>
-    <th>觸發日期</th><th>代號 ↑ hover 看圖</th><th>訊號類型</th>
-    <th style="text-align:right">收盤價</th><th style="text-align:right">突破幅度</th>
-    <th style="text-align:right">量比</th><th style="text-align:right">EMA收斂度</th>
-    <th style="text-align:right">20日最小收斂</th><th style="text-align:right">EMA20</th>
-    <th style="text-align:right">均線模式</th>
-  </tr></thead>
-  <tbody>{rows_html}</tbody>
-</table>
-</div>
-<script>
-const chartData = {chart_json};
-let currentChart = null;
-const tooltip  = document.getElementById('chartTooltip');
-const ttTitle  = document.getElementById('tooltipTitle');
-const canvas   = document.getElementById('tooltipCanvas');
-document.querySelectorAll('.ticker-cell').forEach(cell => {{
-  cell.addEventListener('mouseenter', function(e) {{
-    const ticker = this.dataset.ticker;
-    const data   = chartData[ticker];
-    if (!data) return;
-    ttTitle.textContent = ticker;
-    tooltip.style.display = 'block';
-    positionTooltip(e);
-    if (currentChart) {{ currentChart.destroy(); currentChart = null; }}
-    currentChart = new Chart(canvas, {{
-      type: 'line',
-      data: {{
-        labels: data.dates.map(d => d.slice(5)),
-        datasets: [
-          {{ label:'收盤',  data:data.close,  borderColor:'#e2e8f0', borderWidth:1.5, pointRadius:0, tension:0.2 }},
-          {{ label:'EMA20', data:data.ema20,  borderColor:'#60a5fa', borderWidth:1.5, pointRadius:0, tension:0.2 }},
-          {{ label:'EMA60', data:data.ema60,  borderColor:'#f59e0b', borderWidth:1.5, pointRadius:0, tension:0.2 }},
-          {{ label:'EMA260',data:data.ema260, borderColor:'#f87171', borderWidth:1.5, pointRadius:0, tension:0.2, borderDash:[4,3] }},
-        ]
-      }},
-      options: {{
-        responsive:false, animation:false,
-        plugins: {{ legend:{{display:false}}, tooltip:{{enabled:false}} }},
-        scales: {{
-          x: {{ ticks:{{color:'#475569',font:{{size:9}},maxTicksLimit:8,maxRotation:0}}, grid:{{color:'#1e293b'}} }},
-          y: {{ ticks:{{color:'#475569',font:{{size:9}}}}, grid:{{color:'#1e293b'}} }}
-        }}
-      }}
-    }});
-  }});
-  cell.addEventListener('mouseleave', () => {{ tooltip.style.display='none'; }});
-  cell.addEventListener('mousemove',  e => positionTooltip(e));
-}});
-function positionTooltip(e) {{
-  const tw=390, th=260;
-  let x = e.clientX + 24;
-  let y = e.clientY - 100;
-  if (x + tw > window.innerWidth)  x = e.clientX - tw - 10;
-  if (y + th > window.innerHeight) y = window.innerHeight - th - 10;
-  if (y < 0) y = 10;
-  tooltip.style.left = x + 'px';
-  tooltip.style.top  = y + 'px';
-}}
-</script></body></html>"""
 # ── Page ──────────────────────────────────────────────────────────
-from datetime import datetime as _dt
-_day_key = _dt.now().strftime("%Y-%m-%d")
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
-    st.markdown("## 📡 均線收斂突破選股")
+    st.markdown("## 🩹 修復觸發選股")
     st.markdown(
         "<span style='color:#64748b;font-size:0.78rem'>"
-        "偵測 EMA 三線/雙線收斂後放量突破訊號 &nbsp;｜&nbsp; "
-        "回測：EMA收斂訊號 QQQ 成分股 20日平均報酬 +10.7%，勝率 82%（2020–2026，去除熊市）"
-        "&nbsp;｜&nbsp; 另列 E｜修復觸發（年線下 → 站回多頭排列）&nbsp;｜&nbsp; 資料每日自動更新"
-        "</span>",
-        unsafe_allow_html=True,
-    )
+        "<b>觸發</b>：過去 120 日內曾收在年線（EMA260）下，今日是「收盤 &gt; 月線 &gt; 季線 &gt; 年線」的<b>第一天</b>　｜　"
+        "<b>出場</b>：收盤跌破年線　｜　<b>尺寸</b>：R ÷ max(收盤 − 年線, 10%)　｜　"
+        "不看量、不看當日漲幅"
+        "</span>", unsafe_allow_html=True)
 with col_refresh:
     if st.button("🔄 重新掃描", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 st.markdown("---")
-# 股票池選擇
-universe = st.radio(
-    "掃描股票池",
-    ["Nasdaq 100（建議）", "S&P 500", "全美股（市值 > 10億，約需 3–5 分鐘）"],
-    horizontal=True,
-    help="EMA 收斂訊號在 Nasdaq 100 科技成長股中效果最顯著；全美股掃描首次載入較慢",
-)
-if universe.startswith("Nasdaq"):
-    universe_key = "Nasdaq 100"
-elif universe.startswith("S&P"):
-    universe_key = "S&P 500"
-else:
-    universe_key = "全美股"
-if universe_key == "Nasdaq 100":
-    _nq, _nq_src = fetch_nasdaq100_tickers()
-    _fallback = _nq_src.startswith("內建")
-    st.markdown(
-        f"<span style='color:{'#fbbf24' if _fallback else '#475569'};font-size:0.72rem'>"
-        f"Nasdaq-100 成分股來源：{_nq_src}"
-        f"{'　⚠️ Wikipedia 抓取失敗，名單可能未反映最近的成分股調整。' if _fallback else ''}"
-        f"</span>", unsafe_allow_html=True)
-st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
-# 策略說明摺疊區
-with st.expander("📖 五種訊號說明"):
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.markdown("""
-**A｜K棒盤整突破**
-短期緊密橫盤後直接向上突破。
-- 過去 14 日高低差 ≤ 16%
-- 今日收盤 > 盤整最高點 × 1.003
-- 量比 > 1.3×
-        """)
-    with c2:
-        st.markdown("""
-**B｜EMA 三線收斂突破** ⭐
-月線/季線/年線三線充分靠近後爆量突破。
-- 近 40 日內三線收斂度曾 < 5%
-- 今日漲幅 > 2%，突破近 40 日高點
-- 量比 > 1.3×（僅適用上市 300 日以上）
-        """)
-    with c3:
-        st.markdown("""
-**C｜EMA 雙線收斂突破**
-EMA20 / EMA60 在回調期間重新糾結後突破。
-- 近 40 日內雙線收斂度曾 < 5%
-- 今日漲幅 > 2%，突破近 40 日高點
-- 量比 > 1.3×
-        """)
-    with c4:
-        st.markdown("""
-**D｜EMA 均線發散突破**
-從低位緩慢回升、均線已轉為多頭排列並持續擴張。
-- EMA20 > EMA60，且雙線間距過去 10 日擴大 ≥ 20%
-- 今日漲幅 > 2%，突破近 40 日高點
-- 量比 > 1.3×（適合抓 UNH 這類崩跌後緩回升個股）
-        """)
-    st.markdown("""
-**E｜修復觸發**（順勢交易系統第三引擎；獨立列表，不看量、不看當日漲幅）
-- 過去 120 個交易日內至少一天收盤在年線（EMA260）之下
-- 今日是「收盤 > EMA20 > EMA60 > EMA260」的**第一天**（昨日尚未多頭排列）
-- 出場規則：收盤跌破年線。尺寸示例：R ÷ max(收盤 − 年線, 10%×收盤)
-- 🦖 曾怪物＝過去 250 日內半年漲幅曾 ≥120%。回測（2015–2026、≥$5B 美股、倖存者偏差）：加此濾網 EV +0.66R → +1.52R、勝率 33% → 44%、≥3R 10% → 17%
-- 龍頭與否（子產業市值第一）請自行判斷；本表僅列產業與市值
-    """)
-# 掃描
-try:
-    wait = "約需 3–5 分鐘" if universe_key == "全美股" else "約需 30–60 秒"
-    with st.spinner(f"掃描 {universe_key} 中，{wait}（結果會快取至明日）…"):
-        result, as_of, rec = run_screener(universe_key, _day_key)
-    if result.empty:
-        st.info(f"今日 {universe_key} 無符合條件的訊號。")
+c1, c2, c3 = st.columns([2, 1, 1])
+with c1:
+    picked = st.multiselect("掃描股票池（可複選，自動去重）",
+                            ["S&P 500", "Nasdaq 100", "費城半導體（SOX 概念）", "全美股（市值 >$1B，約 3–5 分鐘）"],
+                            default=["S&P 500"])
+with c2:
+    only_monster = st.checkbox("只看 🦖 曾怪物", value=False,
+                               help="過去 250 日內半年漲幅曾 ≥120%。回測：加此濾網 EV +0.66R → +1.52R、勝率 33% → 44%、≥3R 10% → 17%。")
+with c3:
+    r_usd = st.number_input("R（美元）", min_value=1.0, value=930.0, step=10.0)
+if not picked:
+    st.info("請至少選一個股票池。")
+    st.stop()
+_all, _srcs = [], []
+for p in picked:
+    if p.startswith("S&P"):
+        t, sc = fetch_sp500()
+    elif p.startswith("Nasdaq"):
+        t, sc = fetch_nasdaq100()
+    elif p.startswith("費城"):
+        t, sc = fetch_semis()
     else:
-        # 各類型數量
-        n_b = (result["訊號類型"].str.startswith("B")).sum()
-        n_c = (result["訊號類型"].str.startswith("C")).sum()
-        n_d = (result["訊號類型"].str.startswith("D")).sum()
-        n_a = (result["訊號類型"].str.startswith("A")).sum()
-        st.markdown(
-            f"<span style='color:#4ade80;font-size:0.9rem;font-weight:700'>"
-            f"✅ 今日訊號：{len(result)} 個</span>"
-            f"<span style='color:#475569;font-size:0.75rem'>"
-            f" &nbsp;（B 三線收斂 {n_b} 個 ／ C 雙線收斂 {n_c} 個 ／ D 均線發散 {n_d} 個 ／ A K棒盤整 {n_a} 個）"
-            f" &nbsp;截至 {as_of}"
-            f"</span>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
-        # 取得結果股票的 EMA 線圖資料（hover 用）
-        result_tickers = tuple(result["代號"].unique().tolist())
-        with st.spinner("載入線圖資料…"):
-            chart_data = fetch_chart_data(result_tickers)
-        table_html = build_hover_table(result, chart_data)
-        table_height = min(720, 100 + len(result) * 37)
-        components.html(table_html, height=table_height, scrolling=False)
-        st.markdown(
-            "<div style='color:#334155;font-size:0.68rem;margin-top:8px'>"
-            "⚠️ 策略在多頭環境表現顯著優於熊市，建議搭配大盤壓力儀表板的燈號判斷是否進場。"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-    # ── E｜修復觸發（順勢交易系統第三引擎）──
-    st.markdown("---")
-    hdr, rcol = st.columns([4, 1])
-    with hdr:
-        st.markdown(f"#### 🩹 E｜修復觸發：{len(rec)} 筆（近 {REC_CFG['scan_days']} 個交易日；年線下 → 站回 價>月>季>年 的第一天）")
-    with rcol:
-        r_usd = st.number_input("R（美元）", min_value=1.0, value=930.0, step=10.0, key="rec_r_usd")
+        t, sc = fetch_largecap()
+    _all += list(t); _srcs.append(sc)
+tickers = tuple(dict.fromkeys(_all))
+src = "　＋　".join(_srcs)
+fallback = "備援" in src
+st.markdown(f"<span style='color:{'#fbbf24' if fallback else '#475569'};font-size:0.72rem'>"
+            f"成分股來源：{src}　→　去重後共 <b>{len(tickers)}</b> 檔"
+            f"{'　⚠️ Wikipedia 抓取失敗，名單可能未反映最近調整。' if fallback else ''}</span>",
+            unsafe_allow_html=True)
+try:
+    wait = "約需 3–5 分鐘" if any(p.startswith("全美股") for p in picked) else "約需 30–60 秒"
+    with st.spinner(f"掃描 {len(tickers)} 檔中，{wait}（結果快取至明日）…"):
+        PX = download(tuple(tickers))
+    rows = []
+    for t, c in PX.items():
+        for off in range(SCAN_DAYS):
+            r = detect_recovery(c, offset=off)
+            if r is not None:
+                r["代號"] = t
+                rows.append(r)
+    as_of = max((c.index[-1] for c in PX.values()), default=None)
+    as_of = str(as_of.date()) if as_of is not None else "—"
+    rec = pd.DataFrame(rows)
+    if len(rec) and only_monster:
+        rec = rec[rec["_monster"]]
+    st.markdown(f"<span style='color:#94a3b8;font-size:0.75rem'>取得價格 {len(PX)} 檔｜資料截至 {as_of}</span>",
+                unsafe_allow_html=True)
     if rec.empty:
-        st.markdown("<span style='color:#64748b'>近期無修復觸發。</span>", unsafe_allow_html=True)
+        st.info(f"近 {SCAN_DAYS} 個交易日無修復觸發。修復股在崩盤後的修復年（2016、2020、2023、2025）最密集，"
+                f"延續年與慢牛年本來就少。")
     else:
         with st.spinner("載入產業資料…"):
             ind = fetch_industry(tuple(rec["代號"].unique().tolist()))
-        rec = rec.copy()
         rec["產業"] = rec["代號"].map(lambda t: ind.get(t, ("", 0))[0][:24])
         rec["市值B"] = rec["代號"].map(lambda t: round(ind.get(t, ("", 0))[1], 1))
         rec["股數_1R"] = (r_usd / rec["_risk"]).astype(int)
-        rec["名目"] = (rec["股數_1R"] * rec["收盤價"]).map(lambda v: f"{v:,.0f}")
-        rec = rec.sort_values(["觸發日期", "_monster", "市值B"], ascending=[False, False, False])
-        show_cols = ["觸發日期", "代號", "收盤價", "年線", "距年線", "最後收年線下", "曾怪物", "距63日高", "市值B", "產業", "股數_1R", "名目"]
-        st.dataframe(rec[show_cols].reset_index(drop=True), use_container_width=True,
-                     height=min(60 + 35 * len(rec), 500))
+        rec["名目"] = (rec["股數_1R"] * rec["收盤"]).map(lambda v: f"{v:,.0f}")
+        rec = rec.sort_values(["觸發日", "_monster", "市值B"], ascending=[False, False, False])
         n_m = int(rec["_monster"].sum())
         st.markdown(
-            f"<div style='color:#334155;font-size:0.68rem;margin-top:6px'>"
-            f"🦖 曾怪物 {n_m} 筆。停損＝收盤跌破年線（隔日開盤出）；股數 = R ÷ max(收盤 − 年線, 10%×收盤)，為系統規則之計算示例。"
-            f"觸發日以外的日期進場不在回測統計內。龍頭認定（子產業市值第一）請自行判斷。本表為客觀條件標記，不構成任何投資建議。"
-            f"</div>", unsafe_allow_html=True)
+            f"<span style='color:#4ade80;font-size:0.9rem;font-weight:700'>🩹 修復觸發：{len(rec)} 筆</span>"
+            f"<span style='color:#475569;font-size:0.75rem'>　（其中 🦖 曾怪物 {n_m} 筆｜近 {SCAN_DAYS} 個交易日）</span>",
+            unsafe_allow_html=True)
+        show = ["觸發日", "代號", "收盤", "年線", "距年線%", "最後收年線下", "曾怪物",
+                "距63日高%", "市值B", "產業", "股數_1R", "名目"]
+        st.dataframe(rec[show].reset_index(drop=True), use_container_width=True,
+                     height=min(60 + 35 * len(rec), 560))
+        st.markdown(
+            "<div style='color:#334155;font-size:0.68rem;margin-top:6px'>"
+            "停損＝收盤跌破年線（隔日開盤出）；股數 = R ÷ max(收盤 − 年線, 10%×收盤)，為系統規則之計算示例。"
+            "觸發日以外的日期進場不在回測統計內。<b>質化門檻「產業龍頭」（子產業市值第一）請自行判斷</b>——"
+            "本表僅列產業與市值。本表為客觀條件標記，不構成任何投資建議。</div>",
+            unsafe_allow_html=True)
 except Exception as e:
     st.error(f"掃描失敗：{e}")
+with st.expander("📖 規則與依據"):
+    st.markdown(f"""
+**觸發**：過去 {BELOW_LOOKBACK} 個交易日內至少一天收盤在年線（EMA260）之下，且今日是
+「收盤 > EMA20 > EMA60 > EMA260」的**第一天**（昨日尚未多頭排列）。不看量、不看當日漲幅。
+
+**出場**：收盤跌破年線，隔日開盤出。**尺寸**：股數 = R ÷ max(收盤 − 年線, 10%×收盤)，部位 ≤ 帳戶 10%。
+
+**質化門檻：產業龍頭**（子產業市值第一）。回測：加此門檻後尾部由 −31R 縮到 −8R。本頁不自動判定，只列產業與市值。
+
+**🦖 曾怪物**：過去 {MONSTER_LB} 日內半年漲幅曾 ≥{MONSTER_TH*100:.0f}%。
+回測（2015–2026、目前市值 ≥$5B 美股、倖存者偏差）：同一條修復規則加上此濾網，
+EV **+0.66R → +1.52R**、勝率 **33% → 44%**、≥3R 比例 **10% → 17%**、中位持有 47 → 87 日。
+前十大贏家全在此類（LITE 2025/5 +90R、BE、PLTR 2023/8、MSTR 2023/10、GME 2020/9）。
+
+**額度**：修復 ≤6 檔、動能 ≤9 檔，兩者獨立；總曝險合計以規則四為準。
+
+**適用季節**：崩盤後的修復年（2016、2020、2023、2025）部位級 +0.65R／勝率 37%；
+崩盤年本身（2018、2022）EV ≈ 0。與動能策略年度相關僅 +0.22，合併 CAGR 4.8% → 12.3%。
+""")
