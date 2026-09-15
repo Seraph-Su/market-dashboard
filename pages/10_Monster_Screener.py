@@ -1,2532 +1,554 @@
-{
- "built_at": "2026-09-15T15:09:37",
- "min_cap_b": 1.0,
- "min_52w": 50.0,
- "rows": [
-  {
-   "t": "TSM",
-   "cap": 2167.998,
-   "name": "Taiwan Semiconductor Manufactur"
-  },
-  {
-   "t": "MU",
-   "cap": 1043.593,
-   "name": "Micron Technology, Inc."
-  },
-  {
-   "t": "AMD",
-   "cap": 805.48,
-   "name": "Advanced Micro Devices, Inc."
-  },
-  {
-   "t": "JNJ",
-   "cap": 641.804,
-   "name": "Johnson & Johnson"
-  },
-  {
-   "t": "ASML",
-   "cap": 605.015,
-   "name": "ASML Holding N.V. - New York Re"
-  },
-  {
-   "t": "INTC",
-   "cap": 513.757,
-   "name": "Intel Corporation"
-  },
-  {
-   "t": "CSCO",
-   "cap": 433.921,
-   "name": "Cisco Systems, Inc."
-  },
-  {
-   "t": "CAT",
-   "cap": 360.385,
-   "name": "Caterpillar, Inc."
-  },
-  {
-   "t": "MRK",
-   "cap": 357.37,
-   "name": "Merck & Company, Inc."
-  },
-  {
-   "t": "LRCX",
-   "cap": 342.224,
-   "name": "Lam Research Corporation"
-  },
-  {
-   "t": "DELL",
-   "cap": 339.702,
-   "name": "Dell Technologies Inc."
-  },
-  {
-   "t": "AMAT",
-   "cap": 336.652,
-   "name": "Applied Materials, Inc."
-  },
-  {
-   "t": "PANW",
-   "cap": 305.883,
-   "name": "Palo Alto Networks, Inc."
-  },
-  {
-   "t": "MUFG",
-   "cap": 268.9,
-   "name": "Mitsubishi UFJ Financial Group,"
-  },
-  {
-   "t": "ARM",
-   "cap": 255.262,
-   "name": "Arm Holdings plc"
-  },
-  {
-   "t": "CRWD",
-   "cap": 241.014,
-   "name": "CrowdStrike Holdings, Inc."
-  },
-  {
-   "t": "SNDK",
-   "cap": 227.241,
-   "name": "Sandisk Corporation"
-  },
-  {
-   "t": "KLAC",
-   "cap": 220.924,
-   "name": "KLA Corporation"
-  },
-  {
-   "t": "BHP",
-   "cap": 215.365,
-   "name": "BHP Group Limited"
-  },
-  {
-   "t": "TD",
-   "cap": 198.145,
-   "name": "Toronto Dominion Bank (The)"
-  },
-  {
-   "t": "MRVL",
-   "cap": 196.655,
-   "name": "Marvell Technology, Inc."
-  },
-  {
-   "t": "STX",
-   "cap": 183.176,
-   "name": "Seagate Technology Holdings PLC"
-  },
-  {
-   "t": "SMFG",
-   "cap": 172.498,
-   "name": "Sumitomo Mitsui Financial Group"
-  },
-  {
-   "t": "BBVA",
-   "cap": 160.583,
-   "name": "Banco Bilbao Vizcaya Argentaria"
-  },
-  {
-   "t": "SCCO",
-   "cap": 159.032,
-   "name": "Southern Copper Corporation"
-  },
-  {
-   "t": "RIO",
-   "cap": 158.798,
-   "name": "Rio Tinto Plc"
-  },
-  {
-   "t": "WDC",
-   "cap": 153.929,
-   "name": "Western Digital Corporation"
-  },
-  {
-   "t": "MFG",
-   "cap": 137.127,
-   "name": "Mizuho Financial Group, Inc. Sp"
-  },
-  {
-   "t": "PBR",
-   "cap": 136.298,
-   "name": "Petroleo Brasileiro S.A. Petrob"
-  },
-  {
-   "t": "PBR-A",
-   "cap": 130.563,
-   "name": "Petroleo Brasileiro S.A. Petrob"
-  },
-  {
-   "t": "NEM",
-   "cap": 129.678,
-   "name": "Newmont Corporation"
-  },
-  {
-   "t": "FTNT",
-   "cap": 124.863,
-   "name": "Fortinet, Inc."
-  },
-  {
-   "t": "GLW",
-   "cap": 123.444,
-   "name": "Corning Incorporated"
-  },
-  {
-   "t": "SNOW",
-   "cap": 117.253,
-   "name": "Snowflake Inc."
-  },
-  {
-   "t": "MPC",
-   "cap": 115.738,
-   "name": "Marathon Petroleum Corporation"
-  },
-  {
-   "t": "VLO",
-   "cap": 110.262,
-   "name": "Valero Energy Corporation"
-  },
-  {
-   "t": "EQNR",
-   "cap": 105.646,
-   "name": "Equinor ASA"
-  },
-  {
-   "t": "CNQ",
-   "cap": 103.735,
-   "name": "Canadian Natural Resources Limi"
-  },
-  {
-   "t": "PSX",
-   "cap": 102.572,
-   "name": "Phillips 66"
-  },
-  {
-   "t": "FCX",
-   "cap": 99.573,
-   "name": "Freeport-McMoRan, Inc."
-  },
-  {
-   "t": "ASX",
-   "cap": 96.544,
-   "name": "ASE Technology Holding Co., Ltd"
-  },
-  {
-   "t": "PWR",
-   "cap": 93.517,
-   "name": "Quanta Services, Inc."
-  },
-  {
-   "t": "VRT",
-   "cap": 91.392,
-   "name": "Vertiv Holdings, LLC"
-  },
-  {
-   "t": "CSX",
-   "cap": 90.605,
-   "name": "CSX Corporation"
-  },
-  {
-   "t": "DDOG",
-   "cap": 82.605,
-   "name": "Datadog, Inc."
-  },
-  {
-   "t": "SU",
-   "cap": 80.377,
-   "name": "Suncor Energy  Inc."
-  },
-  {
-   "t": "E",
-   "cap": 79.636,
-   "name": "ENI S.p.A."
-  },
-  {
-   "t": "SLB",
-   "cap": 79.135,
-   "name": "SLB Limited"
-  },
-  {
-   "t": "BE",
-   "cap": 75.708,
-   "name": "Bloom Energy Corporation"
-  },
-  {
-   "t": "LITE",
-   "cap": 74.902,
-   "name": "Lumentum Holdings Inc."
-  },
-  {
-   "t": "FDX",
-   "cap": 73.976,
-   "name": "FedEx Corporation"
-  },
-  {
-   "t": "HPE",
-   "cap": 73.555,
-   "name": "Hewlett Packard Enterprise Comp"
-  },
-  {
-   "t": "ROST",
-   "cap": 73.487,
-   "name": "Ross Stores, Inc."
-  },
-  {
-   "t": "TGT",
-   "cap": 72.096,
-   "name": "Target Corporation"
-  },
-  {
-   "t": "B",
-   "cap": 69.835,
-   "name": "Barrick Mining Corporation"
-  },
-  {
-   "t": "TRGP",
-   "cap": 61.595,
-   "name": "Targa Resources, Inc."
-  },
-  {
-   "t": "CVE",
-   "cap": 61.358,
-   "name": "Cenovus Energy Inc"
-  },
-  {
-   "t": "MRNA",
-   "cap": 58.564,
-   "name": "Moderna, Inc."
-  },
-  {
-   "t": "NUE",
-   "cap": 57.769,
-   "name": "Nucor Corporation"
-  },
-  {
-   "t": "FIX",
-   "cap": 55.706,
-   "name": "Comfort Systems USA, Inc."
-  },
-  {
-   "t": "UMC",
-   "cap": 54.923,
-   "name": "United Microelectronics Corpora"
-  },
-  {
-   "t": "MT",
-   "cap": 54.77,
-   "name": "Arcelor Mittal NY Registry Shar"
-  },
-  {
-   "t": "CAH",
-   "cap": 54.63,
-   "name": "Cardinal Health, Inc."
-  },
-  {
-   "t": "NOK",
-   "cap": 54.027,
-   "name": "Nokia Corporation Sponsored"
-  },
-  {
-   "t": "NBIS",
-   "cap": 53.875,
-   "name": "Nebius Group N.V."
-  },
-  {
-   "t": "KEYS",
-   "cap": 53.62,
-   "name": "Keysight Technologies Inc."
-  },
-  {
-   "t": "COHR",
-   "cap": 52.189,
-   "name": "Coherent Corp."
-  },
-  {
-   "t": "STT",
-   "cap": 51.688,
-   "name": "State Street Corporation"
-  },
-  {
-   "t": "TER",
-   "cap": 51.467,
-   "name": "Teradyne, Inc."
-  },
-  {
-   "t": "NTRA",
-   "cap": 49.267,
-   "name": "Natera, Inc."
-  },
-  {
-   "t": "KB",
-   "cap": 46.655,
-   "name": "KB Financial Group Inc"
-  },
-  {
-   "t": "CIEN",
-   "cap": 45.328,
-   "name": "Ciena Corporation"
-  },
-  {
-   "t": "TEVA",
-   "cap": 45.12,
-   "name": "Teva Pharmaceutical Industries "
-  },
-  {
-   "t": "RVMD",
-   "cap": 43.963,
-   "name": "Revolution Medicines, Inc."
-  },
-  {
-   "t": "STM",
-   "cap": 42.622,
-   "name": "STMicroelectronics N.V."
-  },
-  {
-   "t": "FLEX",
-   "cap": 40.014,
-   "name": "Flex Ltd."
-  },
-  {
-   "t": "SHG",
-   "cap": 39.604,
-   "name": "Shinhan Financial Group Co Ltd"
-  },
-  {
-   "t": "NTAP",
-   "cap": 36.981,
-   "name": "NetApp, Inc."
-  },
-  {
-   "t": "EC",
-   "cap": 36.471,
-   "name": "Ecopetrol S.A."
-  },
-  {
-   "t": "TWLO",
-   "cap": 35.611,
-   "name": "Twilio Inc."
-  },
-  {
-   "t": "CNC",
-   "cap": 34.288,
-   "name": "Centene Corporation"
-  },
-  {
-   "t": "STLD",
-   "cap": 33.615,
-   "name": "Steel Dynamics, Inc."
-  },
-  {
-   "t": "OKTA",
-   "cap": 32.595,
-   "name": "Okta, Inc."
-  },
-  {
-   "t": "TECK",
-   "cap": 32.502,
-   "name": "Teck Resources Ltd"
-  },
-  {
-   "t": "BIIB",
-   "cap": 32.116,
-   "name": "Biogen Inc."
-  },
-  {
-   "t": "ILMN",
-   "cap": 31.44,
-   "name": "Illumina, Inc."
-  },
-  {
-   "t": "ROIV",
-   "cap": 29.63,
-   "name": "Roivant Sciences Ltd."
-  },
-  {
-   "t": "HAL",
-   "cap": 29.247,
-   "name": "Halliburton Company"
-  },
-  {
-   "t": "FTI",
-   "cap": 28.577,
-   "name": "TechnipFMC plc"
-  },
-  {
-   "t": "ON",
-   "cap": 27.895,
-   "name": "ON Semiconductor Corporation"
-  },
-  {
-   "t": "TS",
-   "cap": 27.836,
-   "name": "Tenaris S.A."
-  },
-  {
-   "t": "RPRX",
-   "cap": 34.121,
-   "name": "Royalty Pharma plc"
-  },
-  {
-   "t": "JBHT",
-   "cap": 25.822,
-   "name": "J.B. Hunt Transport Services, I"
-  },
-  {
-   "t": "ATI",
-   "cap": 25.62,
-   "name": "ATI Inc."
-  },
-  {
-   "t": "EXPD",
-   "cap": 25.167,
-   "name": "Expeditors International of Was"
-  },
-  {
-   "t": "CIB",
-   "cap": 24.051,
-   "name": "Grupo Cibest S.A."
-  },
-  {
-   "t": "NVT",
-   "cap": 23.735,
-   "name": "nVent Electric plc"
-  },
-  {
-   "t": "ROKU",
-   "cap": 23.369,
-   "name": "Roku, Inc."
-  },
-  {
-   "t": "BG",
-   "cap": 23.291,
-   "name": "Bunge Limited"
-  },
-  {
-   "t": "GH",
-   "cap": 22.523,
-   "name": "Guardant Health, Inc."
-  },
-  {
-   "t": "YPF",
-   "cap": 22.086,
-   "name": "YPF Sociedad Anonima"
-  },
-  {
-   "t": "TSEM",
-   "cap": 21.603,
-   "name": "Tower Semiconductor Ltd."
-  },
-  {
-   "t": "SNX",
-   "cap": 20.879,
-   "name": "TD SYNNEX Corporation"
-  },
-  {
-   "t": "CRS",
-   "cap": 20.833,
-   "name": "Carpenter Technology Corporatio"
-  },
-  {
-   "t": "SQM",
-   "cap": 19.918,
-   "name": "Sociedad Quimica y Minera S.A."
-  },
-  {
-   "t": "PR",
-   "cap": 19.9,
-   "name": "Permian Resources Corporation"
-  },
-  {
-   "t": "CF",
-   "cap": 19.862,
-   "name": "CF Industries Holdings, Inc."
-  },
-  {
-   "t": "VTRS",
-   "cap": 19.136,
-   "name": "Viatris Inc."
-  },
-  {
-   "t": "DINO",
-   "cap": 19.007,
-   "name": "HF Sinclair Corporation"
-  },
-  {
-   "t": "MTSI",
-   "cap": 18.3,
-   "name": "MACOM Technology Solutions Hold"
-  },
-  {
-   "t": "OVV",
-   "cap": 18.079,
-   "name": "Ovintiv Inc. (DE)"
-  },
-  {
-   "t": "SITM",
-   "cap": 16.79,
-   "name": "SiTime Corporation"
-  },
-  {
-   "t": "WCC",
-   "cap": 16.41,
-   "name": "WESCO International, Inc."
-  },
-  {
-   "t": "MKSI",
-   "cap": 16.179,
-   "name": "MKS Inc."
-  },
-  {
-   "t": "TIGO",
-   "cap": 16.005,
-   "name": "Millicom International Cellular"
-  },
-  {
-   "t": "PS",
-   "cap": 15.988,
-   "name": "Pershing Square Inc."
-  },
-  {
-   "t": "JAZZ",
-   "cap": 15.961,
-   "name": "Jazz Pharmaceuticals plc"
-  },
-  {
-   "t": "APA",
-   "cap": 15.776,
-   "name": "APA Corporation"
-  },
-  {
-   "t": "ARMK",
-   "cap": 15.43,
-   "name": "Aramark"
-  },
-  {
-   "t": "ONTO",
-   "cap": 15.289,
-   "name": "Onto Innovation Inc."
-  },
-  {
-   "t": "LSCC",
-   "cap": 15.096,
-   "name": "Lattice Semiconductor Corporati"
-  },
-  {
-   "t": "SUN",
-   "cap": 14.909,
-   "name": "Sunoco LP"
-  },
-  {
-   "t": "RVTY",
-   "cap": 14.338,
-   "name": "Revvity, Inc."
-  },
-  {
-   "t": "DOCN",
-   "cap": 14.054,
-   "name": "DigitalOcean Holdings, Inc."
-  },
-  {
-   "t": "SKM",
-   "cap": 13.943,
-   "name": "SK Telecom Co., Ltd."
-  },
-  {
-   "t": "FIVE",
-   "cap": 13.741,
-   "name": "Five Below, Inc."
-  },
-  {
-   "t": "SMTC",
-   "cap": 13.724,
-   "name": "Semtech Corporation"
-  },
-  {
-   "t": "COKE",
-   "cap": 13.357,
-   "name": "Coca-Cola Consolidated, Inc."
-  },
-  {
-   "t": "CRL",
-   "cap": 13.038,
-   "name": "Charles River Laboratories Inte"
-  },
-  {
-   "t": "IESC",
-   "cap": 12.734,
-   "name": "IES Holdings, Inc."
-  },
-  {
-   "t": "HL",
-   "cap": 12.623,
-   "name": "Hecla Mining Company"
-  },
-  {
-   "t": "CORT",
-   "cap": 12.085,
-   "name": "Corcept Therapeutics Incorporat"
-  },
-  {
-   "t": "BTSG",
-   "cap": 11.931,
-   "name": "BrightSpring Health Services, I"
-  },
-  {
-   "t": "TTMI",
-   "cap": 11.928,
-   "name": "TTM Technologies, Inc."
-  },
-  {
-   "t": "AMKR",
-   "cap": 11.68,
-   "name": "Amkor Technology, Inc."
-  },
-  {
-   "t": "MOG-B",
-   "cap": 11.59,
-   "name": "Moog Inc."
-  },
-  {
-   "t": "MOG-A",
-   "cap": 11.478,
-   "name": "Moog Inc."
-  },
-  {
-   "t": "FROG",
-   "cap": 11.467,
-   "name": "JFrog Ltd."
-  },
-  {
-   "t": "HBM",
-   "cap": 11.383,
-   "name": "Hudbay Minerals Inc."
-  },
-  {
-   "t": "ARWR",
-   "cap": 11.363,
-   "name": "Arrowhead Pharmaceuticals, Inc."
-  },
-  {
-   "t": "AXSM",
-   "cap": 11.345,
-   "name": "Axsome Therapeutics, Inc."
-  },
-  {
-   "t": "IAG",
-   "cap": 11.3,
-   "name": "Iamgold Corporation"
-  },
-  {
-   "t": "FRO",
-   "cap": 11.247,
-   "name": "Frontline Plc"
-  },
-  {
-   "t": "HUT",
-   "cap": 11.233,
-   "name": "Hut 8 Corp."
-  },
-  {
-   "t": "KNX",
-   "cap": 11.137,
-   "name": "Knight-Swift Transportation Hol"
-  },
-  {
-   "t": "TX",
-   "cap": 10.985,
-   "name": "Ternium S.A. Ternium S.A."
-  },
-  {
-   "t": "ARW",
-   "cap": 10.886,
-   "name": "Arrow Electronics, Inc."
-  },
-  {
-   "t": "GSAT",
-   "cap": 10.623,
-   "name": "Globalstar, Inc."
-  },
-  {
-   "t": "SANM",
-   "cap": 10.507,
-   "name": "Sanmina Corporation"
-  },
-  {
-   "t": "OSCR",
-   "cap": 10.435,
-   "name": "Oscar Health, Inc."
-  },
-  {
-   "t": "DAR",
-   "cap": 10.245,
-   "name": "Darling Ingredients Inc."
-  },
-  {
-   "t": "ENLT",
-   "cap": 10.231,
-   "name": "Enlight Renewable Energy Ltd."
-  },
-  {
-   "t": "AEIS",
-   "cap": 10.187,
-   "name": "Advanced Energy Industries, Inc"
-  },
-  {
-   "t": "GKOS",
-   "cap": 10.092,
-   "name": "Glaukos Corporation"
-  },
-  {
-   "t": "KRYS",
-   "cap": 10.064,
-   "name": "Krystal Biotech, Inc."
-  },
-  {
-   "t": "LFUS",
-   "cap": 10.064,
-   "name": "Littelfuse, Inc."
-  },
-  {
-   "t": "VSAT",
-   "cap": 9.869,
-   "name": "ViaSat, Inc."
-  },
-  {
-   "t": "FCFS",
-   "cap": 9.619,
-   "name": "FirstCash Holdings, Inc."
-  },
-  {
-   "t": "GGB",
-   "cap": 9.593,
-   "name": "Gerdau S.A."
-  },
-  {
-   "t": "PTGX",
-   "cap": 9.563,
-   "name": "Protagonist Therapeutics, Inc."
-  },
-  {
-   "t": "MSGS",
-   "cap": 9.543,
-   "name": "Madison Square Garden Sports Co"
-  },
-  {
-   "t": "KYMR",
-   "cap": 9.532,
-   "name": "Kymera Therapeutics, Inc."
-  },
-  {
-   "t": "SSL",
-   "cap": 9.295,
-   "name": "Sasol Ltd."
-  },
-  {
-   "t": "AG",
-   "cap": 9.267,
-   "name": "First Majestic Silver Corp."
-  },
-  {
-   "t": "PRAX",
-   "cap": 9.229,
-   "name": "Praxis Precision Medicines, Inc"
-  },
-  {
-   "t": "TXG",
-   "cap": 9.135,
-   "name": "10x Genomics, Inc."
-  },
-  {
-   "t": "AMG",
-   "cap": 9.05,
-   "name": "Affiliated Managers Group, Inc."
-  },
-  {
-   "t": "TWST",
-   "cap": 8.934,
-   "name": "Twist Bioscience Corporation"
-  },
-  {
-   "t": "IBRX",
-   "cap": 8.871,
-   "name": "ImmunityBio, Inc."
-  },
-  {
-   "t": "PCVX",
-   "cap": 8.86,
-   "name": "Vaxcyte, Inc."
-  },
-  {
-   "t": "VICR",
-   "cap": 8.517,
-   "name": "Vicor Corporation"
-  },
-  {
-   "t": "VIST",
-   "cap": 8.452,
-   "name": "Vista Energy S.A.B. de C.V."
-  },
-  {
-   "t": "BVN",
-   "cap": 8.432,
-   "name": "Buenaventura Mining Company Inc"
-  },
-  {
-   "t": "VIAV",
-   "cap": 8.345,
-   "name": "Viavi Solutions Inc."
-  },
-  {
-   "t": "PBF",
-   "cap": 8.345,
-   "name": "PBF Energy Inc."
-  },
-  {
-   "t": "SNEX",
-   "cap": 8.266,
-   "name": "StoneX Group Inc."
-  },
-  {
-   "t": "TGTX",
-   "cap": 8.266,
-   "name": "TG Therapeutics, Inc."
-  },
-  {
-   "t": "AAOI",
-   "cap": 8.131,
-   "name": "Applied Optoelectronics, Inc."
-  },
-  {
-   "t": "TKR",
-   "cap": 8.096,
-   "name": "Timken Company (The)"
-  },
-  {
-   "t": "SIMO",
-   "cap": 8.03,
-   "name": "Silicon Motion Technology Corpo"
-  },
-  {
-   "t": "FORM",
-   "cap": 8.025,
-   "name": "FormFactor, Inc."
-  },
-  {
-   "t": "BRKR",
-   "cap": 8.023,
-   "name": "Bruker Corporation"
-  },
-  {
-   "t": "UGP",
-   "cap": 7.928,
-   "name": "Ultrapar Participacoes S.A. (Ne"
-  },
-  {
-   "t": "SYRE",
-   "cap": 7.885,
-   "name": "Spyre Therapeutics, Inc."
-  },
-  {
-   "t": "ZETA",
-   "cap": 7.784,
-   "name": "Zeta Global Holdings Corp."
-  },
-  {
-   "t": "IMVT",
-   "cap": 7.779,
-   "name": "Immunovant, Inc."
-  },
-  {
-   "t": "WULF",
-   "cap": 7.719,
-   "name": "TeraWulf Inc."
-  },
-  {
-   "t": "ALKS",
-   "cap": 7.689,
-   "name": "Alkermes plc"
-  },
-  {
-   "t": "HNGE",
-   "cap": 7.649,
-   "name": "Hinge Health, Inc."
-  },
-  {
-   "t": "AVT",
-   "cap": 7.579,
-   "name": "Avnet, Inc."
-  },
-  {
-   "t": "NOV",
-   "cap": 7.322,
-   "name": "NOV Inc."
-  },
-  {
-   "t": "SLAB",
-   "cap": 7.317,
-   "name": "Silicon Laboratories, Inc."
-  },
-  {
-   "t": "KEX",
-   "cap": 7.312,
-   "name": "Kirby Corporation"
-  },
-  {
-   "t": "AUGO",
-   "cap": 7.235,
-   "name": "Aura Minerals Inc."
-  },
-  {
-   "t": "MAAS",
-   "cap": 7.225,
-   "name": "Maase Inc."
-  },
-  {
-   "t": "SSRM",
-   "cap": 7.223,
-   "name": "SSR Mining Inc."
-  },
-  {
-   "t": "RAL",
-   "cap": 7.208,
-   "name": "Ralliant Corporation"
-  },
-  {
-   "t": "ACA",
-   "cap": 7.128,
-   "name": "Arcosa, Inc."
-  },
-  {
-   "t": "MATX",
-   "cap": 7.076,
-   "name": "Matson, Inc."
-  },
-  {
-   "t": "PACS",
-   "cap": 7.051,
-   "name": "PACS Group, Inc."
-  },
-  {
-   "t": "BLTE",
-   "cap": 6.967,
-   "name": "Belite Bio, Inc"
-  },
-  {
-   "t": "VCTR",
-   "cap": 6.709,
-   "name": "Victory Capital Holdings, Inc. "
-  },
-  {
-   "t": "LNTH",
-   "cap": 6.551,
-   "name": "Lantheus Holdings, Inc."
-  },
-  {
-   "t": "CGON",
-   "cap": 6.541,
-   "name": "CG Oncology, Inc."
-  },
-  {
-   "t": "PLXS",
-   "cap": 6.387,
-   "name": "Plexus Corp."
-  },
-  {
-   "t": "ANDG",
-   "cap": 6.373,
-   "name": "Andersen Group Inc."
-  },
-  {
-   "t": "AVAL",
-   "cap": 6.363,
-   "name": "Grupo Aval Acciones y Valores S"
-  },
-  {
-   "t": "ORKA",
-   "cap": 6.351,
-   "name": "Oruka Therapeutics, Inc."
-  },
-  {
-   "t": "SRRK",
-   "cap": 6.315,
-   "name": "Scholar Rock Holding Corporatio"
-  },
-  {
-   "t": "CAMT",
-   "cap": 6.246,
-   "name": "Camtek Ltd."
-  },
-  {
-   "t": "POWL",
-   "cap": 6.219,
-   "name": "Powell Industries, Inc."
-  },
-  {
-   "t": "TBBB",
-   "cap": 6.203,
-   "name": "BBB Foods Inc."
-  },
-  {
-   "t": "TVTX",
-   "cap": 6.118,
-   "name": "Travere Therapeutics, Inc."
-  },
-  {
-   "t": "ENS",
-   "cap": 6.108,
-   "name": "EnerSys"
-  },
-  {
-   "t": "RIG",
-   "cap": 6.087,
-   "name": "Transocean Ltd (Switzerland)"
-  },
-  {
-   "t": "RNG",
-   "cap": 6.039,
-   "name": "Ringcentral, Inc."
-  },
-  {
-   "t": "AMRX",
-   "cap": 5.998,
-   "name": "Amneal Pharmaceuticals, Inc."
-  },
-  {
-   "t": "ANF",
-   "cap": 5.967,
-   "name": "Abercrombie & Fitch Company"
-  },
-  {
-   "t": "VSXY",
-   "cap": 5.946,
-   "name": "Victorias Secret & Co."
-  },
-  {
-   "t": "TEO",
-   "cap": 5.944,
-   "name": "Telecom Argentina SA"
-  },
-  {
-   "t": "PL",
-   "cap": 5.894,
-   "name": "Planet Labs PBC"
-  },
-  {
-   "t": "KNSA",
-   "cap": 5.892,
-   "name": "Kiniksa Pharmaceuticals Interna"
-  },
-  {
-   "t": "DNTH",
-   "cap": 5.887,
-   "name": "Dianthus Therapeutics, Inc."
-  },
-  {
-   "t": "MXL",
-   "cap": 5.876,
-   "name": "MaxLinear, Inc"
-  },
-  {
-   "t": "LQDA",
-   "cap": 5.845,
-   "name": "Liquidia Corporation"
-  },
-  {
-   "t": "COGT",
-   "cap": 5.797,
-   "name": "Cogent Biosciences, Inc."
-  },
-  {
-   "t": "KGS",
-   "cap": 5.725,
-   "name": "Kodiak Gas Services, Inc."
-  },
-  {
-   "t": "ECG",
-   "cap": 5.68,
-   "name": "Everus Construction Group, Inc."
-  },
-  {
-   "t": "ERAS",
-   "cap": 5.652,
-   "name": "Erasca, Inc."
-  },
-  {
-   "t": "ENVA",
-   "cap": 5.645,
-   "name": "Enova International, Inc."
-  },
-  {
-   "t": "VAL",
-   "cap": 5.643,
-   "name": "Valaris Limited"
-  },
-  {
-   "t": "XENE",
-   "cap": 5.635,
-   "name": "Xenon Pharmaceuticals Inc."
-  },
-  {
-   "t": "CMBT",
-   "cap": 5.635,
-   "name": "CMB.TECH NV"
-  },
-  {
-   "t": "LGND",
-   "cap": 5.595,
-   "name": "Ligand Pharmaceuticals Incorpor"
-  },
-  {
-   "t": "AGX",
-   "cap": 5.508,
-   "name": "Argan, Inc."
-  },
-  {
-   "t": "DFTX",
-   "cap": 5.408,
-   "name": "Definium Therapeutics, Inc."
-  },
-  {
-   "t": "SPHR",
-   "cap": 5.294,
-   "name": "Sphere Entertainment Co."
-  },
-  {
-   "t": "VIRT",
-   "cap": 5.292,
-   "name": "Virtu Financial, Inc."
-  },
-  {
-   "t": "INSW",
-   "cap": 5.242,
-   "name": "International Seaways, Inc."
-  },
-  {
-   "t": "CAKE",
-   "cap": 5.233,
-   "name": "The Cheesecake Factory Incorpor"
-  },
-  {
-   "t": "LFST",
-   "cap": 5.113,
-   "name": "LifeStance Health Group, Inc."
-  },
-  {
-   "t": "OUT",
-   "cap": 5.064,
-   "name": "OUTFRONT Media Inc."
-  },
-  {
-   "t": "HCC",
-   "cap": 5.04,
-   "name": "Warrior Met Coal, Inc."
-  },
-  {
-   "t": "MTRN",
-   "cap": 5.005,
-   "name": "Materion Corporation"
-  },
-  {
-   "t": "CLMT",
-   "cap": 4.971,
-   "name": "Calumet, Inc"
-  },
-  {
-   "t": "BMA",
-   "cap": 4.925,
-   "name": "Banco Macro S.A."
-  },
-  {
-   "t": "GTX",
-   "cap": 4.905,
-   "name": "Garrett Motion Inc."
-  },
-  {
-   "t": "IRDM",
-   "cap": 4.894,
-   "name": "Iridium Communications Inc"
-  },
-  {
-   "t": "CVI",
-   "cap": 4.889,
-   "name": "CVR Energy Inc."
-  },
-  {
-   "t": "UNF",
-   "cap": 4.884,
-   "name": "Unifirst Corporation"
-  },
-  {
-   "t": "MEOH",
-   "cap": 4.852,
-   "name": "Methanex Corporation"
-  },
-  {
-   "t": "EWTX",
-   "cap": 4.846,
-   "name": "Edgewise Therapeutics, Inc."
-  },
-  {
-   "t": "HAE",
-   "cap": 4.837,
-   "name": "Haemonetics Corporation"
-  },
-  {
-   "t": "AIR",
-   "cap": 4.834,
-   "name": "AAR Corp."
-  },
-  {
-   "t": "CRGY",
-   "cap": 4.821,
-   "name": "Crescent Energy Company"
-  },
-  {
-   "t": "VSH",
-   "cap": 4.724,
-   "name": "Vishay Intertechnology, Inc."
-  },
-  {
-   "t": "PTEN",
-   "cap": 4.715,
-   "name": "Patterson-UTI Energy, Inc."
-  },
-  {
-   "t": "XMTR",
-   "cap": 4.698,
-   "name": "Xometry, Inc."
-  },
-  {
-   "t": "WHD",
-   "cap": 4.675,
-   "name": "Cactus, Inc. Class A Common Sto"
-  },
-  {
-   "t": "DAVE",
-   "cap": 4.666,
-   "name": "Dave Inc."
-  },
-  {
-   "t": "ACMR",
-   "cap": 4.657,
-   "name": "ACM Research, Inc."
-  },
-  {
-   "t": "OII",
-   "cap": 4.634,
-   "name": "Oceaneering International, Inc."
-  },
-  {
-   "t": "CHEF",
-   "cap": 4.603,
-   "name": "The Chefs' Warehouse, Inc."
-  },
-  {
-   "t": "CON",
-   "cap": 4.566,
-   "name": "Concentra Group Holdings Parent"
-  },
-  {
-   "t": "DK",
-   "cap": 4.56,
-   "name": "Delek US Holdings, Inc."
-  },
-  {
-   "t": "BB",
-   "cap": 4.542,
-   "name": "BlackBerry Limited"
-  },
-  {
-   "t": "TDW",
-   "cap": 4.407,
-   "name": "Tidewater Inc."
-  },
-  {
-   "t": "CGAU",
-   "cap": 4.325,
-   "name": "Centerra Gold Inc."
-  },
-  {
-   "t": "HTFL",
-   "cap": 4.308,
-   "name": "Heartflow, Inc."
-  },
-  {
-   "t": "HP",
-   "cap": 4.26,
-   "name": "Helmerich & Payne, Inc."
-  },
-  {
-   "t": "MANE",
-   "cap": 4.249,
-   "name": "Veradermics, Incorporated"
-  },
-  {
-   "t": "MYRG",
-   "cap": 4.231,
-   "name": "MYR Group, Inc."
-  },
-  {
-   "t": "BFH",
-   "cap": 4.197,
-   "name": "Bread Financial Holdings, Inc."
-  },
-  {
-   "t": "IOVA",
-   "cap": 4.195,
-   "name": "Iovance Biotherapeutics, Inc."
-  },
-  {
-   "t": "RLAY",
-   "cap": 4.177,
-   "name": "Relay Therapeutics, Inc."
-  },
-  {
-   "t": "ALM",
-   "cap": 4.171,
-   "name": "Almonty Industries Inc."
-  },
-  {
-   "t": "SUNC",
-   "cap": 4.17,
-   "name": "SunocoCorp LLC"
-  },
-  {
-   "t": "DIOD",
-   "cap": 4.159,
-   "name": "Diodes Incorporated"
-  },
-  {
-   "t": "KLIC",
-   "cap": 4.158,
-   "name": "Kulicke and Soffa Industries, I"
-  },
-  {
-   "t": "TNGX",
-   "cap": 4.138,
-   "name": "Tango Therapeutics, Inc."
-  },
-  {
-   "t": "CENX",
-   "cap": 4.112,
-   "name": "Century Aluminum Company"
-  },
-  {
-   "t": "PARR",
-   "cap": 4.093,
-   "name": "Par Pacific Holdings, Inc. Comm"
-  },
-  {
-   "t": "CELC",
-   "cap": 4.087,
-   "name": "Celcuity Inc."
-  },
-  {
-   "t": "LGN",
-   "cap": 8.671,
-   "name": "Legence Corp."
-  },
-  {
-   "t": "SEI",
-   "cap": 6.149,
-   "name": "Solaris Energy Infrastructure, "
-  },
-  {
-   "t": "GEF-B",
-   "cap": 3.997,
-   "name": "Greif, Inc. Corporation"
-  },
-  {
-   "t": "ELVN",
-   "cap": 3.988,
-   "name": "Enliven Therapeutics, Inc."
-  },
-  {
-   "t": "FSLY",
-   "cap": 3.96,
-   "name": "Fastly, Inc."
-  },
-  {
-   "t": "ADPT",
-   "cap": 3.955,
-   "name": "Adaptive Biotechnologies Corpor"
-  },
-  {
-   "t": "AYA",
-   "cap": 3.876,
-   "name": "Aya Gold & Silver Inc."
-  },
-  {
-   "t": "PLSE",
-   "cap": 3.866,
-   "name": "Pulse Biosciences, Inc"
-  },
-  {
-   "t": "ARIS",
-   "cap": 3.856,
-   "name": "Aris Mining Corporation"
-  },
-  {
-   "t": "SKE",
-   "cap": 3.838,
-   "name": "Skeena Resources Limited"
-  },
-  {
-   "t": "BWLP",
-   "cap": 3.812,
-   "name": "BW LPG Limited"
-  },
-  {
-   "t": "MSGE",
-   "cap": 3.803,
-   "name": "Madison Square Garden Entertain"
-  },
-  {
-   "t": "AMLX",
-   "cap": 3.748,
-   "name": "Amylyx Pharmaceuticals, Inc."
-  },
-  {
-   "t": "AXTI",
-   "cap": 3.742,
-   "name": "AXT Inc"
-  },
-  {
-   "t": "TARS",
-   "cap": 3.741,
-   "name": "Tarsus Pharmaceuticals, Inc."
-  },
-  {
-   "t": "IDYA",
-   "cap": 3.669,
-   "name": "IDEAYA Biosciences, Inc."
-  },
-  {
-   "t": "ABCL",
-   "cap": 3.62,
-   "name": "AbCellera Biologics Inc."
-  },
-  {
-   "t": "TRMD",
-   "cap": 3.62,
-   "name": "TORM plc"
-  },
-  {
-   "t": "ZIM",
-   "cap": 3.582,
-   "name": "ZIM Integrated Shipping Service"
-  },
-  {
-   "t": "DHT",
-   "cap": 3.571,
-   "name": "DHT Holdings, Inc."
-  },
-  {
-   "t": "NHC",
-   "cap": 3.567,
-   "name": "National HealthCare Corporation"
-  },
-  {
-   "t": "BTE",
-   "cap": 3.517,
-   "name": "Baytex Energy Corp"
-  },
-  {
-   "t": "ERO",
-   "cap": 3.513,
-   "name": "Ero Copper Corp."
-  },
-  {
-   "t": "TNK",
-   "cap": 3.464,
-   "name": "Teekay Tankers Ltd."
-  },
-  {
-   "t": "LION",
-   "cap": 3.461,
-   "name": "Lionsgate Studios Corp"
-  },
-  {
-   "t": "WT",
-   "cap": 3.453,
-   "name": "WisdomTree, Inc."
-  },
-  {
-   "t": "SBLK",
-   "cap": 3.443,
-   "name": "Star Bulk Carriers Corp."
-  },
-  {
-   "t": "CSTM",
-   "cap": 3.427,
-   "name": "Constellium SE"
-  },
-  {
-   "t": "DNLI",
-   "cap": 3.392,
-   "name": "Denali Therapeutics Inc."
-  },
-  {
-   "t": "SII",
-   "cap": 3.388,
-   "name": "Sprott Inc."
-  },
-  {
-   "t": "CXW",
-   "cap": 3.385,
-   "name": "CoreCivic, Inc."
-  },
-  {
-   "t": "GRAL",
-   "cap": 3.374,
-   "name": "GRAIL, Inc."
-  },
-  {
-   "t": "NESR",
-   "cap": 3.302,
-   "name": "National Energy Services Reunit"
-  },
-  {
-   "t": "BELFB",
-   "cap": 3.277,
-   "name": "Bel Fuse Inc."
-  },
-  {
-   "t": "VGNT",
-   "cap": 3.264,
-   "name": "Versigent PLC"
-  },
-  {
-   "t": "DAN",
-   "cap": 3.26,
-   "name": "Dana Incorporated"
-  },
-  {
-   "t": "LBRT",
-   "cap": 3.187,
-   "name": "Liberty Energy Inc."
-  },
-  {
-   "t": "ATKR",
-   "cap": 3.177,
-   "name": "Atkore Inc."
-  },
-  {
-   "t": "AAMI",
-   "cap": 3.156,
-   "name": "Acadian Asset Management Inc."
-  },
-  {
-   "t": "AVAH",
-   "cap": 3.139,
-   "name": "Aveanna Healthcare Holdings Inc"
-  },
-  {
-   "t": "QURE",
-   "cap": 3.117,
-   "name": "uniQure N.V."
-  },
-  {
-   "t": "ECO",
-   "cap": 3.113,
-   "name": "Okeanis Eco Tankers Corp."
-  },
-  {
-   "t": "CLDX",
-   "cap": 3.077,
-   "name": "Celldex Therapeutics, Inc."
-  },
-  {
-   "t": "RCUS",
-   "cap": 3.065,
-   "name": "Arcus Biosciences, Inc."
-  },
-  {
-   "t": "SLDE",
-   "cap": 3.064,
-   "name": "Slide Insurance Holdings, Inc."
-  },
-  {
-   "t": "ATRO",
-   "cap": 3.052,
-   "name": "Astronics Corporation"
-  },
-  {
-   "t": "ARCB",
-   "cap": 3.033,
-   "name": "ArcBest Corporation"
-  },
-  {
-   "t": "BBAR",
-   "cap": 3.023,
-   "name": "Banco BBVA Argentina S.A."
-  },
-  {
-   "t": "UCTT",
-   "cap": 2.976,
-   "name": "Ultra Clean Holdings, Inc."
-  },
-  {
-   "t": "KN",
-   "cap": 2.956,
-   "name": "Knowles Corporation"
-  },
-  {
-   "t": "TALO",
-   "cap": 2.949,
-   "name": "Talos Energy, Inc."
-  },
-  {
-   "t": "GRDN",
-   "cap": 2.945,
-   "name": "Guardian Pharmacy Services, Inc"
-  },
-  {
-   "t": "IMAX",
-   "cap": 2.93,
-   "name": "Imax Corporation"
-  },
-  {
-   "t": "DAC",
-   "cap": 2.881,
-   "name": "Danaos Corporation"
-  },
-  {
-   "t": "TGB",
-   "cap": 2.87,
-   "name": "Trekor Metals Limited"
-  },
-  {
-   "t": "MBX",
-   "cap": 2.865,
-   "name": "MBX Biosciences, Inc."
-  },
-  {
-   "t": "BKD",
-   "cap": 2.844,
-   "name": "Brookdale Senior Living Inc."
-  },
-  {
-   "t": "NVTS",
-   "cap": 2.843,
-   "name": "Navitas Semiconductor Corporati"
-  },
-  {
-   "t": "ATRC",
-   "cap": 2.838,
-   "name": "AtriCure, Inc."
-  },
-  {
-   "t": "DXPE",
-   "cap": 2.79,
-   "name": "DXP Enterprises, Inc."
-  },
-  {
-   "t": "IMNM",
-   "cap": 2.788,
-   "name": "Immunome, Inc."
-  },
-  {
-   "t": "CALY",
-   "cap": 2.743,
-   "name": "Callaway Golf Company"
-  },
-  {
-   "t": "GPCR",
-   "cap": 2.741,
-   "name": "Structure Therapeutics Inc."
-  },
-  {
-   "t": "CHRN",
-   "cap": 2.731,
-   "name": "ChronoScale Holdings Corporatio"
-  },
-  {
-   "t": "PHVS",
-   "cap": 2.728,
-   "name": "Pharvaris N.V."
-  },
-  {
-   "t": "UNFI",
-   "cap": 2.727,
-   "name": "United Natural Foods, Inc."
-  },
-  {
-   "t": "ATAI",
-   "cap": 2.726,
-   "name": "AtaiBeckley Inc."
-  },
-  {
-   "t": "AEHR",
-   "cap": 2.723,
-   "name": "Aehr Test Systems"
-  },
-  {
-   "t": "ADEA",
-   "cap": 2.72,
-   "name": "Adeia Inc."
-  },
-  {
-   "t": "CDNA",
-   "cap": 2.709,
-   "name": "CareDx, Inc."
-  },
-  {
-   "t": "CLOV",
-   "cap": 2.709,
-   "name": "Clover Health Investments, Corp"
-  },
-  {
-   "t": "EFXT",
-   "cap": 2.706,
-   "name": "Enerflex Ltd"
-  },
-  {
-   "t": "NMM",
-   "cap": 2.667,
-   "name": "Navios Maritime Partners LP"
-  },
-  {
-   "t": "NRIX",
-   "cap": 2.649,
-   "name": "Nurix Therapeutics, Inc."
-  },
-  {
-   "t": "NEOG",
-   "cap": 2.606,
-   "name": "Neogen Corporation"
-  },
-  {
-   "t": "BHE",
-   "cap": 2.595,
-   "name": "Benchmark Electronics, Inc."
-  },
-  {
-   "t": "WTTR",
-   "cap": 2.862,
-   "name": "Select Water Solutions, Inc."
-  },
-  {
-   "t": "BVC",
-   "cap": 2.537,
-   "name": "BitVentures Limited"
-  },
-  {
-   "t": "SVM",
-   "cap": 2.531,
-   "name": "Silvercorp Metals Inc."
-  },
-  {
-   "t": "DGII",
-   "cap": 2.529,
-   "name": "Digi International Inc."
-  },
-  {
-   "t": "DRH",
-   "cap": 2.53,
-   "name": "Diamondrock Hospitality Company"
-  },
-  {
-   "t": "LIFE",
-   "cap": 3.772,
-   "name": "Ethos Technologies Inc."
-  },
-  {
-   "t": "VECO",
-   "cap": 2.5,
-   "name": "Veeco Instruments Inc."
-  },
-  {
-   "t": "DCO",
-   "cap": 2.484,
-   "name": "Ducommun Incorporated"
-  },
-  {
-   "t": "LB",
-   "cap": 6.663,
-   "name": "LandBridge Company LLC"
-  },
-  {
-   "t": "PGEN",
-   "cap": 2.442,
-   "name": "Precigen, Inc."
-  },
-  {
-   "t": "MBIN",
-   "cap": 2.441,
-   "name": "Merchants Bancorp"
-  },
-  {
-   "t": "ANDE",
-   "cap": 2.441,
-   "name": "The Andersons, Inc."
-  },
-  {
-   "t": "KALU",
-   "cap": 2.437,
-   "name": "Kaiser Aluminum Corporation"
-  },
-  {
-   "t": "BELFA",
-   "cap": 2.409,
-   "name": "Bel Fuse Inc."
-  },
-  {
-   "t": "NEO",
-   "cap": 2.397,
-   "name": "NeoGenomics, Inc."
-  },
-  {
-   "t": "PENG",
-   "cap": 2.387,
-   "name": "Penguin Solutions, Inc."
-  },
-  {
-   "t": "PBI",
-   "cap": 2.376,
-   "name": "Pitney Bowes Inc."
-  },
-  {
-   "t": "HIMX",
-   "cap": 2.372,
-   "name": "Himax Technologies, Inc."
-  },
-  {
-   "t": "LPG",
-   "cap": 2.369,
-   "name": "Dorian LPG Ltd."
-  },
-  {
-   "t": "SLS",
-   "cap": 2.368,
-   "name": "SELLAS Life Sciences Group, Inc"
-  },
-  {
-   "t": "COHU",
-   "cap": 2.366,
-   "name": "Cohu, Inc."
-  },
-  {
-   "t": "ROG",
-   "cap": 2.356,
-   "name": "Rogers Corporation"
-  },
-  {
-   "t": "AXGN",
-   "cap": 2.354,
-   "name": "AxoGen, Inc."
-  },
-  {
-   "t": "PURR",
-   "cap": 2.344,
-   "name": "Hyperliquid Strategies Inc"
-  },
-  {
-   "t": "FIGS",
-   "cap": 2.323,
-   "name": "FIGS, Inc."
-  },
-  {
-   "t": "TRVI",
-   "cap": 2.264,
-   "name": "Trevi Therapeutics, Inc."
-  },
-  {
-   "t": "TRLV",
-   "cap": 2.238,
-   "name": "Trulieve Cannabis Corp. Subordi"
-  },
-  {
-   "t": "LUNR",
-   "cap": 2.227,
-   "name": "Intuitive Machines, Inc."
-  },
-  {
-   "t": "MD",
-   "cap": 2.187,
-   "name": "Pediatrix Medical Group, Inc."
-  },
-  {
-   "t": "PVLA",
-   "cap": 2.186,
-   "name": "Palvella Therapeutics, Inc."
-  },
-  {
-   "t": "STGW",
-   "cap": 2.151,
-   "name": "Stagwell Inc."
-  },
-  {
-   "t": "ESTA",
-   "cap": 2.143,
-   "name": "Establishment Labs Holdings Inc"
-  },
-  {
-   "t": "NGL",
-   "cap": 2.141,
-   "name": "NGL ENERGY PARTNERS LP"
-  },
-  {
-   "t": "ECPG",
-   "cap": 2.115,
-   "name": "Encore Capital Group Inc"
-  },
-  {
-   "t": "RAPP",
-   "cap": 2.111,
-   "name": "Rapport Therapeutics, Inc."
-  },
-  {
-   "t": "CEPU",
-   "cap": 2.1,
-   "name": "Central Puerto S.A."
-  },
-  {
-   "t": "NUVB",
-   "cap": 2.086,
-   "name": "Nuvation Bio Inc."
-  },
-  {
-   "t": "URGN",
-   "cap": 2.084,
-   "name": "UroGen Pharma Ltd."
-  },
-  {
-   "t": "KOD",
-   "cap": 2.083,
-   "name": "Kodiak Sciences Inc"
-  },
-  {
-   "t": "VET",
-   "cap": 2.031,
-   "name": "Vermilion Energy Inc."
-  },
-  {
-   "t": "INVX",
-   "cap": 2.03,
-   "name": "Innovex International, Inc."
-  },
-  {
-   "t": "PEB",
-   "cap": 2.019,
-   "name": "Pebblebrook Hotel Trust"
-  },
-  {
-   "t": "CMPS",
-   "cap": 2.013,
-   "name": "COMPASS Pathways Plc - American"
-  },
-  {
-   "t": "CTOS",
-   "cap": 2.004,
-   "name": "Custom Truck One Source, Inc."
-  },
-  {
-   "t": "EZPW",
-   "cap": 1.985,
-   "name": "EZCORP, Inc."
-  },
-  {
-   "t": "BFLY",
-   "cap": 1.973,
-   "name": "Butterfly Network, Inc."
-  },
-  {
-   "t": "SPB",
-   "cap": 1.965,
-   "name": "Spectrum Brands Holdings, Inc."
-  },
-  {
-   "t": "PLPC",
-   "cap": 1.947,
-   "name": "Preformed Line Products Company"
-  },
-  {
-   "t": "ICHR",
-   "cap": 1.924,
-   "name": "Ichor Holdings"
-  },
-  {
-   "t": "ZYME",
-   "cap": 1.92,
-   "name": "Zymeworks Inc."
-  },
-  {
-   "t": "HYMC",
-   "cap": 1.915,
-   "name": "Hycroft Mining Holding Corporat"
-  },
-  {
-   "t": "GHRS",
-   "cap": 1.914,
-   "name": "GH Research PLC"
-  },
-  {
-   "t": "GRC",
-   "cap": 1.888,
-   "name": "Gorman-Rupp Company (The)"
-  },
-  {
-   "t": "GCT",
-   "cap": 1.883,
-   "name": "GigaCloud Technology Inc"
-  },
-  {
-   "t": "PRLB",
-   "cap": 1.871,
-   "name": "Proto Labs, Inc."
-  },
-  {
-   "t": "IMOS",
-   "cap": 1.863,
-   "name": "ChipMOS TECHNOLOGIES INC."
-  },
-  {
-   "t": "DHC",
-   "cap": 1.86,
-   "name": "Diversified Healthcare Trust"
-  },
-  {
-   "t": "SHAZ",
-   "cap": 1.859,
-   "name": "SharonAI Holdings, Inc."
-  },
-  {
-   "t": "SEPN",
-   "cap": 1.846,
-   "name": "Septerna, Inc."
-  },
-  {
-   "t": "TOP",
-   "cap": 1.841,
-   "name": "TOP Financial Group Limited"
-  },
-  {
-   "t": "XNCR",
-   "cap": 1.824,
-   "name": "Xencor, Inc."
-  },
-  {
-   "t": "VIR",
-   "cap": 1.822,
-   "name": "Vir Biotechnology, Inc."
-  },
-  {
-   "t": "TH",
-   "cap": 1.817,
-   "name": "Target Hospitality Corp."
-  },
-  {
-   "t": "NBTX",
-   "cap": 1.815,
-   "name": "Nanobiotix S.A."
-  },
-  {
-   "t": "SFL",
-   "cap": 1.808,
-   "name": "SFL Corporation Ltd"
-  },
-  {
-   "t": "PDFS",
-   "cap": 1.808,
-   "name": "PDF Solutions, Inc."
-  },
-  {
-   "t": "DAO",
-   "cap": 1.753,
-   "name": "Youdao, Inc."
-  },
-  {
-   "t": "DMRA",
-   "cap": 1.753,
-   "name": "Damora Therapeutics, Inc."
-  },
-  {
-   "t": "PSNL",
-   "cap": 1.739,
-   "name": "Personalis, Inc."
-  },
-  {
-   "t": "KOS",
-   "cap": 1.739,
-   "name": "Kosmos Energy Ltd."
-  },
-  {
-   "t": "LILA",
-   "cap": 1.738,
-   "name": "Liberty Latin America Ltd."
-  },
-  {
-   "t": "LILAK",
-   "cap": 1.724,
-   "name": "Liberty Latin America Ltd."
-  },
-  {
-   "t": "VSTS",
-   "cap": 1.709,
-   "name": "Vestis Corporation"
-  },
-  {
-   "t": "LIND",
-   "cap": 1.706,
-   "name": "Lindblad Expeditions Holdings I"
-  },
-  {
-   "t": "CBL",
-   "cap": 1.684,
-   "name": "CBL & Associates Properties, In"
-  },
-  {
-   "t": "OBK",
-   "cap": 1.679,
-   "name": "Origin Bancorp, Inc."
-  },
-  {
-   "t": "MGRT",
-   "cap": 1.66,
-   "name": "Mega Fortune Company Limited"
-  },
-  {
-   "t": "PBT",
-   "cap": 1.658,
-   "name": "Permian Basin Royalty Trust"
-  },
-  {
-   "t": "NEXA",
-   "cap": 1.657,
-   "name": "Nexa Resources S.A."
-  },
-  {
-   "t": "FTRE",
-   "cap": 1.656,
-   "name": "Fortrea Holdings Inc."
-  },
-  {
-   "t": "ETON",
-   "cap": 1.647,
-   "name": "Eton Pharmaceuticals, Inc."
-  },
-  {
-   "t": "TSHA",
-   "cap": 1.632,
-   "name": "Taysha Gene Therapies, Inc."
-  },
-  {
-   "t": "USAS",
-   "cap": 1.627,
-   "name": "Americas Gold and Silver Corpor"
-  },
-  {
-   "t": "INBX",
-   "cap": 1.626,
-   "name": "Inhibrx Biosciences, Inc."
-  },
-  {
-   "t": "NAT",
-   "cap": 1.616,
-   "name": "Nordic American Tankers Limited"
-  },
-  {
-   "t": "ANAB",
-   "cap": 1.602,
-   "name": "AnaptysBio, Inc."
-  },
-  {
-   "t": "BAND",
-   "cap": 1.576,
-   "name": "Bandwidth Inc."
-  },
-  {
-   "t": "AGL",
-   "cap": 1.551,
-   "name": "agilon health, inc."
-  },
-  {
-   "t": "ALNT",
-   "cap": 1.54,
-   "name": "Allient Inc."
-  },
-  {
-   "t": "BCAX",
-   "cap": 1.535,
-   "name": "Bicara Therapeutics Inc."
-  },
-  {
-   "t": "ATEX",
-   "cap": 1.522,
-   "name": "Anterix Inc."
-  },
-  {
-   "t": "TEN",
-   "cap": 1.495,
-   "name": "Tsakos Energy Navigation Ltd"
-  },
-  {
-   "t": "TYRA",
-   "cap": 1.491,
-   "name": "Tyra Biosciences, Inc."
-  },
-  {
-   "t": "NUTX",
-   "cap": 1.486,
-   "name": "Nutex Health Inc."
-  },
-  {
-   "t": "INNV",
-   "cap": 1.47,
-   "name": "InnovAge Holding Corp."
-  },
-  {
-   "t": "IAUX",
-   "cap": 1.463,
-   "name": "i-80 Gold Corp."
-  },
-  {
-   "t": "LBRX",
-   "cap": 1.447,
-   "name": "LB Pharmaceuticals Inc"
-  },
-  {
-   "t": "AMBQ",
-   "cap": 1.442,
-   "name": "Ambiq Micro, Inc."
-  },
-  {
-   "t": "AMAL",
-   "cap": 1.429,
-   "name": "Amalgamated Financial Corp."
-  },
-  {
-   "t": "UFCS",
-   "cap": 1.422,
-   "name": "United Fire Group, Inc"
-  },
-  {
-   "t": "APPS",
-   "cap": 1.419,
-   "name": "Digital Turbine, Inc."
-  },
-  {
-   "t": "AVBP",
-   "cap": 1.409,
-   "name": "ArriVent BioPharma, Inc."
-  },
-  {
-   "t": "PNTG",
-   "cap": 1.401,
-   "name": "The Pennant Group, Inc."
-  },
-  {
-   "t": "ABSI",
-   "cap": 1.388,
-   "name": "Absci Corporation"
-  },
-  {
-   "t": "GOLD",
-   "cap": 1.38,
-   "name": "Gold.com, Inc."
-  },
-  {
-   "t": "LQDT",
-   "cap": 1.349,
-   "name": "Liquidity Services, Inc."
-  },
-  {
-   "t": "TRAX",
-   "cap": 1.342,
-   "name": "First Tracks Biotherapeutics, I"
-  },
-  {
-   "t": "DRTS",
-   "cap": 1.332,
-   "name": "Alpha Tau Medical Ltd."
-  },
-  {
-   "t": "AMN",
-   "cap": 1.324,
-   "name": "AMN Healthcare Services Inc"
-  },
-  {
-   "t": "BJRI",
-   "cap": 1.322,
-   "name": "BJ's Restaurants, Inc."
-  },
-  {
-   "t": "NBR",
-   "cap": 1.321,
-   "name": "Nabors Industries Ltd."
-  },
-  {
-   "t": "CGEM",
-   "cap": 1.313,
-   "name": "Cullinan Therapeutics, Inc."
-  },
-  {
-   "t": "IMTX",
-   "cap": 1.312,
-   "name": "Immatics N.V."
-  },
-  {
-   "t": "TBN",
-   "cap": 1.31,
-   "name": "Tamboran Resources Corporation"
-  },
-  {
-   "t": "PUMP",
-   "cap": 1.29,
-   "name": "ProPetro Holding Corp."
-  },
-  {
-   "t": "TE",
-   "cap": 1.287,
-   "name": "T1 Energy Inc."
-  },
-  {
-   "t": "OPY",
-   "cap": 1.279,
-   "name": "Oppenheimer Holdings, Inc."
-  },
-  {
-   "t": "SENEB",
-   "cap": 1.274,
-   "name": "Seneca Foods Corp."
-  },
-  {
-   "t": "OMER",
-   "cap": 1.264,
-   "name": "Omeros Corporation"
-  },
-  {
-   "t": "SENEA",
-   "cap": 1.262,
-   "name": "Seneca Foods Corp."
-  },
-  {
-   "t": "UVE",
-   "cap": 1.244,
-   "name": "UNIVERSAL INSURANCE HOLDINGS IN"
-  },
-  {
-   "t": "ANRO",
-   "cap": 1.243,
-   "name": "Alto Neuroscience, Inc."
-  },
-  {
-   "t": "TK",
-   "cap": 1.238,
-   "name": "Teekay Corporation Ltd."
-  },
-  {
-   "t": "MGTX",
-   "cap": 1.237,
-   "name": "MeiraGTx Holdings plc"
-  },
-  {
-   "t": "REPL",
-   "cap": 1.235,
-   "name": "Replimune Group, Inc."
-  },
-  {
-   "t": "RDVT",
-   "cap": 1.224,
-   "name": "Red Violet, Inc."
-  },
-  {
-   "t": "FCEL",
-   "cap": 1.222,
-   "name": "FuelCell Energy, Inc."
-  },
-  {
-   "t": "CCO",
-   "cap": 1.212,
-   "name": "Clear Channel Outdoor Holdings,"
-  },
-  {
-   "t": "ALMS",
-   "cap": 1.193,
-   "name": "Alumis Inc."
-  },
-  {
-   "t": "CLBK",
-   "cap": 1.186,
-   "name": "Columbia Financial, Inc."
-  },
-  {
-   "t": "GLUE",
-   "cap": 1.186,
-   "name": "Monte Rosa Therapeutics, Inc."
-  },
-  {
-   "t": "EE",
-   "cap": 4.284,
-   "name": "Excelerate Energy, Inc."
-  },
-  {
-   "t": "HBNB",
-   "cap": 1.17,
-   "name": "Hotel101 Global Holdings Corp."
-  },
-  {
-   "t": "JBIO",
-   "cap": 1.156,
-   "name": "Jade Biosciences, Inc."
-  },
-  {
-   "t": "HZO",
-   "cap": 1.153,
-   "name": "MarineMax, Inc.  (FL)"
-  },
-  {
-   "t": "UMAC",
-   "cap": 1.132,
-   "name": "Unusual Machines, Inc."
-  },
-  {
-   "t": "MYE",
-   "cap": 1.12,
-   "name": "Myers Industries, Inc."
-  },
-  {
-   "t": "PDS",
-   "cap": 1.119,
-   "name": "Precision Drilling Corporation"
-  },
-  {
-   "t": "CRVS",
-   "cap": 1.103,
-   "name": "Corvus Pharmaceuticals, Inc."
-  },
-  {
-   "t": "NEWP",
-   "cap": 1.089,
-   "name": "New Pacific Metals Corp."
-  },
-  {
-   "t": "CPAC",
-   "cap": 1.072,
-   "name": "Cementos Pacasmayo S.A.A."
-  },
-  {
-   "t": "BW",
-   "cap": 1.047,
-   "name": "Babcock & Wilcox Enterprises, I"
-  },
-  {
-   "t": "ANL",
-   "cap": 1.026,
-   "name": "Adlai Nortye Group Ltd."
-  },
-  {
-   "t": "AIP",
-   "cap": 1.013,
-   "name": "Arteris, Inc."
-  },
-  {
-   "t": "FTH",
-   "cap": 1.01,
-   "name": "Faeth Therapeutics, Inc."
-  },
-  {
-   "t": "SGML",
-   "cap": 1.003,
-   "name": "Sigma Lithium Corporation"
+import streamlit as st
+import pandas as pd
+import numpy as np
+import time
+import yfinance as yf
+from yfinance import EquityQuery as Q
+
+# ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ────────────────────
+#   與 1_Dashboard.py / 6_WinRate_Matrix.py / 5_Breakout_Screener.py 同一套：
+#   根字級 16px → 20px，本頁所有 rem 一次放大 1.25 倍。
+#   ⚠️ st.data_editor（可編輯表格）是 canvas 繪製，字級不吃 CSS，
+#      需在專案根目錄 .streamlit/config.toml 設 [theme] baseFontSize = 20。
+#      唯讀表格已改用 big_table() 的 HTML 表格，字級才放得大。
+st.markdown("""
+<style>
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p  { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.25rem; }
+  [data-testid="stMarkdownContainer"] h5 { font-size: 1.1rem; }
+  [data-testid="stMetricValue"] { font-size: 1.85rem !important; }
+  [data-testid="stMetricLabel"] p { font-size: 0.98rem !important; }
+  [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] div { font-size: 0.95rem !important; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  [data-testid="stCheckbox"] label p, [data-testid="stRadio"] label p { font-size: 1rem !important; }
+  [data-testid="stAlert"] p { font-size: 1rem; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input, .stDateInput input,
+  [data-baseweb="select"] div, [data-baseweb="tag"] span, [data-baseweb="tab"] p { font-size: 1rem; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.08rem; font-weight: 600; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
+
+  /* 唯讀表格（big_table）：取代 st.dataframe，字級才能跟著放大 */
+  .bigtbl-wrap { overflow: auto; border: 1px solid #1e293b; border-radius: 8px; }
+  table.bigtbl { border-collapse: collapse; width: max-content; min-width: 100%; }
+  table.bigtbl th {
+    position: sticky; top: 0; z-index: 2; background: #0f172a; color: #64748b;
+    font-size: 0.88rem; font-weight: 600; text-align: right; white-space: nowrap;
+    padding: 10px 14px; border-bottom: 1px solid #1e293b;
   }
- ]
-}
+  table.bigtbl td {
+    font-size: 1rem; color: #cbd5e1; text-align: right; white-space: nowrap;
+    padding: 9px 14px; border-bottom: 1px solid #16202f;
+  }
+  table.bigtbl th.l, table.bigtbl td.l { text-align: left; }
+  table.bigtbl td.code { font-weight: 700; color: #e2e8f0; font-size: 1.08rem; }
+  table.bigtbl tr:hover td { background: #131c2b; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def big_table(df, height=520, show_index=True, fmt=None, left=()):
+    """大字級唯讀表格：st.dataframe 是 canvas 繪製、字級吃不到 CSS，改輸出 HTML 表格。
+    fmt：{欄名: "{:,.0f}"} 明確指定格式；未指定的浮點欄自動套千分位。
+    left：靠左對齊的欄名集合（文字欄）；index 一律靠左並加粗。"""
+    d = df.copy()
+    fmt = fmt or {}
+    for c in d.columns:
+        if c in fmt:
+            d[c] = d[c].map(lambda v, f=fmt[c]: "—" if pd.isna(v) else f.format(v))
+        elif pd.api.types.is_float_dtype(d[c]):
+            d[c] = d[c].map(lambda v: "—" if pd.isna(v)
+                            else (f"{v:,.0f}" if abs(v - round(v)) < 1e-9 else f"{v:,.2f}"))
+    head = (f'<th class="l">{d.index.name or ""}</th>' if show_index else "")
+    head += "".join(f'<th class="{"l" if c in left else ""}">{c}</th>' for c in d.columns)
+    body = ""
+    for i, row in d.iterrows():
+        tds = f'<td class="l code">{i}</td>' if show_index else ""
+        tds += "".join(f'<td class="{"l" if c in left else ""}">'
+                       f'{"" if pd.isna(row[c]) else row[c]}</td>' for c in d.columns)
+        body += f"<tr>{tds}</tr>"
+    st.markdown(f'<div class="bigtbl-wrap" style="max-height:{height}px">'
+                f'<table class="bigtbl"><thead><tr>{head}</tr></thead>'
+                f'<tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════════════════
+# 🦖 怪物股選股器（順勢交易系統 規則一＋規則二）
+#   宇宙：美股普通股、市值 > $1B、過去半年漲幅 > 150%、上市滿一年、剔除能源／礦業金屬／生技製藥／加密貨幣相關
+#   觸發：今日收盤創 63 日新高；許可：領頭股燈號綠燈（≥5/8）且壓力否決未成立
+#   輸出：合格名單＋前波支撐停損＋1R 股數（修復突破候選在「均線收斂突破選股」頁）
+# ═══════════════════════════════════════════════════════════════════
+
+TOP8_FALLBACK = ["NVDA", "MSFT", "AAPL", "AMZN", "GOOGL", "META", "AVGO", "TSLA"]
+MACRO = ["SPY", "CME", "XLP", "XLY", "IWM"]
+EXCL_SECTOR = {"Energy"}
+EXCL_INDUSTRY_KW = ["Biotech", "Drug Manufacturers", "Pharmaceutical", "Gold", "Silver", "Copper", "Steel",
+                    "Aluminum", "Other Industrial Metals", "Other Precious Metals", "Coking Coal", "Thermal Coal",
+                    "Uranium", "Oil & Gas"]
+# 加密貨幣相關（礦機商、持幣公司、交易所）與迷因股：產業分類抓不到，用名單剔除
+EXCL_TICKERS_DEFAULT = "MSTR, MARA, RIOT, HUT, CLSK, BITF, CIFR, WULF, IREN, CORZ, GREE, BTBT, HIVE, SDIG, BTCS, COIN, BKKT, GLXY, SBET, BMNR, DFDV, CEP, CAN, EBON, NCTY, BTDR, SLNH, GRYP, APLD, GME, AMC, KOSS, MULN"
+EXCH_OK = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS"}
+BATCH = 25
+
+
+# ── 資料 ─────────────────────────────────────────────────────────
+# 備援宇宙用的半導體名單（Yahoo 產業篩選同樣會被擋，只能寫死）
+SEMIS_FALLBACK = ["NVDA", "AVGO", "AMD", "TSM", "MU", "INTC", "QCOM", "TXN", "ADI", "LRCX",
+                  "AMAT", "KLAC", "MRVL", "NXPI", "MCHP", "ON", "SWKS", "QRVO", "MPWR", "TER",
+                  "ENTG", "ASML", "ARM", "ALAB", "CRDO", "RMBS", "LSCC", "SITM", "POWI", "AOSL",
+                  "COHR", "SNDK", "LITE", "AAOI", "WOLF", "AMKR", "FORM", "ACLS", "UCTT", "ICHR"]
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _index_universe() -> pd.DataFrame:
+    """備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體（維基百科，不經 Yahoo 篩選器）。
+    沒有市值欄位（cap = NaN），但這些成分股本來就都 >$1B，市值門檻等同已滿足。"""
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    out = []
+    for url, minlen in (("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", 400),
+                        ("https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies", 90)):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            r.raise_for_status()
+            for tb in pd.read_html(StringIO(r.text)):
+                cols = [str(c) for c in tb.columns]
+                hit = [c for c in cols if "Ticker" in c or "Symbol" in c]
+                if not hit or len(tb) < minlen:
+                    continue
+                ser = tb[hit[0]].astype(str).str.strip().str.replace(".", "-", regex=False)
+                out += [t for t in ser.tolist()
+                        if t and t.upper() != "NAN" and 1 <= len(t) <= 6 and t.replace("-", "").isalpha()]
+                break
+        except Exception:
+            pass
+    out += SEMIS_FALLBACK
+    out = list(dict.fromkeys(out))
+    return pd.DataFrame([{"t": t, "cap": float("nan"), "name": ""} for t in out])
+
+
+UNIV_FILE = "data/monster_universe.json"      # 由 build_universe.py 在本機產生後 commit 上來
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _file_universe(min_cap_b: float) -> tuple:
+    """讀 repo 裡由排程產生的宇宙名單。雲端 IP 打不到 Yahoo screener，
+    但你自己電腦的住宅 IP 打得到——所以名單在本機算好 commit 上來，網頁只負責讀。
+    檔案不存在就回 (None, "")，自動往下一層走。"""
+    import json, datetime as _dt
+    from pathlib import Path as _P
+    f = _P(__file__).resolve().parent.parent / UNIV_FILE      # repo 根目錄/data/...
+    if not f.exists():
+        return None, ""
+    try:
+        blob = json.loads(f.read_text(encoding="utf-8"))
+        rows = [x for x in blob["rows"] if (x.get("cap") or 0) >= min_cap_b]
+        if not rows:
+            return None, ""
+        built = blob.get("built_at", "?")
+        age = (_dt.date.today() - _dt.date.fromisoformat(built[:10])).days
+        note = f"排程名單（{built[:10]}，{len(rows)} 檔候選）"
+        if age >= 3:
+            note = f"⚠️ 排程名單已經 {age} 天沒更新（{built[:10]}，{len(rows)} 檔）——請在本機重跑 build_universe.py 並 commit。"
+        return pd.DataFrame(rows), note
+    except Exception:
+        return None, ""
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
+    """Yahoo 篩選器粗篩：市值 > min_cap、52 週漲幅 > min_52w（半年 >150% 的必要條件近似）。
+    回傳 (DataFrame, 來源說明)。
+
+    ⚠️ yf.screen 需要 Yahoo 的 cookie/crumb 認證，雲端機房 IP 很常被回 401/429
+    （本機跑得動、部署到 Community Cloud 就掛）。所以這裡：
+      ① 每頁重試 3 次、指數退避；② 整段失敗不再往外丟例外，改用指數成分股當備援宇宙。"""
+    df_file, note_file = _file_universe(min_cap_b)
+    if df_file is not None:                       # 第一層：排程產生的名單
+        return df_file, note_file
+    q = Q("and", [Q("gt", ["intradaymarketcap", min_cap_b * 1e9]),
+                  Q("gt", ["fiftytwowkpercentchange", min_52w]),
+                  Q("eq", ["region", "us"])])
+    rows, off, last_err = [], 0, None
+    while off < 3000:
+        r = None
+        for attempt in range(3):
+            try:
+                r = yf.screen(q, size=250, offset=off, sortField="intradaymarketcap", sortAsc=False)
+                break
+            except Exception as e:                 # 401／429／連線中斷都在這裡吸收
+                last_err = e
+                # Yahoo 對機房 IP 封的是 screener endpoint 本身，不是限流：
+                # 回「User is unable to access this feature」時重試永遠不會成功，直接放棄省 12 秒。
+                if "unable to access this feature" in str(e).lower():
+                    break
+                time.sleep(2 * (attempt + 1))
+        if r is None:
+            break
+        qs = r.get("quotes", [])
+        rows += qs
+        off += 250
+        if not qs or off >= r.get("total", 0):
+            break
+    keep = []
+    for x in rows:
+        if x.get("quoteType") != "EQUITY" or x.get("exchange") not in EXCH_OK:
+            continue
+        keep.append({"t": x["symbol"], "cap": (x.get("marketCap") or 0) / 1e9,
+                     "name": x.get("shortName", "")})
+    if keep:
+        return pd.DataFrame(keep), f"Yahoo 篩選器（{len(keep)} 檔候選）"
+    fb = _index_universe()
+    why = "（Yahoo 封鎖機房 IP 的 screener endpoint）" if last_err is not None else "（無回傳資料）"
+    return fb, ("⚠️ Yahoo 篩選器連線失敗 " + why +
+                f"——雲端 IP 常被限流。已改用備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體共 {len(fb)} 檔。"
+                "指數外的中小型怪物股這時候會漏掉，市值欄位也會是「—」。")
+
+
+@st.cache_resource(ttl=86400, show_spinner=False)   # ⚠️ 不可改回 cache_data：
+def fetch_prices(tickers: tuple, period: str = "1y") -> dict:   # cache_data 每 session 複製一份 → 爆記憶體
+    """分批下載 OHLC（被限流時暫停重試一次）；缺太多時不逐檔補抓，避免卡死。回傳 {ticker: DataFrame}。"""
+    out = {}
+    tk = list(tickers)
+    for i in range(0, len(tk), BATCH):
+        ch = tk[i:i + BATCH]
+        raw = None
+        for attempt in range(2):
+            try:
+                raw = yf.download(ch, period=period, interval="1d", auto_adjust=True,
+                                  progress=False, threads=False, group_by="ticker")
+                if raw is not None and not raw.empty:
+                    break
+            except Exception:
+                raw = None
+            time.sleep(3)          # 疑似限流：等一下再試
+        if raw is None or raw.empty:
+            continue
+        for t in ch:
+            try:
+                d = raw[t] if len(ch) > 1 else raw
+                if isinstance(d.columns, pd.MultiIndex):
+                    d.columns = d.columns.get_level_values(0)
+                d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
+                if len(d) >= 130:
+                    out[t] = d
+            except Exception:
+                pass
+    missing = [t for t in tk if t not in out]
+    if 0 < len(missing) <= 40:      # 少量缺漏才逐檔補抓
+        for t in missing:
+            try:
+                d = yf.download(t, period=period, interval="1d", auto_adjust=True, progress=False, threads=False)
+                if isinstance(d.columns, pd.MultiIndex):
+                    d.columns = d.columns.get_level_values(0)
+                d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
+                if len(d) >= 130:
+                    out[t] = d
+            except Exception:
+                pass
+    return out
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_sector(t: str) -> tuple:
+    try:
+        i = yf.Ticker(t).info
+        return (i.get("sector") or "", i.get("industry") or "")
+    except Exception:
+        return ("", "")
+
+
+# 同公司雙股別合併（與大盤壓力儀表板一致）
+_SHARE_CLASS = {"GOOG": "GOOGL", "BRK-A": "BRK-B"}
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_sp500_members() -> set:
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                        headers=headers, timeout=30)
+    resp.raise_for_status()
+    df = pd.read_html(StringIO(resp.text))[0]
+    return set(df["Symbol"].str.replace(".", "-", regex=False).tolist())
+@st.cache_data(ttl=86400, show_spinner=False)
+def top8_by_cap(n: int = 8) -> tuple:
+    """S&P 500 市值前 n 大（合併雙股別、排除非成分股）。
+    ⚠️ 必須與『大盤壓力儀表板』的 fetch_leader_list 完全相同，否則兩頁燈號會不一致：
+    門檻 $2000 億（非 $3000 億）、且要過 S&P 500 成分股濾網（排除 TSM 等外國發行人）。"""
+    try:
+        r = yf.screen(Q("and", [Q("eq", ["region", "us"]), Q("gt", ["intradaymarketcap", 2e11])]),
+                      size=25, sortField="intradaymarketcap", sortAsc=False)
+        try:
+            members = fetch_sp500_members()
+        except Exception:
+            members = None                      # 維基抓不到就不過濾
+        seen, out = set(), []
+        for x in r.get("quotes", []):
+            sym = x.get("symbol", "")
+            if not sym or "." in sym:
+                continue
+            sym = _SHARE_CLASS.get(sym, sym)
+            if sym in seen:
+                continue
+            if members is not None and sym not in members:
+                continue
+            seen.add(sym); out.append(sym)
+            if len(out) >= n:
+                break
+        return tuple(out) if len(out) >= 6 else tuple(TOP8_FALLBACK)
+    except Exception:
+        return tuple(TOP8_FALLBACK)
+
+
+def atr14(df: pd.DataFrame) -> pd.Series:
+    h, l, c = df["High"], df["Low"], df["Close"]
+    tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    return tr.rolling(14).mean()
+
+
+def swing_stop(df: pd.DataFrame, px: float) -> tuple:
+    """最近已確認擺盪低點（前後 3 日最低、低於現價 5% 以上），距離上限 25%。回傳 (停損, 日期或 None)。"""
+    lo = df["Low"]
+    for i in range(len(lo) - 4, max(len(lo) - 120, 3), -1):
+        if lo.iloc[i] == lo.iloc[i - 3:i + 4].min() and lo.iloc[i] < px * 0.95:
+            return max(float(lo.iloc[i]), px * 0.75), lo.index[i].date()
+    return px * 0.80, None
+
+
+
+# ── 管理員模式 ─────────────────────────────────────────────────────
+#   高成本功能（重新掃描＝清全域快取、全美股掃描）只給管理員，避免讀者一多就把
+#   Community Cloud 的 1 GB 記憶體與 Yahoo 限流打爆。
+#   密碼放 .streamlit/secrets.toml 的 admin_password；
+#   Community Cloud 在 App settings → Secrets 貼上，改完會自動重啟。
+def is_admin() -> bool:
+    if st.session_state.get("_is_admin"):
+        return True
+    try:
+        real = st.secrets.get("admin_password", "")
+    except Exception:
+        real = ""
+    if not real:
+        return False          # 沒設 admin_password → 管理功能一律關閉（讀者看不到任何提示）
+    with st.sidebar:
+        with st.expander("🔑 管理員"):
+            pw = st.text_input("管理密碼", type="password", key="_adminpw")
+            if pw:
+                if pw == real:
+                    st.session_state["_is_admin"] = True
+                    st.rerun()
+                st.caption("密碼不正確")
+    return False
+
+
+ADMIN = is_admin()
+
+
+# ── Page ──────────────────────────────────────────────────────────
+col_title, col_refresh = st.columns([5, 1])
+with col_title:
+    st.markdown("## 🦖 怪物股選股器")
+    st.markdown(
+        "<span style='color:#64748b;font-size:0.9rem'>"
+        "宇宙＝市值 > $1B、半年漲幅 > 150%、上市滿一年、非能源／礦業／生技／加密　｜　觸發＝今日創 63 日新高　｜　"
+        "許可＝領頭股綠燈且壓力否決未成立　｜　資料每日快取"
+        "</span>", unsafe_allow_html=True)
+with col_refresh:
+    if ADMIN and st.button("🔄 重新掃描", use_container_width=True):
+        # 清全域快取，所有讀者一起重抓 → 只開放給管理員
+        fetch_prices.clear(); st.cache_data.clear()
+        st.rerun()
+st.markdown("---")
+
+c1, c2, c3, c4 = st.columns(4)
+with c1:
+    mom_th = st.slider("半年漲幅門檻（%）", 100, 300, 150, 10,
+                       help="回測：>150% 均 +0.44R／勝率 48%；100～150% 反而最弱（勝率 34%）。門檻不建議下修。")
+with c2:
+    min_cap = st.selectbox("最低市值（$B）", [1.0, 2.0, 5.0, 10.0], index=0)
+with c3:
+    r_usd = st.number_input("R（美元，帳戶 1%）", min_value=1.0, value=930.0, step=10.0)
+with c4:
+    excl_ipo = st.checkbox("剔除上市未滿一年", value=True,
+                           help="2019～2025 年 IPO 回測：上市 <1 年進場均 −0.10R、勝率 26%、怪物率 ~4%；老牌股 +0.44R／48%／10.6%。")
+ipo_exempt_txt = st.text_input("例外：分拆／重新上市的老公司（逗號分隔，不視為新股）",
+                               value="SNDK, GEV, SOLV, SOLS, Q, VSNT",
+                               help="回測樣本只含真正的 IPO，不含分拆與重新掛牌；這些公司有完整營運歷史，不適用新股結論。DELL 2018 年重新上市、資料已滿一年，不受影響。")
+ipo_exempt = {s.strip().upper() for s in ipo_exempt_txt.split(",") if s.strip()}
+excl_txt = st.text_input("排除名單：加密貨幣相關／迷因股（逗號分隔）", value=EXCL_TICKERS_DEFAULT,
+                         help="回測：剔除加密與迷因股後最大回撤由 −25.8% 收到 −20.0%，加碼貢獻由 −7R 轉為 +8～12R。產業分類抓不到這類公司，只能用名單。")
+excl_tickers = {s.strip().upper() for s in excl_txt.split(",") if s.strip()}
+
+# ── 1. 宇宙 ──
+with st.spinner("Yahoo 篩選器粗篩中…"):
+    univ, univ_note = screen_universe(min_cap, 50.0)
+if univ.empty:
+    st.error("篩選器與備援名單都取不到資料（Yahoo 與 Wikipedia 同時失敗），請稍後再試。")
+    st.stop()
+if univ_note.startswith("⚠️"):
+    st.warning(univ_note)
+
+# ── 2. 價格 ──
+top8 = list(top8_by_cap())
+tickers = tuple(dict.fromkeys(univ["t"].tolist() + top8 + TOP8_FALLBACK + MACRO))
+prog = st.progress(0, text=f"下載 {len(tickers)} 檔價格資料（首次約 2～4 分鐘，之後快取）…")
+PX = fetch_prices(tickers)
+prog.progress(100, text=f"價格資料完成：{len(PX)} 檔")
+prog.empty()
+cov = sum(1 for t in univ["t"] if t in PX) / max(len(univ), 1)
+st.markdown(f"<span style='color:#475569;font-size:0.9rem'>篩選器候選 {len(univ)} 檔｜取得價格 {sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜資料截至 {max((PX[t].index[-1] for t in PX), default='—')}</span>",
+            unsafe_allow_html=True)
+if cov < 0.6:
+    st.warning(f"⚠️ 只取得 {cov*100:.0f}% 候選股的價格，很可能被 Yahoo 暫時限流——名單會不完整。請等 1～2 分鐘後按「🔄 重新掃描」。")
+    if cov < 0.2:
+        fetch_prices.clear()   # 幾乎全空的結果不要快取一整天
+
+# ── 3. 閘門 ──
+def close_of(t):
+    return PX[t]["Close"].ffill() if t in PX else None
+
+# 判定與大盤壓力儀表板一致：紅＝2% 緩衝後仍 ≤4；黃＝無緩衝 ≤4；其餘為綠
+n_above, n_buf, have = 0, 0, 0
+_above_cols = {}
+for t in list(top8) + [x for x in TOP8_FALLBACK if x not in top8]:   # 缺資料時用備援名單補到 8 檔
+    if have >= 8:
+        break
+    c = close_of(t)
+    if c is None or len(c) < 80:
+        continue
+    e60 = c.ewm(span=60, adjust=False).mean()
+    have += 1
+    dist = float(c.iloc[-1] / e60.iloc[-1] - 1) * 100
+    n_above += int(dist > 0)          # 無緩衝
+    n_buf += int(dist > -2.0)         # 2% 緩衝
+    _above_cols[t] = (c > e60)
+# 方向：每日站上家數的 10 日均線，近兩週變化（與儀表板相同）
+delta10 = 0.0
+try:
+    _h_all = pd.DataFrame(_above_cols).sum(axis=1)
+    _h_ma10 = _h_all.rolling(10).mean()
+    if len(_h_ma10.dropna()) > 11:
+        delta10 = float(_h_ma10.iloc[-1] - _h_ma10.iloc[-11])
+except Exception:
+    pass
+if have >= 6:
+    if n_buf <= 4:
+        light = "紅"
+    elif n_above <= 4:
+        light = "惡化黃" if delta10 <= -0.5 else "修復黃"
+    else:
+        light = "綠"
+else:
+    light = "資料不足"
+spy, cme, xlp, xly = close_of("SPY"), close_of("CME"), close_of("XLP"), close_of("XLY")
+cme10 = float((cme / spy).pct_change(10).iloc[-1] * 100) if cme is not None and spy is not None else float("nan")
+xl20 = float((xlp / xly).pct_change(20).iloc[-1] * 100) if xlp is not None and xly is not None else float("nan")
+sig1 = (cme10 >= 5) and (xl20 > 1)
+gate_open = light in ("綠", "惡化黃") and not sig1
+asof = spy.index[-1].date() if spy is not None else "—"
+
+lc = {"綠": "#4ade80", "惡化黃": "#fbbf24", "修復黃": "#fb923c", "紅": "#f87171", "資料不足": "#94a3b8"}[light]
+g1, g2, g3, g4 = st.columns(4)
+g1.metric("領頭股燈號", f"{n_above}/{have}", light, delta_color="off",
+          help=f"S&P 500 市值前八大：{', '.join(top8)}（與大盤壓力儀表板同一份名單與判定）。"
+               f"紅＝2% 緩衝後仍 ≤4／黃＝無緩衝 ≤4（惡化黃＝10 日均近兩週下滑 ≥0.5 檔，開門；修復黃＝關門）／其餘為綠。"
+               f"目前：無緩衝 {n_above}/{have}、2% 緩衝 {n_buf}/{have}、方向 {delta10:+.1f}。")
+g2.metric("CME/SPY 10 日", f"{cme10:+.1f}%", "否決燈 · 需與 XLP/XLY 同亮", delta_color="off")
+g3.metric("XLP/XLY 20 日", f"{xl20:+.1f}%", "單燈亮不否決", delta_color="off")
+g4.metric("新倉許可", "✅ 開" if gate_open else "⛔ 關",
+          "壓力否決成立" if sig1 else ("燈號未開門" if not gate_open else f"截至 {asof}"), delta_color="off")
+if not gate_open:
+    st.warning("閘門關：下方名單僅供觀察，不開新倉。等燈號轉綠／否決解除後，再看當日有無 🔔 觸發。")
+
+# ── 4. 名單 ──
+rows, excluded, excluded_ipo = [], [], []
+for _, x in univ.iterrows():
+    t = x["t"]
+    if t not in PX:
+        continue
+    df = PX[t]
+    c, l, h = df["Close"].ffill(), df["Low"].ffill(), df["High"].ffill()
+    px = float(c.iloc[-1])
+    if px < 5 or len(c) < 130:
+        continue
+    r6 = px / float(c.iloc[-126]) - 1
+    e60 = c.ewm(span=60, adjust=False).mean()
+    if r6 < mom_th / 100:
+        continue
+    # 上市未滿一年：抓 1 年資料卻不足 ~240 個交易日（回測：<1 年 IPO 均 −0.10R／勝率 26%，老牌股 +0.44R／48%）
+    if excl_ipo and len(c) < 240 and t not in ipo_exempt:
+        excluded_ipo.append(f"{t}（{len(c)} 日）")
+        continue
+    if t in excl_tickers:
+        excluded.append(f"{t}（加密／迷因）")
+        continue
+    sec, ind = fetch_sector(t)
+    if sec in EXCL_SECTOR or any(k.lower() in ind.lower() for k in EXCL_INDUSTRY_KW):
+        excluded.append(f"{t}（{ind or sec}）")
+        continue
+    a14 = float(atr14(df).iloc[-1])
+    hi63 = float(c.iloc[-64:-1].max())
+    stop, stop_dt = swing_stop(df, px)
+    sh = int(r_usd / (px - stop)) if px > stop else 0
+    _cap = x["cap"]
+    if _cap != _cap:                    # NaN：備援宇宙沒有市值資料
+        band = "—"
+    else:
+        band = ">10B" if _cap > 10 else ("2-10B" if _cap > 2 else "1-2B")
+    base = dict(代碼=t, 名稱=x["name"][:18], 半年=f"{r6*100:+.0f}%", 市值B=(round(_cap, 1) if _cap == _cap else float("nan")), 帶=band, 價=round(px, 2),
+                距63日高=f"{(px/hi63-1)*100:+.1f}%", 觸發="🔔" if px >= hi63 else "",
+                距季線=f"{(px/e60.iloc[-1]-1)*100:+.0f}%", ATR=f"{a14/px*100:.1f}%",
+                停損=round(stop, 2), 停損距=f"{(px/stop-1)*100:.0f}%", 停損日=str(stop_dt) if stop_dt else "—",
+                股數_1R=sh, 名目=f"{sh*px:,.0f}", 產業=ind[:22])
+    rows.append(base)
+
+def order(df_):
+    if df_.empty:
+        return df_
+    a = df_[df_["觸發"] == "🔔"].sort_values("市值B", ascending=False)
+    b = df_[df_["觸發"] == ""].sort_values("市值B", ascending=False)
+    return pd.concat([a, b])
+
+mon = order(pd.DataFrame(rows))
+st.markdown(f"#### 🦖 怪物股宇宙：{len(mon)} 檔（半年 > {mom_th}%）　🔔 觸發 {int((mon['觸發']=='🔔').sum()) if len(mon) else 0} 檔")
+if len(mon):
+    big_table(mon.set_index("代碼"), height=min(72 + 46 * len(mon), 680),
+              left={"名稱", "帶", "觸發", "停損日", "產業"},
+              fmt={"市值B": "{:,.1f}", "價": "{:,.2f}", "停損": "{:,.2f}"})
+    st.markdown(
+        "<div style='color:#334155;font-size:0.9rem'>"
+        "停損＝最近已確認擺盪低點（前後 3 日最低、低於現價 5% 以上），距離上限 25%；太近（<8%）的停損請改看更前一個結構低點——"
+        "股數 = R ÷（現價 − 停損），為系統規則之計算示例。🔔 僅表示當日收盤創 63 日新高，為客觀條件標記，不構成任何投資建議。"
+        "</div>", unsafe_allow_html=True)
+else:
+    st.markdown("<span style='color:#64748b'>目前沒有合格的怪物股——這在慢牛年很正常，不是系統壞了。</span>", unsafe_allow_html=True)
+
+if excluded:
+    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:8px'>剔除（能源／礦業金屬／生技製藥／加密迷因）：{'、'.join(excluded)}</div>",
+                unsafe_allow_html=True)
+if excluded_ipo:
+    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
+                unsafe_allow_html=True)
+
+with st.expander("📖 規則與依據"):
+    st.markdown(f"""
+**規則一（買什麼）**：市值 > ${min_cap:g}B、半年漲幅 > {mom_th}%、上市滿一年、非能源／礦業／生技製藥／加密貨幣相關。依據：半年 >150% 的股票，六個月內再漲 >100% 的機率 7.4%（隨機 0.7%）；100～150% 區間勝率 34%、EV +0.10R，>150% 勝率 48%、EV +0.44R、怪物率 10.6%。高動能生技 EV −0.17R、勝率 25%，所有產業最差。上市未滿一年的 IPO（2019～2025 年 1,003 檔）觸發後均 −0.10R、勝率 26%、怪物率約 4%——前波低點未經驗證、閉鎖期解禁供給，故剔除。
+
+**規則二（何時買）**：收盤創 63 日新高那天觸發，隔日開盤進；領頭股 ≥5/8 站上季線為綠燈才開新倉。綠燈 EV +17.7%、紅燈 +3.2%，差在怪物率（8.9% vs 4.7%）不在勝率。壓力否決＝CME/SPY 10 日 ≥+5% **且** XLP/XLY 20 日 >+1% 同時成立，綠燈也不開；單燈亮不否決。
+
+**規則三（多大、停損）**：R＝帳戶 1%，停損＝最新前波支撐低點，股數＝R ÷ 停損距離。停損只往上移。破了就走、不破就抱。停損出場後再創新高＝重進場。
+
+**規則四（幾檔）**：最多 9 檔，本金曝險 ≤ 9%。同一天多檔觸發時各給 1R，讓停損去篩；名額不夠用題材籠子分（一個題材 3～4 檔）。
+
+⚠️ 篩選器用 52 週漲幅 >50% 粗篩，極端情況（半年漲 150% 但 52 週仍 <50%）會漏掉；歷史回測有倖存者偏差；本頁不構成投資建議。
+""")
