@@ -95,8 +95,8 @@ def fetch_largecap(min_cap: int = 1_000_000_000) -> tuple:
             break
     return tuple(dict.fromkeys(out)), f"全美股市值 >$1B（{len(out)} 檔）"
 MIN_BARS = 800           # EMA260 收斂需要的最少根數（500 根會嚴重低估年線）
-@st.cache_data(ttl=86400, show_spinner=False)
-def download(tickers: tuple) -> dict:
+@st.cache_resource(ttl=86400, show_spinner=False)   # ⚠️ 不可改回 cache_data：
+def download(tickers: tuple) -> dict:               #    cache_data 每個 session 複製一份，人一多就爆記憶體
     """5 年日線，分批下載。EMA260 是無限記憶平均，資料太短會讓年線失真：
     例 MAAS 2026-09-14，取 500 根算出年線 11.61（價在其上、誤觸發），
     取 800 根以上為 18.31（價在其下、不該觸發）。"""
@@ -158,6 +158,22 @@ def detect_recovery(c: pd.Series, offset: int = 0):
         "_monster": bool(r_max >= MONSTER_TH) if r_max == r_max else False,
     }
 @st.cache_data(ttl=86400, show_spinner=False)
+def scan(tickers: tuple) -> tuple:
+    """下載 → 偵測 → 只回傳結果表（幾十列）與資料日期。
+    快取的是這張小表，不是上千檔價格：每個讀者複製的成本從幾百 MB 降到幾十 KB。"""
+    PX = download(tickers)
+    rows = []
+    for t, c in PX.items():
+        for off in range(SCAN_DAYS):
+            r = detect_recovery(c, offset=off)
+            if r is not None:
+                r["代號"] = t
+                rows.append(r)
+    as_of = max((c.index[-1] for c in PX.values()), default=None)
+    return pd.DataFrame(rows), (str(as_of.date()) if as_of is not None else "—"), len(PX)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def fetch_industry(tickers: tuple) -> dict:
     out = {}
     for t in tickers:
@@ -213,6 +229,35 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
+# ── 管理員模式 ─────────────────────────────────────────────────────
+#   高成本功能（重新掃描＝清全域快取、全美股掃描）只給管理員，避免讀者一多就把
+#   Community Cloud 的 1 GB 記憶體與 Yahoo 限流打爆。
+#   密碼放 .streamlit/secrets.toml 的 admin_password；
+#   Community Cloud 在 App settings → Secrets 貼上，改完會自動重啟。
+def is_admin() -> bool:
+    if st.session_state.get("_is_admin"):
+        return True
+    try:
+        real = st.secrets.get("admin_password", "")
+    except Exception:
+        real = ""
+    if not real:
+        return False          # 沒設 admin_password → 管理功能一律關閉（讀者看不到任何提示）
+    with st.sidebar:
+        with st.expander("🔑 管理員"):
+            pw = st.text_input("管理密碼", type="password", key="_adminpw")
+            if pw:
+                if pw == real:
+                    st.session_state["_is_admin"] = True
+                    st.rerun()
+                st.caption("密碼不正確")
+    return False
+
+
+ADMIN = is_admin()
+
+
 # ── Page ──────────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
@@ -224,15 +269,17 @@ with col_title:
         "不看量、不看當日漲幅"
         "</span>", unsafe_allow_html=True)
 with col_refresh:
-    if st.button("🔄 重新掃描", use_container_width=True):
-        st.cache_data.clear()
+    if ADMIN and st.button("🔄 重新掃描", use_container_width=True):
+        # 清全域快取，所有讀者一起重抓 → 只開放給管理員
+        download.clear(); scan.clear()
         st.rerun()
 st.markdown("---")
 c1, c2, c3 = st.columns([2, 1, 1])
 with c1:
-    picked = st.multiselect("掃描股票池（可複選，自動去重）",
-                            ["S&P 500", "Nasdaq 100", "費城半導體（SOX 概念）", "全美股（市值 >$1B，約 3–5 分鐘）"],
-                            default=["S&P 500"])
+    _pools = ["S&P 500", "Nasdaq 100", "費城半導體（SOX 概念）"]
+    if ADMIN:
+        _pools.append("全美股（市值 >$1B，約 3–5 分鐘）")   # 成本最高，讀者看不到
+    picked = st.multiselect("掃描股票池（可複選，自動去重）", _pools, default=["S&P 500"])
 with c2:
     only_monster = st.checkbox("只看 🦖 曾怪物", value=False,
                                help="過去 250 日內半年漲幅曾 ≥120%。回測：加此濾網 EV +0.66R → +1.52R、勝率 33% → 44%、≥3R 10% → 17%。")
@@ -261,22 +308,13 @@ st.markdown(f"<span style='color:{'#fbbf24' if fallback else '#475569'};font-siz
             unsafe_allow_html=True)
 try:
     wait = "約需 3–5 分鐘" if any(p.startswith("全美股") for p in picked) else "約需 30–60 秒"
-    with st.spinner(f"掃描 {len(tickers)} 檔中，{wait}（結果快取至明日）…"):
-        PX = download(tuple(tickers))
-    rows = []
-    for t, c in PX.items():
-        for off in range(SCAN_DAYS):
-            r = detect_recovery(c, offset=off)
-            if r is not None:
-                r["代號"] = t
-                rows.append(r)
-    as_of = max((c.index[-1] for c in PX.values()), default=None)
-    as_of = str(as_of.date()) if as_of is not None else "—"
-    rec = pd.DataFrame(rows)
+    with st.spinner(f"掃描 {len(tickers)} 檔中，{wait}（每日只跑一次，之後所有人共用結果）…"):
+        rec, as_of, n_px = scan(tuple(tickers))
+    rec = rec.copy()                      # 快取物件不可就地修改
     if len(rec) and only_monster:
         rec = rec[rec["_monster"]]
-    st.markdown(f"<span style='color:#94a3b8;font-size:0.9rem'>取得價格 {len(PX)} 檔｜資料截至 {as_of}</span>",
-                unsafe_allow_html=True)
+    st.markdown(f"<span style='color:#94a3b8;font-size:0.9rem'>取得價格 {n_px} 檔｜資料截至 {as_of}"
+                f"｜每日盤後更新一次</span>", unsafe_allow_html=True)
     if rec.empty:
         st.info(f"近 {SCAN_DAYS} 個交易日無修復觸發。修復股在崩盤後的修復年（2016、2020、2023、2025）最密集，"
                 f"延續年與慢牛年本來就少。")
