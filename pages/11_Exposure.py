@@ -3,6 +3,82 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 from pathlib import Path
+
+# ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ────────────────────
+#   與 1_Dashboard.py / 6_WinRate_Matrix.py / 5_Breakout_Screener.py 同一套：
+#   根字級 16px → 20px，本頁所有 rem 一次放大 1.25 倍。
+#   ⚠️ st.data_editor（可編輯表格）是 canvas 繪製，字級不吃 CSS，
+#      需在專案根目錄 .streamlit/config.toml 設 [theme] baseFontSize = 20。
+#      唯讀表格已改用 big_table() 的 HTML 表格，字級才放得大。
+st.markdown("""
+<style>
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p  { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.25rem; }
+  [data-testid="stMarkdownContainer"] h5 { font-size: 1.1rem; }
+  [data-testid="stMetricValue"] { font-size: 1.85rem !important; }
+  [data-testid="stMetricLabel"] p { font-size: 0.98rem !important; }
+  [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] div { font-size: 0.95rem !important; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  [data-testid="stCheckbox"] label p, [data-testid="stRadio"] label p { font-size: 1rem !important; }
+  [data-testid="stAlert"] p { font-size: 1rem; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input, .stDateInput input,
+  [data-baseweb="select"] div, [data-baseweb="tag"] span, [data-baseweb="tab"] p { font-size: 1rem; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.08rem; font-weight: 600; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
+
+  /* 唯讀表格（big_table）：取代 st.dataframe，字級才能跟著放大 */
+  .bigtbl-wrap { overflow: auto; border: 1px solid #1e293b; border-radius: 8px; }
+  table.bigtbl { border-collapse: collapse; width: max-content; min-width: 100%; }
+  table.bigtbl th {
+    position: sticky; top: 0; z-index: 2; background: #0f172a; color: #64748b;
+    font-size: 0.88rem; font-weight: 600; text-align: right; white-space: nowrap;
+    padding: 10px 14px; border-bottom: 1px solid #1e293b;
+  }
+  table.bigtbl td {
+    font-size: 1rem; color: #cbd5e1; text-align: right; white-space: nowrap;
+    padding: 9px 14px; border-bottom: 1px solid #16202f;
+  }
+  table.bigtbl th.l, table.bigtbl td.l { text-align: left; }
+  table.bigtbl td.code { font-weight: 700; color: #e2e8f0; font-size: 1.08rem; }
+  table.bigtbl tr:hover td { background: #131c2b; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def big_table(df, height=520, show_index=True, fmt=None, left=()):
+    """大字級唯讀表格：st.dataframe 是 canvas 繪製、字級吃不到 CSS，改輸出 HTML 表格。
+    fmt：{欄名: "{:,.0f}"} 明確指定格式；未指定的浮點欄自動套千分位。
+    left：靠左對齊的欄名集合（文字欄）；index 一律靠左並加粗。"""
+    d = df.copy()
+    fmt = fmt or {}
+    for c in d.columns:
+        if c in fmt:
+            d[c] = d[c].map(lambda v, f=fmt[c]: "—" if pd.isna(v) else f.format(v))
+        elif pd.api.types.is_float_dtype(d[c]):
+            d[c] = d[c].map(lambda v: "—" if pd.isna(v)
+                            else (f"{v:,.0f}" if abs(v - round(v)) < 1e-9 else f"{v:,.2f}"))
+    head = (f'<th class="l">{d.index.name or ""}</th>' if show_index else "")
+    head += "".join(f'<th class="{"l" if c in left else ""}">{c}</th>' for c in d.columns)
+    body = ""
+    for i, row in d.iterrows():
+        tds = f'<td class="l code">{i}</td>' if show_index else ""
+        tds += "".join(f'<td class="{"l" if c in left else ""}">'
+                       f'{"" if pd.isna(row[c]) else row[c]}</td>' for c in d.columns)
+        body += f"<tr>{tds}</tr>"
+    st.markdown(f'<div class="bigtbl-wrap" style="max-height:{height}px">'
+                f'<table class="bigtbl"><thead><tr>{head}</tr></thead>'
+                f'<tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════════════
 # 🌡️ 總曝險計算器（順勢交易系統 規則四）
 #   總曝險 = Σ 股數 ×（停損價 − 進場價）÷ 帳戶總資金
@@ -79,17 +155,17 @@ def bar(label, value, cap, unit="$", help_txt=None):
     txt = (f"{value:,.0f} / {cap:,.0f}" if unit == "$" else f"{value:.1f} / {cap:.1f}")
     st.markdown(
         f"<div style='margin:2px 0 10px'>"
-        f"<div style='display:flex;justify-content:space-between;font-size:0.78rem'>"
+        f"<div style='display:flex;justify-content:space-between;font-size:0.9rem'>"
         f"<span style='color:#94a3b8'>{label}</span>"
         f"<span style='color:{color};font-weight:600'>{txt}　({pct*100:.0f}%)</span></div>"
         f"<div style='height:7px;background:#1e293b;border-radius:4px;overflow:hidden;margin-top:3px'>"
         f"<div style='height:100%;width:{min(max(pct,0),1)*100:.1f}%;background:{color}'></div></div>"
-        + (f"<div style='color:#475569;font-size:0.68rem;margin-top:3px'>{help_txt}</div>" if help_txt else "")
+        + (f"<div style='color:#475569;font-size:0.9rem;margin-top:3px'>{help_txt}</div>" if help_txt else "")
         + "</div>", unsafe_allow_html=True)
 # ── Page ──────────────────────────────────────────────────────────
 st.markdown("## 🌡️ 總曝險計算器")
 st.markdown(
-    "<span style='color:#64748b;font-size:0.8rem'>"
+    "<span style='color:#64748b;font-size:0.9rem'>"
     "<b>總曝險 = 所有停損同時被打到時，帳戶會賺或賠多少</b>　＝ Σ 股數 ×（停損價 − 進場價）÷ 帳戶總資金<br>"
     "例：用 10% 資金買、停損設在 −10% → 曝險 −1%；停損移到成本價 → 0%；停損移到 +10% → +1%。"
     "只涵蓋主動選股部位。"
@@ -105,7 +181,7 @@ with st.sidebar:
     name_cap_pct = st.number_input("單一標的上限（帳戶 %）", min_value=1.0, value=10.0, step=1.0) / 100
     theme_cap_pct = st.number_input("單一題材上限（帳戶 %）", min_value=10.0, value=60.0, step=5.0) / 100
 r_usd = acct * r_pct
-st.markdown(f"<span style='color:#94a3b8;font-size:0.8rem'>R = 帳戶 {r_pct*100:.1f}% = "
+st.markdown(f"<span style='color:#94a3b8;font-size:0.9rem'>R = 帳戶 {r_pct*100:.1f}% = "
             f"<b style='color:#e2e8f0'>${r_usd:,.0f}</b>　｜　總曝險上限 = 帳戶 −{heat_cap_pct*100:.0f}% "
             f"（−${acct*heat_cap_pct:,.0f}）　｜　單股上限 = ${acct*name_cap_pct:,.0f}　｜　"
             f"題材上限 = ${acct*theme_cap_pct:,.0f}</span>", unsafe_allow_html=True)
@@ -115,7 +191,7 @@ if "pos" not in st.session_state:
 hdr, btn1, btn2 = st.columns([4, 1, 1])
 with hdr:
     st.markdown("#### 持倉明細")
-    st.markdown("<span style='color:#64748b;font-size:0.72rem'>"
+    st.markdown("<span style='color:#64748b;font-size:0.9rem'>"
                 "直接在表格輸入，最後一列是空白列——填進去就會長出新的一列。"
                 "「現價」「距停損%」自動帶入（15 分鐘快取）。加碼單另開一列（同代碼可多列）。每次修改自動存檔。"
                 "</span>", unsafe_allow_html=True)
@@ -173,12 +249,12 @@ neg = exposure < 0
 st.markdown(
     f"<div style='margin:14px 0 6px;padding:18px 22px;border-radius:12px;"
     f"background:{'#450a0a' if neg else '#052e16'};border:1px solid {'#7f1d1d' if neg else '#166534'}'>"
-    f"<div style='font-size:0.82rem;color:#94a3b8;margin-bottom:6px'>總曝險　"
-    f"<span style='font-size:0.72rem'>（所有停損同時打到 → 帳戶{'賠' if neg else '賺'}這麼多）</span></div>"
-    f"<div style='font-size:2.6rem;font-weight:800;line-height:1;"
+    f"<div style='font-size:0.9rem;color:#94a3b8;margin-bottom:6px'>總曝險　"
+    f"<span style='font-size:0.9rem'>（所有停損同時打到 → 帳戶{'賠' if neg else '賺'}這麼多）</span></div>"
+    f"<div style='font-size:2.73rem;font-weight:800;line-height:1;"
     f"color:{'#f87171' if neg else '#4ade80'}'>{exp_pct:+.2f}%</div>"
-    f"<div style='font-size:1rem;color:#cbd5e1;margin-top:6px'>{'−' if neg else '+'}${abs(exposure):,.0f}"
-    f"　<span style='color:#64748b;font-size:0.8rem'>＝ {exposure/r_usd:+.1f}R　｜　"
+    f"<div style='font-size:1.1rem;color:#cbd5e1;margin-top:6px'>{'−' if neg else '+'}${abs(exposure):,.0f}"
+    f"　<span style='color:#64748b;font-size:0.9rem'>＝ {exposure/r_usd:+.1f}R　｜　"
     f"進場成本 ${cost:,.0f} 的 {exposure/max(cost,1)*100:+.1f}%</span></div>"
     f"</div>", unsafe_allow_html=True)
 c1, c2, c3, c4 = st.columns(4)
@@ -194,7 +270,7 @@ if neg:
 else:
     st.markdown(
         "<div style='margin:2px 0 10px;padding:8px 12px;border-radius:6px;background:#052e16;"
-        "color:#4ade80;font-size:0.8rem'>✅ 全部停損都已在成本之上，打到停損仍是獲利——曝險額度全滿可用。</div>",
+        "color:#4ade80;font-size:0.9rem'>✅ 全部停損都已在成本之上，打到停損仍是獲利——曝險額度全滿可用。</div>",
         unsafe_allow_html=True)
 bar("持倉檔數", n_names, max_pos, unit="n")
 bar("名目部位 / 帳戶", notional / acct * 100, 100.0, unit="n")
@@ -208,25 +284,28 @@ by_theme["佔帳戶%"] = (by_theme["市值"] / acct * 100).round(1)
 cA, cB = st.columns(2)
 with cA:
     st.markdown("##### 單一標的")
-    st.dataframe(by_name.round(0), use_container_width=True, height=min(60 + 35 * len(by_name), 280))
+    big_table(by_name, height=min(72 + 46 * len(by_name), 340),
+              fmt={"市值": "{:,.0f}", "曝險$": "{:+,.0f}", "佔帳戶%": "{:.1f}", "曝險%": "{:+.2f}"})
     over = by_name[by_name["佔帳戶%"] > name_cap_pct * 100]
     if len(over):
         st.error(f"⛔ 超過單股上限 {name_cap_pct*100:.0f}%：{'、'.join(over.index)}")
 with cB:
     st.markdown("##### 題材")
-    st.dataframe(by_theme.round(0), use_container_width=True, height=min(60 + 35 * len(by_theme), 280))
+    big_table(by_theme, height=min(72 + 46 * len(by_theme), 340),
+              fmt={"市值": "{:,.0f}", "曝險$": "{:+,.0f}", "佔帳戶%": "{:.1f}"})
     overt = by_theme[by_theme["佔帳戶%"] > theme_cap_pct * 100]
     if len(overt):
         st.error(f"⛔ 超過題材上限 {theme_cap_pct*100:.0f}%：{'、'.join(overt.index)}")
 st.markdown("#### 逐筆明細")
 show = d[["代碼", "題材", "股數", "進場價", "停損價", "現價", "成本", "市值",
           "停損 vs 成本%", "距停損%", "曝險$", "曝險%", "未實現"]].sort_values("曝險$")
-st.dataframe(show.style.format({"進場價": "{:.2f}", "停損價": "{:.2f}", "現價": "{:.2f}",
-                                "成本": "{:,.0f}", "市值": "{:,.0f}", "停損 vs 成本%": "{:+.1f}",
-                                "距停損%": "{:+.1f}", "曝險$": "{:+,.0f}", "曝險%": "{:+.2f}",
-                                "未實現": "{:+,.0f}"}),
-             use_container_width=True, height=min(60 + 35 * len(show), 460))
-st.markdown("<div style='color:#334155;font-size:0.68rem'>"
+big_table(show, show_index=False, height=min(72 + 46 * len(show), 540),
+          left={"代碼", "題材"},
+          fmt={"進場價": "{:.2f}", "停損價": "{:.2f}", "現價": "{:.2f}",
+               "成本": "{:,.0f}", "市值": "{:,.0f}", "停損 vs 成本%": "{:+.1f}",
+               "距停損%": "{:+.1f}", "曝險$": "{:+,.0f}", "曝險%": "{:+.2f}",
+               "未實現": "{:+,.0f}"})
+st.markdown("<div style='color:#334155;font-size:0.9rem'>"
             "曝險$ = 股數 ×（停損價 − 進場價）：停損在成本之下為負（會傷本金），在成本之上為正（已鎖利）。"
             "整頁的總曝險就是這一欄的加總。</div>", unsafe_allow_html=True)
 # ── 新倉試算 ──
@@ -251,7 +330,7 @@ if n_entry > 0 and 0 < n_stop < n_entry:
     name_now = float(by_name["市值"].get(n_t, 0)) + sh * n_entry
     name_ok = name_now <= acct * name_cap_pct
     st.markdown(
-        f"<div style='font-size:0.88rem;line-height:1.9'>"
+        f"<div style='font-size:0.9rem;line-height:1.9'>"
         f"停損距離 <b>{risk_ps/n_entry*100:.1f}%</b>　→　<b>{sh}</b> 股　名目 <b>${sh*n_entry:,.0f}</b>"
         f"（帳戶 {sh*n_entry/acct*100:.1f}%）<br>"
         f"{'✅' if cap_ok else '⛔'} 總曝險：{exp_pct:+.2f}% → <b>{new_exp/acct*100:+.2f}%</b>"
