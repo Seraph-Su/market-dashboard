@@ -95,20 +95,24 @@ st.markdown(
     "<span style='color:#64748b;font-size:0.78rem'>"
     "本金曝險＝所有停損同時被打到、會傷到本金的總額（開新倉的閘門，≤ 帳戶 9%）　｜　"
     "利潤曝險＝停損已在進場價之上，回吐的只是帳面獲利（監控，不設限）　｜　"
-    "另檢查：檔數 ≤9、單股 ≤10%、題材 ≤50~60%、保本地板"
+    "另檢查：檔數 ≤9、單股 ≤10%、題材 ≤50~60%、保本地板　｜　"
+    "<b>本頁只涵蓋主動選股部位</b>（每月換股的 mega-cap 輪動不設停損、不列入曝險計算）"
     "</span>", unsafe_allow_html=True)
 st.markdown("---")
 with st.sidebar:
     st.markdown("### 帳戶參數")
-    acct = st.number_input("帳戶總資金 $", min_value=1000.0, value=93333.0, step=1000.0)
+    acct = st.number_input("帳戶總資金 $", min_value=1000.0, value=93333.0, step=1000.0,
+                           help="R 與各項上限（曝險 9%、單股 10%、題材 60%）皆以帳戶總資金為分母，與規則書一致。")
     r_pct = st.number_input("單筆風險 R（帳戶 %）", min_value=0.1, value=1.0, step=0.1) / 100
     max_pos = st.number_input("最大同時持倉數", min_value=1, value=9, step=1)
     heat_cap_pct = st.number_input("本金曝險上限（帳戶 %）", min_value=1.0, value=9.0, step=0.5) / 100
     name_cap_pct = st.number_input("單一標的上限（帳戶 %）", min_value=1.0, value=10.0, step=1.0) / 100
     theme_cap_pct = st.number_input("單一題材上限（帳戶 %）", min_value=10.0, value=60.0, step=5.0) / 100
     st.markdown("### 保本閘門")
-    start_cap = st.number_input("起始本金 $", min_value=0.0, value=61900.0, step=1000.0)
-    sleeve_cash = st.number_input("袖內現金 $", min_value=0.0, value=0.0, step=500.0)
+    start_cap = st.number_input("起始本金 $", min_value=0.0, value=61900.0, step=1000.0,
+                                help="主動選股這部分一開始投入的錢，用來判斷保本地板。")
+    sleeve_cash = st.number_input("主動選股現金 $", min_value=0.0, value=0.0, step=500.0,
+                                  help="主動選股這部分還沒投入的現金；每月換股部位不列入本頁。")
     tol_pct = st.number_input("可容忍本金損失 %", min_value=0.0, value=0.0, step=1.0) / 100
 r_usd = acct * r_pct
 st.markdown(f"<span style='color:#94a3b8;font-size:0.8rem'>R = 帳戶 {r_pct*100:.1f}% = "
@@ -217,9 +221,9 @@ with cB:
 # ── 保本閘門 ──
 st.markdown("#### 保本閘門")
 g1, g2, g3, g4 = st.columns(4)
-g1.metric("袖權益（現金＋市值）", f"${sleeve_eq:,.0f}", f"起始本金 ${start_cap:,.0f}", delta_color="off")
-g2.metric("獲利緩衝", f"${sleeve_eq - start_cap:,.0f}", "袖權益 − 起始本金", delta_color="off")
-g3.metric("最壞情況權益（全停損）", f"${worst_eq:,.0f}", "袖權益 − 總曝險", delta_color="off")
+g1.metric("主動選股淨值（現金＋市值）", f"${sleeve_eq:,.0f}", f"起始本金 ${start_cap:,.0f}", delta_color="off")
+g2.metric("獲利緩衝", f"${sleeve_eq - start_cap:,.0f}", "淨值 − 起始本金", delta_color="off")
+g3.metric("最壞情況權益（全停損）", f"${worst_eq:,.0f}", "淨值 − 總曝險", delta_color="off")
 g4.metric("保本缺口", f"${gap:,.0f}", "✅ 守住地板" if gap >= 0 else "✗ 破地板，需降曝險", delta_color="off")
 if gap < 0:
     st.error(f"⛔ 全部停損同時被打到會跌破保本地板 ${floor:,.0f}，缺口 ${-gap:,.0f}。"
@@ -281,7 +285,7 @@ with st.expander("📖 定義與規則"):
 - **單批曝險** = 股數 ×（現價 − 停損價），停損已在現價之上時為 0。代表「現在全部停損被打到，帳面會少掉多少」。
 - **本金曝險** = 停損價低於進場價的那部分損失＝股數 ×（進場價 − 停損價），只算還沒鎖住獲利的部位。**這是開新倉的唯一閘門，上限帳戶 {heat_cap_pct*100:.0f}%。**
 - **利潤曝險** = 單批曝險 − 本金曝險。停損已上移到成本之上，被打到只是回吐獲利，不傷本金，**監控但不設限**。
-- **保本地板** = 起始本金 × (1 − 可容忍損失%)；最壞情況權益 = 袖權益 − 總曝險。破地板時只能出部位或等停損自然上移，**不可為了降低曝險把停損移到結構之外**（禁止事項）。
+- **保本地板** = 起始本金 × (1 − 可容忍損失%)；最壞情況權益 = 主動選股淨值 − 總曝險。破地板時只能出部位或等停損自然上移，**不可為了降低曝險把停損移到結構之外**（禁止事項）。
 - 曝險是針對整桶金計算，不分策略；同一檔股票（含加碼單）合計 ≤ 帳戶 {name_cap_pct*100:.0f}%；同一題材 ≤ {theme_cap_pct*100:.0f}%。
 - 加碼單請獨立列出一列，初始停損＝加碼價 − 3×ATR14，之後只跟基本倉結構停損上移。
 - 持倉全部在本頁手動輸入，每次修改自動存檔於伺服器（重新整理、關掉再開都還在）。若儀表板重新部署或容器重啟，檔案可能被清掉，需要長期保存可用下方 CSV 備份。
