@@ -372,20 +372,17 @@ D = fetch_data()
 st_cme  = status('cme',   D['cme_excess_10d'])
 st_hyg  = status('hyg',   D['hyg_iei_20d'])
 st_iwm  = status('iwm',   D['iwm_spy_60d'])
-st_vixr = status('vixr',  D['vix_ratio'])
 st_xlp  = status('xlp',   D['xlp_xly_20d'])
-st_rsp  = status('rsp',   D['rsp_spy_60d'])
-st_br    = status('brdth', D['sector_breadth'])
 st_spy60   = status('spy60',   D['spy_vs_60ma'])
 st_vixma20 = status('vixma20', D['vix_vs_ma20'])
 # IWF/IWD 已從核心移除：60天回測倍率僅0.94x（低於基準），不具預測能力
+# 輔助情境指標（VIX 期限結構、RSP/SPY、板塊廣度）已於 2026-09-15 移除顯示；資料仍在 fetch_data 內，需要時可加回。
 
 # ── Combo triggers（先算，整體燈號要用）──
 cme_triggered = st_cme in ('yellow','red')
 combo1 = cme_triggered and st_iwm != 'green'                    # CME + 小型股弱勢
 combo2 = cme_triggered and st_xlp in ('yellow','red')           # 訊號1：CME + 防禦輪動 → 壓力否決
 combo3 = cme_triggered and st_iwm != 'green' and st_xlp in ('yellow','red')
-uvxy_warn = st_rsp == 'red' or st_br in ('yellow','red')
 
 # ── 整體燈號：否決邏輯，不數燈 ──
 # 紅 = 任一 AND 組合成立（否決新倉）；黃 = 只有單燈亮（情境警示，不否決）；綠 = 全無
@@ -688,7 +685,7 @@ if ldr_status is not None and L is not None:
     if can_enter:
         box_cls, title = 'overall-green', '🟢 可開新倉／可評估加碼'
         body = (f"領頭股：{ldr_reason}。壓力否決：未成立。"
-                f"→ 進場與否回到個股觸發（創 63 日新高／合規加碼點）與 R、Heat、保本閘門。")
+                f"→ 進場與否回到個股觸發（創 63 日新高／合規加碼點）與 R、總曝險。")
     elif veto_active:
         _which = "、".join(x for x, ok in [("CME＋防禦輪動", combo2), ("CME＋小型股弱勢", combo1)] if ok)
         box_cls, title = 'overall-red', '🔴 不開新倉、不加碼 — 壓力否決成立'
@@ -707,26 +704,6 @@ else:
     st.markdown('<div class="uvxy-ok">領頭股資料未載入，無法合成進場許可；請以壓力否決與個股觸發判斷。</div>',
                 unsafe_allow_html=True)
 
-st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
-# ── Context indicators ────────────────────────────────────────────
-st.markdown('<div class="section-hdr">輔助情境指標（參考用途 · 不計入整體燈號）</div>', unsafe_allow_html=True)
-x1, x2, x3 = st.columns(3)
-with x1:
-    vr = D['vix_ratio']
-    desc = (f"期限結構倒掛（{vr}），近月恐慌高於遠月" if st_vixr!='green'
-            else f"期限結構正常 Contango（{vr}），情緒穩定")
-    card("VIX/VIX3M 期限結構", str(vr), st_vixr, desc, D['vixr_series'], inv=True)
-with x2:
-    rs = D['rsp_spy_60d']
-    desc = (f"等權重跑輸市值加權 {abs(rs)}%，廣度惡化" if st_rsp=='red'
-            else f"廣度正常（{fmt(rs)}）")
-    card("RSP/SPY 等權廣度（60日）", fmt(rs), st_rsp, desc, D['rsp_series'])
-with x3:
-    br = D['sector_breadth']
-    desc = (f"僅 {br} 個板塊在50MA上，廣度嚴重惡化" if st_br=='red'
-            else f"{br} 個板塊在50MA上，廣度偏窄" if st_br=='yellow'
-            else f"{br} 個板塊在50MA上，廣度健康")
-    card(f"板塊廣度（{br}/9 在50日均線上）", f"{br}/9", st_br, desc, D['breadth_series'], note="UVXY訊號")
 # ── Footer ────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown(
