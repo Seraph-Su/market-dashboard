@@ -167,12 +167,58 @@ def fetch_industry(tickers: tuple) -> dict:
         except Exception:
             out[t] = ("", 0.0)
     return out
+# ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ────────────────────
+#   與 pages/1_Dashboard.py、6_WinRate_Matrix.py 同一套：根字級 16px → 20px。
+#   結果表改用 HTML 表格（見下方 table_html）：st.dataframe 是 canvas 繪製，
+#   字級不吃 CSS，只有換成 HTML 表格才能跟著放大。
+st.markdown("""
+<style>
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p  { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.2rem; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input,
+  [data-baseweb="select"] div, [data-baseweb="tag"] span { font-size: 1rem; }
+  [data-testid="stCheckbox"] label p { font-size: 1rem !important; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.1rem; font-weight: 600; }
+  [data-testid="stAlert"] p { font-size: 1rem; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
+
+  /* 修復觸發結果表（取代 st.dataframe，字級才放得大） */
+  .rec-wrap { overflow-x: auto; max-height: 620px; border: 1px solid #1e293b; border-radius: 8px; }
+  table.rec { border-collapse: collapse; width: max-content; min-width: 100%; }
+  table.rec th {
+    position: sticky; top: 0; z-index: 2;
+    background: #0f172a; color: #64748b; font-size: 0.88rem; font-weight: 600;
+    text-align: right; white-space: nowrap; padding: 10px 14px;
+    border-bottom: 1px solid #1e293b;
+  }
+  table.rec td {
+    font-size: 1rem; color: #cbd5e1; text-align: right; white-space: nowrap;
+    padding: 9px 14px; border-bottom: 1px solid #16202f;
+  }
+  table.rec th.l, table.rec td.l { text-align: left; }
+  table.rec tr:hover td { background: #131c2b; }
+  table.rec td.code { font-weight: 700; color: #e2e8f0; font-size: 1.08rem; }
+</style>
+""", unsafe_allow_html=True)
+
 # ── Page ──────────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
     st.markdown("## 🩹 修復觸發選股")
     st.markdown(
-        "<span style='color:#64748b;font-size:0.78rem'>"
+        "<span style='color:#64748b;font-size:0.9rem'>"
         "<b>觸發</b>：過去 120 日內曾收在年線（EMA260）下，且今日是<b>最後一次收年線下之後的第一個</b>「收盤 &gt; 月線 &gt; 季線 &gt; 年線」日　｜　"
         "<b>出場</b>：收盤跌破年線　｜　<b>尺寸</b>：R ÷ max(收盤 − 年線, 10%)　｜　"
         "不看量、不看當日漲幅"
@@ -209,7 +255,7 @@ for p in picked:
 tickers = tuple(dict.fromkeys(_all))
 src = "　＋　".join(_srcs)
 fallback = "備援" in src
-st.markdown(f"<span style='color:{'#fbbf24' if fallback else '#475569'};font-size:0.72rem'>"
+st.markdown(f"<span style='color:{'#fbbf24' if fallback else '#475569'};font-size:0.9rem'>"
             f"成分股來源：{src}　→　去重後共 <b>{len(tickers)}</b> 檔"
             f"{'　⚠️ Wikipedia 抓取失敗，名單可能未反映最近調整。' if fallback else ''}</span>",
             unsafe_allow_html=True)
@@ -229,7 +275,7 @@ try:
     rec = pd.DataFrame(rows)
     if len(rec) and only_monster:
         rec = rec[rec["_monster"]]
-    st.markdown(f"<span style='color:#94a3b8;font-size:0.75rem'>取得價格 {len(PX)} 檔｜資料截至 {as_of}</span>",
+    st.markdown(f"<span style='color:#94a3b8;font-size:0.9rem'>取得價格 {len(PX)} 檔｜資料截至 {as_of}</span>",
                 unsafe_allow_html=True)
     if rec.empty:
         st.info(f"近 {SCAN_DAYS} 個交易日無修復觸發。修復股在崩盤後的修復年（2016、2020、2023、2025）最密集，"
@@ -244,15 +290,33 @@ try:
         rec = rec.sort_values(["觸發日", "_monster", "市值B"], ascending=[False, False, False])
         n_m = int(rec["_monster"].sum())
         st.markdown(
-            f"<span style='color:#4ade80;font-size:0.9rem;font-weight:700'>🩹 修復觸發：{len(rec)} 筆</span>"
-            f"<span style='color:#475569;font-size:0.75rem'>　（其中 🦖 曾怪物 {n_m} 筆｜近 {SCAN_DAYS} 個交易日）</span>",
+            f"<span style='color:#4ade80;font-size:0.99rem;font-weight:700'>🩹 修復觸發：{len(rec)} 筆</span>"
+            f"<span style='color:#475569;font-size:0.9rem'>　（其中 🦖 曾怪物 {n_m} 筆｜近 {SCAN_DAYS} 個交易日）</span>",
             unsafe_allow_html=True)
         show = ["觸發日", "代號", "收盤", "年線", "距年線%", "最後收年線下", "曾怪物",
                 "距63日高%", "市值B", "產業", "股數_1R", "名目"]
-        st.dataframe(rec[show].reset_index(drop=True), use_container_width=True,
-                     height=min(60 + 35 * len(rec), 560))
+        # 靠左欄位（文字類），其餘靠右對齊
+        LEFT = {"觸發日", "代號", "最後收年線下", "曾怪物", "產業"}
+        def _cell(col, v):
+            cls = "l" if col in LEFT else ""
+            if col == "代號":
+                cls = "l code"
+            if col == "距年線%":
+                c = "#4ade80" if float(v) >= 0 else "#f87171"
+                return f'<td style="color:{c};font-weight:700">{v:+.1f}%</td>'
+            if col == "距63日高%":
+                return f'<td>{v:+.1f}%</td>'
+            return f'<td class="{cls}">{v}</td>'
+        head = "".join(f'<th class="{"l" if c in LEFT else ""}">{c}</th>' for c in show)
+        body = "".join(
+            "<tr>" + "".join(_cell(c, r[c]) for c in show) + "</tr>"
+            for _, r in rec[show].reset_index(drop=True).iterrows()
+        )
+        st.markdown(f'<div class="rec-wrap"><table class="rec">'
+                    f'<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>',
+                    unsafe_allow_html=True)
         st.markdown(
-            "<div style='color:#334155;font-size:0.68rem;margin-top:6px'>"
+            "<div style='color:#334155;font-size:0.9rem;margin-top:6px'>"
             "停損＝收盤跌破年線（隔日開盤出）；股數 = R ÷ max(收盤 − 年線, 10%×收盤)，為系統規則之計算示例。"
             "觸發日以外的日期進場不在回測統計內。<b>質化門檻「產業龍頭」（子產業市值第一）請自行判斷</b>——"
             "本表僅列產業與市值。本表為客觀條件標記，不構成任何投資建議。</div>",
