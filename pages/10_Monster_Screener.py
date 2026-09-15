@@ -412,13 +412,14 @@ with c3:
 with c4:
     excl_ipo = st.checkbox("剔除上市未滿一年", value=True,
                            help="2019～2025 年 IPO 回測：上市 <1 年進場均 −0.10R、勝率 26%、怪物率 ~4%；老牌股 +0.44R／48%／10.6%。")
-ipo_exempt_txt = st.text_input("例外：分拆／重新上市的老公司（逗號分隔，不視為新股）",
-                               value="SNDK, GEV, SOLV, SOLS, Q, VSNT",
-                               help="回測樣本只含真正的 IPO，不含分拆與重新掛牌；這些公司有完整營運歷史，不適用新股結論。DELL 2018 年重新上市、資料已滿一年，不受影響。")
-ipo_exempt = {s.strip().upper() for s in ipo_exempt_txt.split(",") if s.strip()}
-excl_txt = st.text_input("排除名單：加密貨幣相關／迷因股（逗號分隔）", value=EXCL_TICKERS_DEFAULT,
-                         help="回測：剔除加密與迷因股後最大回撤由 −25.8% 收到 −20.0%，加碼貢獻由 −7R 轉為 +8～12R。產業分類抓不到這類公司，只能用名單。")
-excl_tickers = {s.strip().upper() for s in excl_txt.split(",") if s.strip()}
+# 「例外」與「排除名單」兩個輸入框移到頁面最下方（2026-09-15）。
+# Streamlit 是由上往下執行，掃描時就要用到這兩個值，所以先從 session_state 讀（第一次用預設值），
+# 輸入框本身放在頁尾、綁同一個 key；使用者一改，rerun 時這裡就拿到新值。
+IPO_EXEMPT_DEFAULT = "SNDK, GEV, SOLV, SOLS, Q, VSNT"
+st.session_state.setdefault("ipo_exempt_txt", IPO_EXEMPT_DEFAULT)
+st.session_state.setdefault("excl_txt", EXCL_TICKERS_DEFAULT)
+ipo_exempt = {s.strip().upper() for s in st.session_state["ipo_exempt_txt"].split(",") if s.strip()}
+excl_tickers = {s.strip().upper() for s in st.session_state["excl_txt"].split(",") if s.strip()}
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
@@ -568,8 +569,16 @@ if excluded:
     st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:8px'>剔除（能源／礦業金屬／生技製藥／加密迷因）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
 if excluded_ipo:
-    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
+    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進下方例外欄）：{'、'.join(excluded_ipo)}</div>",
                 unsafe_allow_html=True)
+
+# ── 名單設定（例外／排除）──放在頁尾，改了會自動重新套用到上方名單 ──
+st.markdown("---")
+st.markdown("#### ⚙️ 名單設定")
+st.text_input("例外：分拆／重新上市的老公司（逗號分隔，不視為新股）", key="ipo_exempt_txt",
+              help="回測樣本只含真正的 IPO，不含分拆與重新掛牌；這些公司有完整營運歷史，不適用新股結論。DELL 2018 年重新上市、資料已滿一年，不受影響。")
+st.text_input("排除名單：加密貨幣相關／迷因股（逗號分隔）", key="excl_txt",
+              help="回測：剔除加密與迷因股後最大回撤由 −25.8% 收到 −20.0%，加碼貢獻由 −7R 轉為 +8～12R。產業分類抓不到這類公司，只能用名單。")
 
 with st.expander("📖 規則與依據"):
     st.markdown(f"""
