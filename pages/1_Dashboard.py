@@ -5,6 +5,32 @@ import numpy as np
 import plotly.graph_objects as go
 st.markdown("""
 <style>
+  /* ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ───────────────
+     rem 以 html 根字級為準：16px → 20px，本頁所有 rem 尺寸一次放大 1.25 倍。
+     下方再補 Streamlit 內建元件（標題／按鈕／輸入框／指標）的個別字級。      */
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p,
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.2rem; }
+  [data-testid="stMetricValue"] { font-size: 1.9rem !important; }
+  [data-testid="stMetricLabel"] p { font-size: 1rem !important; }
+  [data-testid="stMetricDelta"] { font-size: 1rem !important; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input, .stDateInput input,
+  [data-baseweb="select"] div, [data-baseweb="tab"] p { font-size: 1rem; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.05rem; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  [data-testid="stTable"] td, [data-testid="stTable"] th { font-size: 1rem; }
+  /* 說明文字統一加大行距，長段落才讀得順 */
+  .block-container span, .block-container div { line-height: 1.6; }
   .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
   .metric-card {
     background: #1a1f2e; border-radius: 10px; padding: 14px 16px;
@@ -13,28 +39,28 @@ st.markdown("""
   .card-red   { border-color: #dc2626 !important; }
   .card-yellow{ border-color: #d97706 !important; }
   .card-green { border-color: #1e293b !important; }
-  .val-green  { color: #4ade80; font-size: 1.5rem; font-weight: 700; }
-  .val-yellow { color: #fbbf24; font-size: 1.5rem; font-weight: 700; }
-  .val-red    { color: #f87171; font-size: 1.5rem; font-weight: 700; }
-  .val-neutral{ color: #94a3b8; font-size: 1.5rem; font-weight: 700; }
-  .badge-green { background:#14532d; color:#4ade80; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
-  .badge-yellow{ background:#451a03; color:#fbbf24; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
-  .badge-red   { background:#7f1d1d; color:#f87171; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
-  .desc-text  { color: #64748b; font-size: 0.75rem; margin-top: 4px; line-height: 1.4; }
-  .lift-tag   { color: #475569; font-size: 0.65rem; }
+  .val-green  { color: #4ade80; font-size: 1.58rem; font-weight: 700; }
+  .val-yellow { color: #fbbf24; font-size: 1.58rem; font-weight: 700; }
+  .val-red    { color: #f87171; font-size: 1.58rem; font-weight: 700; }
+  .val-neutral{ color: #94a3b8; font-size: 1.58rem; font-weight: 700; }
+  .badge-green { background:#14532d; color:#4ade80; padding:2px 8px; border-radius:10px; font-size:0.9rem; font-weight:700; }
+  .badge-yellow{ background:#451a03; color:#fbbf24; padding:2px 8px; border-radius:10px; font-size:0.9rem; font-weight:700; }
+  .badge-red   { background:#7f1d1d; color:#f87171; padding:2px 8px; border-radius:10px; font-size:0.9rem; font-weight:700; }
+  .desc-text  { color: #64748b; font-size: 0.9rem; margin-top: 4px; line-height: 1.4; }
+  .lift-tag   { color: #475569; font-size: 0.9rem; }
   .combo-active  { background:#1e1b4b; border:1px solid #4f46e5; border-radius:8px; padding:10px 14px; margin-bottom:6px; }
   .combo-inactive{ background:#111827; border:1px solid #1e293b; border-radius:8px; padding:10px 14px; margin-bottom:6px; opacity:0.6; }
-  .uvxy-warn  { background:#451a03; border:1px solid #d97706; border-radius:8px; padding:10px 14px; color:#fcd34d; font-size:0.8rem; }
-  .uvxy-ok    { background:#111827; border:1px solid #1e293b; border-radius:8px; padding:10px 14px; color:#475569; font-size:0.8rem; }
+  .uvxy-warn  { background:#451a03; border:1px solid #d97706; border-radius:8px; padding:10px 14px; color:#fcd34d; font-size:0.9rem; }
+  .uvxy-ok    { background:#111827; border:1px solid #1e293b; border-radius:8px; padding:10px 14px; color:#475569; font-size:0.9rem; }
   .overall-green { background:linear-gradient(135deg,#052e16,#14532d); border:1px solid #16a34a; border-radius:12px; padding:16px 20px; }
   .overall-yellow{ background:linear-gradient(135deg,#1c1500,#3a2800); border:1px solid #d97706; border-radius:12px; padding:16px 20px; }
   .overall-red   { background:linear-gradient(135deg,#2d0000,#450a0a); border:1px solid #dc2626; border-radius:12px; padding:16px 20px; }
-  .ov-green-title{ color:#4ade80; font-size:1.1rem; font-weight:700; }
-  .ov-yellow-title{color:#fbbf24; font-size:1.1rem; font-weight:700;}
-  .ov-red-title  { color:#f87171; font-size:1.1rem; font-weight:700; }
-  .section-hdr{ font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:6px; margin-top:4px; }
-  .ldr-chip-up   { background:#14532d; color:#4ade80; padding:2px 7px; border-radius:6px; font-size:0.68rem; font-weight:700; font-family:monospace; margin-right:4px; }
-  .ldr-chip-down { background:#7f1d1d; color:#f87171; padding:2px 7px; border-radius:6px; font-size:0.68rem; font-weight:700; font-family:monospace; margin-right:4px; }
+  .ov-green-title{ color:#4ade80; font-size:1.21rem; font-weight:700; }
+  .ov-yellow-title{color:#fbbf24; font-size:1.21rem; font-weight:700;}
+  .ov-red-title  { color:#f87171; font-size:1.21rem; font-weight:700; }
+  .section-hdr{ font-size:0.9rem; text-transform:uppercase; letter-spacing:0.1em; color:#475569; margin-bottom:6px; margin-top:4px; }
+  .ldr-chip-up   { background:#14532d; color:#4ade80; padding:2px 7px; border-radius:6px; font-size:0.9rem; font-weight:700; font-family:monospace; margin-right:4px; }
+  .ldr-chip-down { background:#7f1d1d; color:#f87171; padding:2px 7px; border-radius:6px; font-size:0.9rem; font-weight:700; font-family:monospace; margin-right:4px; }
 </style>
 """, unsafe_allow_html=True)
 # ── Data fetch ────────────────────────────────────────────────────
@@ -352,12 +378,12 @@ def fmt(val):
     return f"+{val}%" if val > 0 else f"{val}%"
 def card(title, val_str, st_val, desc, series, inv=False, lift=None, note=None):
     col_str = color_for('', st_val)
-    note_html = f' <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">{note}</span>' if note else ''
+    note_html = f' <span style="font-size:0.9rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">{note}</span>' if note else ''
     lift_html = f'<span class="lift-tag">實證倍率 {lift}</span>' if lift else ''
     st.markdown(f"""
     <div class="metric-card card-{st_val}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <span style="font-size:0.72rem;color:#94a3b8">{title}{note_html}</span>
+        <span style="font-size:0.9rem;color:#94a3b8">{title}{note_html}</span>
         {BADGE[st_val]}
       </div>
       <div class="{VAL_CLASS[st_val]}" style="margin:4px 0 2px">{val_str}</div>
@@ -399,7 +425,7 @@ else:
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
     st.markdown("## 📊 大盤壓力儀表板")
-    st.markdown(f"<span style='color:#64748b;font-size:0.78rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:#64748b;font-size:0.9rem'>數據截至 {D['as_of']} &nbsp;｜&nbsp; SPY ${D['spy_price']} &nbsp;｜&nbsp; 200日均線 ${D['spy_200ma_val']} (+{D['spy_vs_200ma']}%，牛市確立)</span>", unsafe_allow_html=True)
 with col_refresh:
     if st.button("🔄 更新數據", use_container_width=True):
         st.cache_data.clear()
@@ -409,9 +435,7 @@ st.markdown("---")
 ov_map = {
     'green':  ('無否決訊號',
                '核心壓力指標全數安靜。能否進場／加碼由個股觸發與領頭股燈號決定，見下方「進場許可」。'),
-    'yellow': ('單一核心指標亮燈 — 情境警示，不構成否決',
-               '單燈不否決。回測：單獨「防禦輪動」亮時 SPY 一個月報酬反而最好（爬憂慮之牆）；'
-               '單獨 CME 亮對指數無害但對熱門動能股不利。動作：繫安全帶、不追延伸，但<b>不因單燈停止合規進場</b>。'),
+    'yellow': ('單一核心指標亮燈 — 情境警示，不構成否決', ''),
     'red':    ('壓力否決成立 — AND 組合觸發',
                'CME 與防禦輪動／小型股弱勢同時亮。回測：此時新進場 EV 由 +15% 轉負、跌 5% 機率翻倍。'
                '動作：<b>不開新倉、不加碼</b>；既有持倉交給停損，不預先賣出（提前減碼已驗證負 EV）。'),
@@ -420,7 +444,7 @@ ov_title, ov_desc = ov_map[overall]
 st.markdown(f"""
 <div class="overall-{overall}" style="margin-bottom:14px">
   <div class="ov-{overall}-title">{'🟢' if overall=='green' else '🟡' if overall=='yellow' else '🔴'} &nbsp;{ov_title}</div>
-  <div style="color:#94a3b8;font-size:0.78rem;margin-top:4px">{ov_desc}</div>
+  {f'<div style="color:#94a3b8;font-size:1.12rem;margin-top:6px">{ov_desc}</div>' if ov_desc else ''}
 </div>
 """, unsafe_allow_html=True)
 # ── Combo panel ──────────────────────────────────────────────────
@@ -432,14 +456,14 @@ combos = [
 ]
 for active, prob, lift, title, desc in combos:
     cls = "combo-active" if active else "combo-inactive"
-    badge = '<span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:700">觸發中</span>' if active else '<span style="background:#1e293b;color:#475569;padding:2px 8px;border-radius:10px;font-size:0.65rem">未觸發</span>'
+    badge = '<span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:0.9rem;font-weight:700">觸發中</span>' if active else '<span style="background:#1e293b;color:#475569;padding:2px 8px;border-radius:10px;font-size:0.9rem">未觸發</span>'
     st.markdown(f"""
     <div class="{cls}">
       <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:1.1rem;font-weight:700;color:{'#a5b4fc' if active else '#475569'};width:50px">{prob}</span>
+        <span style="font-size:1.21rem;font-weight:700;color:{'#a5b4fc' if active else '#475569'};width:50px">{prob}</span>
         <div style="flex:1">
-          <div style="font-size:0.75rem;font-weight:600;color:{'#c7d2fe' if active else '#475569'}">{title}</div>
-          <div style="font-size:0.68rem;color:{'#818cf8' if active else '#334155'};margin-top:2px">{desc}</div>
+          <div style="font-size:0.9rem;font-weight:600;color:{'#c7d2fe' if active else '#475569'}">{title}</div>
+          <div style="font-size:0.9rem;color:{'#818cf8' if active else '#334155'};margin-top:2px">{desc}</div>
         </div>
         {badge}
       </div>
@@ -514,24 +538,24 @@ with y3:
         def _period_row(label, row, all_wrs):
             if not row:
                 return (f"<div style='flex:1;opacity:0.4'>"
-                        f"<div style='font-size:0.6rem;color:#64748b'>{label}</div>"
-                        f"<div style='font-size:1.1rem;font-weight:700;color:#475569'>—</div></div>")
+                        f"<div style='font-size:0.9rem;color:#64748b'>{label}</div>"
+                        f"<div style='font-size:1.21rem;font-weight:700;color:#475569'>—</div></div>")
             wc   = _wr_color(row['wr'])
             pctl = _percentile_in(row['wr'], all_wrs)
             pctl_col = '#4ade80' if pctl >= 75 else '#fbbf24' if pctl >= 50 else '#f87171'
             return (f"<div style='flex:1'>"
-                    f"<div style='font-size:0.6rem;color:#64748b;margin-bottom:2px'>{label}</div>"
-                    f"<div style='font-size:1.3rem;font-weight:800;color:{wc}'>{row['wr']:.1f}%</div>"
-                    f"<div style='font-size:0.65rem;color:{pctl_col}'>P{pctl} 百分位</div>"
-                    f"<div style='font-size:0.62rem;color:#475569'>n={row['n']}</div></div>")
+                    f"<div style='font-size:0.9rem;color:#64748b;margin-bottom:2px'>{label}</div>"
+                    f"<div style='font-size:1.37rem;font-weight:800;color:{wc}'>{row['wr']:.1f}%</div>"
+                    f"<div style='font-size:0.9rem;color:{pctl_col}'>P{pctl} 百分位</div>"
+                    f"<div style='font-size:0.9rem;color:#475569'>n={row['n']}</div></div>")
         row1 = _period_row("1個月勝率", _wr_row_20, _all_wr_20)
         row2 = _period_row("3個月勝率", _wr_row,    _all_wr_60)
         border_col = _wr_color(_wr_row['wr']) if _wr_row else '#334155'
         st.markdown(f"""
         <div class="metric-card" style="border-color:{border_col}55">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-            <span style="font-size:0.72rem;color:#94a3b8">進場勝率（EMA260 之上）</span>
-            <span style="background:#14532d;color:#4ade80;padding:2px 7px;border-radius:8px;font-size:0.62rem;font-weight:700">✓</span>
+            <span style="font-size:0.9rem;color:#94a3b8">進場勝率（EMA260 之上）</span>
+            <span style="background:#14532d;color:#4ade80;padding:2px 7px;border-radius:8px;font-size:0.9rem;font-weight:700">✓</span>
           </div>
           <div style="display:flex;gap:12px">{row1}{row2}</div>
           <div class="desc-text" style="margin-top:6px">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}<br>資料期間 2000–2026，含存活者偏差</div>
@@ -539,15 +563,15 @@ with y3:
     elif not _above260:
         st.markdown(f"""
         <div class="metric-card card-red">
-          <div style="font-size:0.72rem;color:#94a3b8">進場勝率</div>
-          <div style="font-size:1rem;font-weight:700;color:#f87171;margin:4px 0 2px">年線以下，勝率不適用</div>
+          <div style="font-size:0.9rem;color:#94a3b8">進場勝率</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#f87171;margin:4px 0 2px">年線以下，勝率不適用</div>
           <div class="desc-text">SPY 位於 EMA260 下方 {fmt(D['spy_vs_260ma'])}，回測條件不成立</div>
         </div>""", unsafe_allow_html=True)
     else:
         st.markdown(f"""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8">進場勝率</div>
-          <div style="font-size:1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
+          <div style="font-size:0.9rem;color:#94a3b8">進場勝率</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:4px 0 2px">查無資料</div>
           <div class="desc-text">乖離率桶 {_dev_bkt} × VIX桶 {_vix_bkt}</div>
         </div>""", unsafe_allow_html=True)
 with y4:
@@ -555,38 +579,38 @@ with y4:
         def _ev_block(label, row):
             if not row:
                 return (f"<div style='flex:1;opacity:0.4'>"
-                        f"<div style='font-size:0.6rem;color:#64748b'>{label}</div>"
-                        f"<div style='font-size:0.95rem;font-weight:700;color:#475569'>—</div></div>")
+                        f"<div style='font-size:0.9rem;color:#64748b'>{label}</div>"
+                        f"<div style='font-size:1.04rem;font-weight:700;color:#475569'>—</div></div>")
             avg = row['avg']; wr = row['wr']; ev = round(wr/100*avg, 2)
             ac = '#4ade80' if avg>0 else '#f87171'
             ec = '#4ade80' if ev>0  else '#f87171'
             return (f"<div style='flex:1'>"
-                    f"<div style='font-size:0.6rem;color:#64748b;margin-bottom:2px'>{label}</div>"
-                    f"<div style='font-size:0.7rem;color:#475569'>期望值</div>"
-                    f"<div style='font-size:1.15rem;font-weight:800;color:{ec}'>{'+' if ev>0 else ''}{ev:.2f}%</div>"
-                    f"<div style='font-size:0.7rem;color:#475569;margin-top:3px'>平均報酬</div>"
-                    f"<div style='font-size:1.15rem;font-weight:800;color:{ac}'>{'+' if avg>0 else ''}{avg:.2f}%</div>"
+                    f"<div style='font-size:0.9rem;color:#64748b;margin-bottom:2px'>{label}</div>"
+                    f"<div style='font-size:0.9rem;color:#475569'>期望值</div>"
+                    f"<div style='font-size:1.26rem;font-weight:800;color:{ec}'>{'+' if ev>0 else ''}{ev:.2f}%</div>"
+                    f"<div style='font-size:0.9rem;color:#475569;margin-top:3px'>平均報酬</div>"
+                    f"<div style='font-size:1.26rem;font-weight:800;color:{ac}'>{'+' if avg>0 else ''}{avg:.2f}%</div>"
                     f"</div>")
         b1 = _ev_block("1個月", _wr_row_20)
         b2 = _ev_block("3個月", _wr_row)
         st.markdown(f"""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:6px">期望值 &amp; 平均報酬</div>
+          <div style="font-size:0.9rem;color:#94a3b8;margin-bottom:6px">期望值 &amp; 平均報酬</div>
           <div style="display:flex;gap:12px">{b1}{b2}</div>
           <div class="desc-text" style="margin-top:6px">期望值 = 勝率 × 平均報酬</div>
         </div>""", unsafe_allow_html=True)
     elif not _above260:
         st.markdown("""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
-          <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">—</div>
+          <div style="font-size:0.9rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:6px 0 4px">—</div>
           <div class="desc-text">年線以下，數據不適用</div>
         </div>""", unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="metric-card">
-          <div style="font-size:0.72rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
-          <div style="font-size:1rem;font-weight:700;color:#475569;margin:6px 0 4px">查無資料</div>
+          <div style="font-size:0.9rem;color:#94a3b8">期望值 &amp; 平均報酬</div>
+          <div style="font-size:1.1rem;font-weight:700;color:#475569;margin:6px 0 4px">查無資料</div>
         </div>""", unsafe_allow_html=True)
 # ── 領頭股前哨 ────────────────────────────────────────────────────
 st.markdown('<div class="section-hdr">領頭股前哨（權值股隊形 · 不計入整體燈號）</div>', unsafe_allow_html=True)
@@ -624,8 +648,8 @@ try:
         st.markdown(f"""
         <div class="metric-card card-{ldr_status}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <span style="font-size:0.72rem;color:#94a3b8">領頭股健康度（收盤 vs EMA60）
-              <span style="font-size:0.6rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">
+            <span style="font-size:0.9rem;color:#94a3b8">領頭股健康度（收盤 vs EMA60）
+              <span style="font-size:0.9rem;color:#6366f1;background:#1e1b4b;padding:1px 5px;border-radius:4px">
               {'名單每日自動更新' if _list_is_live else '⚠ 使用備援名單'}</span></span>
             {BADGE[ldr_status]}
           </div>
@@ -645,8 +669,8 @@ try:
             dir_txt, dir_col = f"→ 持平（10日均兩週 {_d10:+.1f} 檔）", '#94a3b8'
         st.markdown(
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">'
-            f'<span style="font-size:0.65rem;color:#475569">健康度近 60 日（灰＝每日 · 粗線＝10日均 · 虛線＝裂痕線）</span>'
-            f'<span style="font-size:0.72rem;font-weight:700;color:{dir_col}">{dir_txt}</span></div>',
+            f'<span style="font-size:0.9rem;color:#475569">健康度近 60 日（灰＝每日 · 粗線＝10日均 · 虛線＝裂痕線）</span>'
+            f'<span style="font-size:0.9rem;font-weight:700;color:{dir_col}">{dir_txt}</span></div>',
             unsafe_allow_html=True)
         figL = go.Figure()
         figL.add_trace(go.Scatter(
@@ -697,8 +721,8 @@ if ldr_status is not None and L is not None:
         body += " 　※ 目前有單一壓力燈亮：屬情境警示，不否決，勿追延伸。"
     st.markdown(f"""
     <div class="{box_cls}" style="margin-bottom:14px">
-      <div style="font-size:1.05rem;font-weight:700;color:#e2e8f0">{title}</div>
-      <div style="color:#94a3b8;font-size:0.78rem;margin-top:6px">{body}</div>
+      <div style="font-size:1.16rem;font-weight:700;color:#e2e8f0">{title}</div>
+      <div style="color:#94a3b8;font-size:0.9rem;margin-top:6px">{body}</div>
     </div>""", unsafe_allow_html=True)
 else:
     st.markdown('<div class="uvxy-ok">領頭股資料未載入，無法合成進場許可；請以壓力否決與個股觸發判斷。</div>',
@@ -707,7 +731,7 @@ else:
 # ── Footer ────────────────────────────────────────────────────────
 st.markdown("---")
 st.markdown(
-    f"<div style='text-align:center;color:#334155;font-size:0.68rem'>"
+    f"<div style='text-align:center;color:#334155;font-size:0.9rem'>"
     f"數據來源：Yahoo Finance（yfinance）&nbsp;｜&nbsp;"
     f"數據每小時自動更新 &nbsp;｜&nbsp;"
     f"截至 {D['as_of']}"
