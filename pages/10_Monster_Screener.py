@@ -101,15 +101,65 @@ BATCH = 25
 
 
 # ── 資料 ─────────────────────────────────────────────────────────
+# 備援宇宙用的半導體名單（Yahoo 產業篩選同樣會被擋，只能寫死）
+SEMIS_FALLBACK = ["NVDA", "AVGO", "AMD", "TSM", "MU", "INTC", "QCOM", "TXN", "ADI", "LRCX",
+                  "AMAT", "KLAC", "MRVL", "NXPI", "MCHP", "ON", "SWKS", "QRVO", "MPWR", "TER",
+                  "ENTG", "ASML", "ARM", "ALAB", "CRDO", "RMBS", "LSCC", "SITM", "POWI", "AOSL",
+                  "COHR", "SNDK", "LITE", "AAOI", "WOLF", "AMKR", "FORM", "ACLS", "UCTT", "ICHR"]
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
-def screen_universe(min_cap_b: float, min_52w: float) -> pd.DataFrame:
-    """Yahoo 篩選器粗篩：市值 > min_cap、52 週漲幅 > min_52w（半年 >150% 的必要條件近似）。"""
+def _index_universe() -> pd.DataFrame:
+    """備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體（維基百科，不經 Yahoo 篩選器）。
+    沒有市值欄位（cap = NaN），但這些成分股本來就都 >$1B，市值門檻等同已滿足。"""
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    out = []
+    for url, minlen in (("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", 400),
+                        ("https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies", 90)):
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+            r.raise_for_status()
+            for tb in pd.read_html(StringIO(r.text)):
+                cols = [str(c) for c in tb.columns]
+                hit = [c for c in cols if "Ticker" in c or "Symbol" in c]
+                if not hit or len(tb) < minlen:
+                    continue
+                ser = tb[hit[0]].astype(str).str.strip().str.replace(".", "-", regex=False)
+                out += [t for t in ser.tolist()
+                        if t and t.upper() != "NAN" and 1 <= len(t) <= 6 and t.replace("-", "").isalpha()]
+                break
+        except Exception:
+            pass
+    out += SEMIS_FALLBACK
+    out = list(dict.fromkeys(out))
+    return pd.DataFrame([{"t": t, "cap": float("nan"), "name": ""} for t in out])
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
+    """Yahoo 篩選器粗篩：市值 > min_cap、52 週漲幅 > min_52w（半年 >150% 的必要條件近似）。
+    回傳 (DataFrame, 來源說明)。
+
+    ⚠️ yf.screen 需要 Yahoo 的 cookie/crumb 認證，雲端機房 IP 很常被回 401/429
+    （本機跑得動、部署到 Community Cloud 就掛）。所以這裡：
+      ① 每頁重試 3 次、指數退避；② 整段失敗不再往外丟例外，改用指數成分股當備援宇宙。"""
     q = Q("and", [Q("gt", ["intradaymarketcap", min_cap_b * 1e9]),
                   Q("gt", ["fiftytwowkpercentchange", min_52w]),
                   Q("eq", ["region", "us"])])
-    rows, off = [], 0
+    rows, off, last_err = [], 0, None
     while off < 3000:
-        r = yf.screen(q, size=250, offset=off, sortField="intradaymarketcap", sortAsc=False)
+        r = None
+        for attempt in range(3):
+            try:
+                r = yf.screen(q, size=250, offset=off, sortField="intradaymarketcap", sortAsc=False)
+                break
+            except Exception as e:                 # 401／429／連線中斷都在這裡吸收
+                last_err = e
+                time.sleep(2 * (attempt + 1))
+        if r is None:
+            break
         qs = r.get("quotes", [])
         rows += qs
         off += 250
@@ -121,7 +171,13 @@ def screen_universe(min_cap_b: float, min_52w: float) -> pd.DataFrame:
             continue
         keep.append({"t": x["symbol"], "cap": (x.get("marketCap") or 0) / 1e9,
                      "name": x.get("shortName", "")})
-    return pd.DataFrame(keep)
+    if keep:
+        return pd.DataFrame(keep), f"Yahoo 篩選器（{len(keep)} 檔候選）"
+    fb = _index_universe()
+    why = f"（{type(last_err).__name__}）" if last_err is not None else "（無回傳資料）"
+    return fb, ("⚠️ Yahoo 篩選器連線失敗 " + why +
+                f"——雲端 IP 常被限流。已改用備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體共 {len(fb)} 檔。"
+                "指數外的中小型怪物股這時候會漏掉，市值欄位也會是「—」。")
 
 
 @st.cache_resource(ttl=86400, show_spinner=False)   # ⚠️ 不可改回 cache_data：
@@ -300,10 +356,12 @@ excl_tickers = {s.strip().upper() for s in excl_txt.split(",") if s.strip()}
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
-    univ = screen_universe(min_cap, 50.0)
+    univ, univ_note = screen_universe(min_cap, 50.0)
 if univ.empty:
-    st.error("篩選器沒有回傳資料（可能被 Yahoo 暫時限流），請稍後按「重新掃描」。")
+    st.error("篩選器與備援名單都取不到資料（Yahoo 與 Wikipedia 同時失敗），請稍後再試。")
     st.stop()
+if univ_note.startswith("⚠️"):
+    st.warning(univ_note)
 
 # ── 2. 價格 ──
 top8 = list(top8_by_cap())
@@ -407,8 +465,12 @@ for _, x in univ.iterrows():
     hi63 = float(c.iloc[-64:-1].max())
     stop, stop_dt = swing_stop(df, px)
     sh = int(r_usd / (px - stop)) if px > stop else 0
-    band = ">10B" if x["cap"] > 10 else ("2-10B" if x["cap"] > 2 else "1-2B")
-    base = dict(代碼=t, 名稱=x["name"][:18], 半年=f"{r6*100:+.0f}%", 市值B=round(x["cap"], 1), 帶=band, 價=round(px, 2),
+    _cap = x["cap"]
+    if _cap != _cap:                    # NaN：備援宇宙沒有市值資料
+        band = "—"
+    else:
+        band = ">10B" if _cap > 10 else ("2-10B" if _cap > 2 else "1-2B")
+    base = dict(代碼=t, 名稱=x["name"][:18], 半年=f"{r6*100:+.0f}%", 市值B=(round(_cap, 1) if _cap == _cap else float("nan")), 帶=band, 價=round(px, 2),
                 距63日高=f"{(px/hi63-1)*100:+.1f}%", 觸發="🔔" if px >= hi63 else "",
                 距季線=f"{(px/e60.iloc[-1]-1)*100:+.0f}%", ATR=f"{a14/px*100:.1f}%",
                 停損=round(stop, 2), 停損距=f"{(px/stop-1)*100:.0f}%", 停損日=str(stop_dt) if stop_dt else "—",
