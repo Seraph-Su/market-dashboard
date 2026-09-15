@@ -137,6 +137,34 @@ def _index_universe() -> pd.DataFrame:
     return pd.DataFrame([{"t": t, "cap": float("nan"), "name": ""} for t in out])
 
 
+UNIV_FILE = "data/monster_universe.json"      # 由 build_universe.py 在本機產生後 commit 上來
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _file_universe(min_cap_b: float) -> tuple:
+    """讀 repo 裡由排程產生的宇宙名單。雲端 IP 打不到 Yahoo screener，
+    但你自己電腦的住宅 IP 打得到——所以名單在本機算好 commit 上來，網頁只負責讀。
+    檔案不存在就回 (None, "")，自動往下一層走。"""
+    import json, datetime as _dt
+    from pathlib import Path as _P
+    f = _P(__file__).resolve().parent.parent / UNIV_FILE      # repo 根目錄/data/...
+    if not f.exists():
+        return None, ""
+    try:
+        blob = json.loads(f.read_text(encoding="utf-8"))
+        rows = [x for x in blob["rows"] if (x.get("cap") or 0) >= min_cap_b]
+        if not rows:
+            return None, ""
+        built = blob.get("built_at", "?")
+        age = (_dt.date.today() - _dt.date.fromisoformat(built[:10])).days
+        note = f"排程名單（{built[:10]}，{len(rows)} 檔候選）"
+        if age >= 3:
+            note = f"⚠️ 排程名單已經 {age} 天沒更新（{built[:10]}，{len(rows)} 檔）——請在本機重跑 build_universe.py 並 commit。"
+        return pd.DataFrame(rows), note
+    except Exception:
+        return None, ""
+
+
 @st.cache_data(ttl=86400, show_spinner=False)
 def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
     """Yahoo 篩選器粗篩：市值 > min_cap、52 週漲幅 > min_52w（半年 >150% 的必要條件近似）。
@@ -145,6 +173,9 @@ def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
     ⚠️ yf.screen 需要 Yahoo 的 cookie/crumb 認證，雲端機房 IP 很常被回 401/429
     （本機跑得動、部署到 Community Cloud 就掛）。所以這裡：
       ① 每頁重試 3 次、指數退避；② 整段失敗不再往外丟例外，改用指數成分股當備援宇宙。"""
+    df_file, note_file = _file_universe(min_cap_b)
+    if df_file is not None:                       # 第一層：排程產生的名單
+        return df_file, note_file
     q = Q("and", [Q("gt", ["intradaymarketcap", min_cap_b * 1e9]),
                   Q("gt", ["fiftytwowkpercentchange", min_52w]),
                   Q("eq", ["region", "us"])])
@@ -157,6 +188,10 @@ def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
                 break
             except Exception as e:                 # 401／429／連線中斷都在這裡吸收
                 last_err = e
+                # Yahoo 對機房 IP 封的是 screener endpoint 本身，不是限流：
+                # 回「User is unable to access this feature」時重試永遠不會成功，直接放棄省 12 秒。
+                if "unable to access this feature" in str(e).lower():
+                    break
                 time.sleep(2 * (attempt + 1))
         if r is None:
             break
@@ -174,7 +209,7 @@ def screen_universe(min_cap_b: float, min_52w: float) -> tuple:
     if keep:
         return pd.DataFrame(keep), f"Yahoo 篩選器（{len(keep)} 檔候選）"
     fb = _index_universe()
-    why = f"（{type(last_err).__name__}）" if last_err is not None else "（無回傳資料）"
+    why = "（Yahoo 封鎖機房 IP 的 screener endpoint）" if last_err is not None else "（無回傳資料）"
     return fb, ("⚠️ Yahoo 篩選器連線失敗 " + why +
                 f"——雲端 IP 常被限流。已改用備援宇宙：S&P 500 ＋ Nasdaq 100 ＋ 半導體共 {len(fb)} 檔。"
                 "指數外的中小型怪物股這時候會漏掉，市值欄位也會是「—」。")
