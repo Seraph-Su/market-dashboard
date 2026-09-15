@@ -7,7 +7,7 @@ from yfinance import EquityQuery as Q
 
 # ═══════════════════════════════════════════════════════════════════
 # 🦖 怪物股選股器（順勢交易系統 規則一＋規則二）
-#   宇宙：美股普通股、市值 > $1B、過去半年漲幅 > 150%、剔除能源／礦業金屬／生技製藥
+#   宇宙：美股普通股、市值 > $1B、過去半年漲幅 > 150%、上市滿一年、剔除能源／礦業金屬／生技製藥／加密貨幣相關
 #   觸發：今日收盤創 63 日新高；許可：領頭股燈號綠燈（≥5/8）且壓力否決未成立
 #   輸出：合格名單＋前波支撐停損＋1R 股數（修復突破候選在「均線收斂突破選股」頁）
 # ═══════════════════════════════════════════════════════════════════
@@ -18,6 +18,8 @@ EXCL_SECTOR = {"Energy"}
 EXCL_INDUSTRY_KW = ["Biotech", "Drug Manufacturers", "Pharmaceutical", "Gold", "Silver", "Copper", "Steel",
                     "Aluminum", "Other Industrial Metals", "Other Precious Metals", "Coking Coal", "Thermal Coal",
                     "Uranium", "Oil & Gas"]
+# 加密貨幣相關（礦機商、持幣公司、交易所）與迷因股：產業分類抓不到，用名單剔除
+EXCL_TICKERS_DEFAULT = "MSTR, MARA, RIOT, HUT, CLSK, BITF, CIFR, WULF, IREN, CORZ, GREE, BTBT, HIVE, SDIG, BTCS, COIN, BKKT, GLXY, SBET, BMNR, DFDV, CEP, CAN, EBON, NCTY, BTDR, SLNH, GRYP, APLD, GME, AMC, KOSS, MULN"
 EXCH_OK = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS"}
 BATCH = 25
 
@@ -99,28 +101,44 @@ def fetch_sector(t: str) -> tuple:
         return ("", "")
 
 
+# 同公司雙股別合併（與大盤壓力儀表板一致）
+_SHARE_CLASS = {"GOOG": "GOOGL", "BRK-A": "BRK-B"}
 @st.cache_data(ttl=86400, show_spinner=False)
-def top8_by_cap() -> tuple:
-    """即時市值前八大普通股（抓不到則用備援名單）。"""
+def fetch_sp500_members() -> set:
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                        headers=headers, timeout=30)
+    resp.raise_for_status()
+    df = pd.read_html(StringIO(resp.text))[0]
+    return set(df["Symbol"].str.replace(".", "-", regex=False).tolist())
+@st.cache_data(ttl=86400, show_spinner=False)
+def top8_by_cap(n: int = 8) -> tuple:
+    """S&P 500 市值前 n 大（合併雙股別、排除非成分股）。
+    ⚠️ 必須與『大盤壓力儀表板』的 fetch_leader_list 完全相同，否則兩頁燈號會不一致：
+    門檻 $2000 億（非 $3000 億）、且要過 S&P 500 成分股濾網（排除 TSM 等外國發行人）。"""
     try:
-        r = yf.screen(Q("and", [Q("eq", ["region", "us"]), Q("gt", ["intradaymarketcap", 3e11])]),
-                      size=30, sortField="intradaymarketcap", sortAsc=False)
+        r = yf.screen(Q("and", [Q("eq", ["region", "us"]), Q("gt", ["intradaymarketcap", 2e11])]),
+                      size=25, sortField="intradaymarketcap", sortAsc=False)
+        try:
+            members = fetch_sp500_members()
+        except Exception:
+            members = None                      # 維基抓不到就不過濾
         seen, out = set(), []
         for x in r.get("quotes", []):
-            if x.get("quoteType") != "EQUITY":
+            sym = x.get("symbol", "")
+            if not sym or "." in sym:
                 continue
-            base = x["symbol"].replace("GOOG", "GOOGL") if x["symbol"] == "GOOG" else x["symbol"]
-            if base in seen or x["symbol"] in ("BRK-A",):
+            sym = _SHARE_CLASS.get(sym, sym)
+            if sym in seen:
                 continue
-            seen.add(base); out.append(x["symbol"])
-            if len(out) == 8:
+            if members is not None and sym not in members:
+                continue
+            seen.add(sym); out.append(sym)
+            if len(out) >= n:
                 break
-        for t in TOP8_FALLBACK:          # 不足八檔時用備援名單補齊
-            if len(out) >= 8:
-                break
-            if t not in out:
-                out.append(t)
-        return tuple(out[:8])
+        return tuple(out) if len(out) >= 6 else tuple(TOP8_FALLBACK)
     except Exception:
         return tuple(TOP8_FALLBACK)
 
@@ -146,7 +164,7 @@ with col_title:
     st.markdown("## 🦖 怪物股選股器")
     st.markdown(
         "<span style='color:#64748b;font-size:0.78rem'>"
-        "宇宙＝市值 > $1B、半年漲幅 > 150%、上市滿一年、非能源／礦業／生技　｜　觸發＝今日創 63 日新高　｜　"
+        "宇宙＝市值 > $1B、半年漲幅 > 150%、上市滿一年、非能源／礦業／生技／加密　｜　觸發＝今日創 63 日新高　｜　"
         "許可＝領頭股綠燈且壓力否決未成立　｜　資料每日快取"
         "</span>", unsafe_allow_html=True)
 with col_refresh:
@@ -170,6 +188,9 @@ ipo_exempt_txt = st.text_input("例外：分拆／重新上市的老公司（逗
                                value="SNDK, GEV, SOLV, SOLS, Q, VSNT",
                                help="回測樣本只含真正的 IPO，不含分拆與重新掛牌；這些公司有完整營運歷史，不適用新股結論。DELL 2018 年重新上市、資料已滿一年，不受影響。")
 ipo_exempt = {s.strip().upper() for s in ipo_exempt_txt.split(",") if s.strip()}
+excl_txt = st.text_input("排除名單：加密貨幣相關／迷因股（逗號分隔）", value=EXCL_TICKERS_DEFAULT,
+                         help="回測：剔除加密與迷因股後最大回撤由 −25.8% 收到 −20.0%，加碼貢獻由 −7R 轉為 +8～12R。產業分類抓不到這類公司，只能用名單。")
+excl_tickers = {s.strip().upper() for s in excl_txt.split(",") if s.strip()}
 
 # ── 1. 宇宙 ──
 with st.spinner("Yahoo 篩選器粗篩中…"):
@@ -197,8 +218,10 @@ if cov < 0.6:
 def close_of(t):
     return PX[t]["Close"].ffill() if t in PX else None
 
-n_above, n_prev, have = 0, 0, 0
-for t in top8 + [x for x in TOP8_FALLBACK if x not in top8]:   # 缺資料時用備援名單補到 8 檔
+# 判定與大盤壓力儀表板一致：紅＝2% 緩衝後仍 ≤4；黃＝無緩衝 ≤4；其餘為綠
+n_above, n_buf, have = 0, 0, 0
+_above_cols = {}
+for t in list(top8) + [x for x in TOP8_FALLBACK if x not in top8]:   # 缺資料時用備援名單補到 8 檔
     if have >= 8:
         break
     c = close_of(t)
@@ -206,10 +229,26 @@ for t in top8 + [x for x in TOP8_FALLBACK if x not in top8]:   # 缺資料時用
         continue
     e60 = c.ewm(span=60, adjust=False).mean()
     have += 1
-    n_above += int(c.iloc[-1] > e60.iloc[-1])
-    n_prev += int(c.iloc[-11] > e60.iloc[-11])
+    dist = float(c.iloc[-1] / e60.iloc[-1] - 1) * 100
+    n_above += int(dist > 0)          # 無緩衝
+    n_buf += int(dist > -2.0)         # 2% 緩衝
+    _above_cols[t] = (c > e60)
+# 方向：每日站上家數的 10 日均線，近兩週變化（與儀表板相同）
+delta10 = 0.0
+try:
+    _h_all = pd.DataFrame(_above_cols).sum(axis=1)
+    _h_ma10 = _h_all.rolling(10).mean()
+    if len(_h_ma10.dropna()) > 11:
+        delta10 = float(_h_ma10.iloc[-1] - _h_ma10.iloc[-11])
+except Exception:
+    pass
 if have >= 6:
-    light = "綠" if n_above >= 5 else ("紅" if n_above <= 3 else ("惡化黃" if n_prev > n_above else "修復黃"))
+    if n_buf <= 4:
+        light = "紅"
+    elif n_above <= 4:
+        light = "惡化黃" if delta10 <= -0.5 else "修復黃"
+    else:
+        light = "綠"
 else:
     light = "資料不足"
 spy, cme, xlp, xly = close_of("SPY"), close_of("CME"), close_of("XLP"), close_of("XLY")
@@ -222,7 +261,9 @@ asof = spy.index[-1].date() if spy is not None else "—"
 lc = {"綠": "#4ade80", "惡化黃": "#fbbf24", "修復黃": "#fb923c", "紅": "#f87171", "資料不足": "#94a3b8"}[light]
 g1, g2, g3, g4 = st.columns(4)
 g1.metric("領頭股燈號", f"{n_above}/{have}", light, delta_color="off",
-          help=f"前八大：{', '.join(top8)}。≥5 綠、4 黃（惡化黃＝從綠掉下來，開門；修復黃＝從紅爬上來，關門）、≤3 紅。")
+          help=f"S&P 500 市值前八大：{', '.join(top8)}（與大盤壓力儀表板同一份名單與判定）。"
+               f"紅＝2% 緩衝後仍 ≤4／黃＝無緩衝 ≤4（惡化黃＝10 日均近兩週下滑 ≥0.5 檔，開門；修復黃＝關門）／其餘為綠。"
+               f"目前：無緩衝 {n_above}/{have}、2% 緩衝 {n_buf}/{have}、方向 {delta10:+.1f}。")
 g2.metric("CME/SPY 10 日", f"{cme10:+.1f}%", "否決燈 · 需與 XLP/XLY 同亮", delta_color="off")
 g3.metric("XLP/XLY 20 日", f"{xl20:+.1f}%", "單燈亮不否決", delta_color="off")
 g4.metric("新倉許可", "✅ 開" if gate_open else "⛔ 關",
@@ -248,6 +289,9 @@ for _, x in univ.iterrows():
     # 上市未滿一年：抓 1 年資料卻不足 ~240 個交易日（回測：<1 年 IPO 均 −0.10R／勝率 26%，老牌股 +0.44R／48%）
     if excl_ipo and len(c) < 240 and t not in ipo_exempt:
         excluded_ipo.append(f"{t}（{len(c)} 日）")
+        continue
+    if t in excl_tickers:
+        excluded.append(f"{t}（加密／迷因）")
         continue
     sec, ind = fetch_sector(t)
     if sec in EXCL_SECTOR or any(k.lower() in ind.lower() for k in EXCL_INDUSTRY_KW):
@@ -285,7 +329,7 @@ else:
     st.markdown("<span style='color:#64748b'>目前沒有合格的怪物股——這在慢牛年很正常，不是系統壞了。</span>", unsafe_allow_html=True)
 
 if excluded:
-    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>產業剔除（能源／礦業金屬／生技製藥）：{'、'.join(excluded)}</div>",
+    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>剔除（能源／礦業金屬／生技製藥／加密迷因）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
 if excluded_ipo:
     st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
@@ -293,13 +337,13 @@ if excluded_ipo:
 
 with st.expander("📖 規則與依據"):
     st.markdown(f"""
-**規則一（買什麼）**：市值 > ${min_cap:g}B、半年漲幅 > {mom_th}%、上市滿一年、非能源／礦業／生技製藥。依據：半年 >150% 的股票，六個月內再漲 >100% 的機率 7.4%（隨機 0.7%）；100～150% 區間勝率 34%、EV +0.10R，>150% 勝率 48%、EV +0.44R、怪物率 10.6%。高動能生技 EV −0.17R、勝率 25%，所有產業最差。上市未滿一年的 IPO（2019～2025 年 1,003 檔）觸發後均 −0.10R、勝率 26%、怪物率約 4%——前波低點未經驗證、閉鎖期解禁供給，故剔除。
+**規則一（買什麼）**：市值 > ${min_cap:g}B、半年漲幅 > {mom_th}%、上市滿一年、非能源／礦業／生技製藥／加密貨幣相關。依據：半年 >150% 的股票，六個月內再漲 >100% 的機率 7.4%（隨機 0.7%）；100～150% 區間勝率 34%、EV +0.10R，>150% 勝率 48%、EV +0.44R、怪物率 10.6%。高動能生技 EV −0.17R、勝率 25%，所有產業最差。上市未滿一年的 IPO（2019～2025 年 1,003 檔）觸發後均 −0.10R、勝率 26%、怪物率約 4%——前波低點未經驗證、閉鎖期解禁供給，故剔除。
 
 **規則二（何時買）**：收盤創 63 日新高那天觸發，隔日開盤進；領頭股 ≥5/8 站上季線為綠燈才開新倉。綠燈 EV +17.7%、紅燈 +3.2%，差在怪物率（8.9% vs 4.7%）不在勝率。壓力否決＝CME/SPY 10 日 ≥+5% **且** XLP/XLY 20 日 >+1% 同時成立，綠燈也不開；單燈亮不否決。
 
 **規則三（多大、停損）**：R＝帳戶 1%，停損＝最新前波支撐低點，股數＝R ÷ 停損距離。停損只往上移。破了就走、不破就抱。停損出場後再創新高＝重進場。
 
-**規則四（幾檔）**：最多 9 檔，本金 Heat ≤ 9%。同一天多檔觸發時各給 1R，讓停損去篩；名額不夠用題材籠子分（一個題材 3～4 檔）。
+**規則四（幾檔）**：最多 9 檔，本金曝險 ≤ 9%。同一天多檔觸發時各給 1R，讓停損去篩；名額不夠用題材籠子分（一個題材 3～4 檔）。
 
 ⚠️ 篩選器用 52 週漲幅 >50% 粗篩，極端情況（半年漲 150% 但 52 週仍 <50%）會漏掉；歷史回測有倖存者偏差；本頁不構成投資建議。
 """)
