@@ -124,8 +124,8 @@ def screen_universe(min_cap_b: float, min_52w: float) -> pd.DataFrame:
     return pd.DataFrame(keep)
 
 
-@st.cache_data(ttl=86400, show_spinner=False)
-def fetch_prices(tickers: tuple, period: str = "1y") -> dict:
+@st.cache_resource(ttl=86400, show_spinner=False)   # ⚠️ 不可改回 cache_data：
+def fetch_prices(tickers: tuple, period: str = "1y") -> dict:   # cache_data 每 session 複製一份 → 爆記憶體
     """分批下載 OHLC（被限流時暫停重試一次）；缺太多時不逐檔補抓，避免卡死。回傳 {ticker: DataFrame}。"""
     out = {}
     tk = list(tickers)
@@ -234,6 +234,35 @@ def swing_stop(df: pd.DataFrame, px: float) -> tuple:
     return px * 0.80, None
 
 
+
+# ── 管理員模式 ─────────────────────────────────────────────────────
+#   高成本功能（重新掃描＝清全域快取、全美股掃描）只給管理員，避免讀者一多就把
+#   Community Cloud 的 1 GB 記憶體與 Yahoo 限流打爆。
+#   密碼放 .streamlit/secrets.toml 的 admin_password；
+#   Community Cloud 在 App settings → Secrets 貼上，改完會自動重啟。
+def is_admin() -> bool:
+    if st.session_state.get("_is_admin"):
+        return True
+    try:
+        real = st.secrets.get("admin_password", "")
+    except Exception:
+        real = ""
+    if not real:
+        return False          # 沒設 admin_password → 管理功能一律關閉（讀者看不到任何提示）
+    with st.sidebar:
+        with st.expander("🔑 管理員"):
+            pw = st.text_input("管理密碼", type="password", key="_adminpw")
+            if pw:
+                if pw == real:
+                    st.session_state["_is_admin"] = True
+                    st.rerun()
+                st.caption("密碼不正確")
+    return False
+
+
+ADMIN = is_admin()
+
+
 # ── Page ──────────────────────────────────────────────────────────
 col_title, col_refresh = st.columns([5, 1])
 with col_title:
@@ -244,8 +273,9 @@ with col_title:
         "許可＝領頭股綠燈且壓力否決未成立　｜　資料每日快取"
         "</span>", unsafe_allow_html=True)
 with col_refresh:
-    if st.button("🔄 重新掃描", use_container_width=True):
-        st.cache_data.clear()
+    if ADMIN and st.button("🔄 重新掃描", use_container_width=True):
+        # 清全域快取，所有讀者一起重抓 → 只開放給管理員
+        fetch_prices.clear(); st.cache_data.clear()
         st.rerun()
 st.markdown("---")
 
@@ -288,7 +318,7 @@ st.markdown(f"<span style='color:#475569;font-size:0.9rem'>篩選器候選 {len(
 if cov < 0.6:
     st.warning(f"⚠️ 只取得 {cov*100:.0f}% 候選股的價格，很可能被 Yahoo 暫時限流——名單會不完整。請等 1～2 分鐘後按「🔄 重新掃描」。")
     if cov < 0.2:
-        st.cache_data.clear()   # 幾乎全空的結果不要快取一整天
+        fetch_prices.clear()   # 幾乎全空的結果不要快取一整天
 
 # ── 3. 閘門 ──
 def close_of(t):
