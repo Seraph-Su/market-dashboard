@@ -7,7 +7,7 @@ from io import StringIO
 # ═══════════════════════════════════════════════════════════════════
 # 🩹 修復觸發選股（順勢交易系統 第三引擎）
 #   觸發：過去 120 個交易日內至少一天收盤 < 年線(EMA260)，
-#         且今日是「收盤 > EMA20 > EMA60 > EMA260」的第一天（昨日尚未多頭排列）。
+#         且今日是「最後一次收年線下之後的第一個多頭排列日」（收盤 > EMA20 > EMA60 > EMA260）。
 #   出場：收盤跌破年線。尺寸：R ÷ max(進場價 − 年線, 10%×進場價)。
 #   不看量、不看當日漲幅。原本的 A/B/C/D 四種均線收斂突破訊號已於 2026-09-15 移除。
 # ═══════════════════════════════════════════════════════════════════
@@ -94,15 +94,18 @@ def fetch_largecap(min_cap: int = 1_000_000_000) -> tuple:
         except Exception:
             break
     return tuple(dict.fromkeys(out)), f"全美股市值 >$1B（{len(out)} 檔）"
+MIN_BARS = 800           # EMA260 收斂需要的最少根數（500 根會嚴重低估年線）
 @st.cache_data(ttl=86400, show_spinner=False)
 def download(tickers: tuple) -> dict:
-    """500 日日線，分批下載。"""
+    """5 年日線，分批下載。EMA260 是無限記憶平均，資料太短會讓年線失真：
+    例 MAAS 2026-09-14，取 500 根算出年線 11.61（價在其上、誤觸發），
+    取 800 根以上為 18.31（價在其下、不該觸發）。"""
     out, tk = {}, list(tickers)
     BATCH = 150
     for i in range(0, len(tk), BATCH):
         ch = tk[i:i + BATCH]
         try:
-            raw = yf.download(ch, period="500d", interval="1d", auto_adjust=True, progress=False)
+            raw = yf.download(ch, period="5y", interval="1d", auto_adjust=True, progress=False)
         except Exception:
             continue
         for t in ch:
@@ -111,26 +114,33 @@ def download(tickers: tuple) -> dict:
                     d = pd.DataFrame({"Close": raw["Close"][t]}).dropna()
                 else:
                     d = raw[["Close"]].dropna()
-                if len(d) >= 300:
+                if len(d) >= MIN_BARS:
                     out[t] = d["Close"]
             except Exception:
                 pass
     return out
 def detect_recovery(c: pd.Series, offset: int = 0):
-    """修復觸發：120 日內曾收年線下，今日首次站上 價>月>季>年。"""
+    """修復觸發：120 日內曾收年線下，且今日是『最後一次收在年線下之後的第一個多頭排列日』。
+    嚴格版（2026-09-15）：光看「昨日尚未排列」會讓早已修復的股票每次跌破月線再站回就重新觸發
+    （例 MAAS 4/16 最後一次收年線下，之後觸發了 7 次）。回測（2015–2026）：嚴格版筆數 875 → 797/年，
+    EV +0.53R → +0.54R、勝率 33% 不變；曾怪物子集 EV +1.44R → +1.49R、勝率 46% → 47%。
+    數字幾乎相同，但名單乾淨很多。"""
     if offset > 0:
         c = c.iloc[:len(c) - offset]
-    if len(c) < 300:
+    if len(c) < MIN_BARS:
         return None
     e20 = c.ewm(span=20, adjust=False).mean()
     e60 = c.ewm(span=60, adjust=False).mean()
     e260 = c.ewm(span=260, adjust=False).mean()
-    al_today = c.iloc[-1] > e20.iloc[-1] > e60.iloc[-1] > e260.iloc[-1]
-    al_prev = c.iloc[-2] > e20.iloc[-2] > e60.iloc[-2] > e260.iloc[-2]
-    if not al_today or al_prev:
+    al = (c > e20) & (e20 > e60) & (e60 > e260)
+    if not bool(al.iloc[-1]) or bool(al.iloc[-2]):
         return None
     below = (c < e260).iloc[-(BELOW_LOOKBACK + 1):-1]
     if not below.any():
+        return None
+    # 嚴格條件：最後一次收年線下之後，今天以前不曾出現過多頭排列
+    last_below_ts = below[below].index[-1]
+    if bool(al.loc[(al.index > last_below_ts) & (al.index < c.index[-1])].any()):
         return None
     px, yr = float(c.iloc[-1]), float(e260.iloc[-1])
     r126 = c / c.shift(126) - 1
@@ -163,7 +173,7 @@ with col_title:
     st.markdown("## 🩹 修復觸發選股")
     st.markdown(
         "<span style='color:#64748b;font-size:0.78rem'>"
-        "<b>觸發</b>：過去 120 日內曾收在年線（EMA260）下，今日是「收盤 &gt; 月線 &gt; 季線 &gt; 年線」的<b>第一天</b>　｜　"
+        "<b>觸發</b>：過去 120 日內曾收在年線（EMA260）下，且今日是<b>最後一次收年線下之後的第一個</b>「收盤 &gt; 月線 &gt; 季線 &gt; 年線」日　｜　"
         "<b>出場</b>：收盤跌破年線　｜　<b>尺寸</b>：R ÷ max(收盤 − 年線, 10%)　｜　"
         "不看量、不看當日漲幅"
         "</span>", unsafe_allow_html=True)
@@ -252,7 +262,12 @@ except Exception as e:
 with st.expander("📖 規則與依據"):
     st.markdown(f"""
 **觸發**：過去 {BELOW_LOOKBACK} 個交易日內至少一天收盤在年線（EMA260）之下，且今日是
-「收盤 > EMA20 > EMA60 > EMA260」的**第一天**（昨日尚未多頭排列）。不看量、不看當日漲幅。
+**「最後一次收在年線下之後的第一個多頭排列日」**（收盤 > EMA20 > EMA60 > EMA260）。不看量、不看當日漲幅。
+
+　嚴格版（2026-09-15 改）：原本只檢查「昨日尚未排列」，導致早已修復的股票每次跌破月線再站回就重新入選——
+　例 MAAS 最後一次收年線下是 4/16，之後又觸發了 7 次。回測（2015–2026、≥$5B 美股）：
+　嚴格版筆數 875 → 797 筆/年，EV +0.53R → **+0.54R**、勝率 33% 不變；曾怪物子集 EV +1.44R → **+1.49R**、勝率 46% → 47%。
+　績效差異在雜訊內，但名單乾淨很多。
 
 **出場**：收盤跌破年線，隔日開盤出。**尺寸**：股數 = R ÷ max(收盤 − 年線, 10%×收盤)，部位 ≤ 帳戶 10%。
 
@@ -262,6 +277,11 @@ with st.expander("📖 規則與依據"):
 回測（2015–2026、目前市值 ≥$5B 美股、倖存者偏差）：同一條修復規則加上此濾網，
 EV **+0.66R → +1.52R**、勝率 **33% → 44%**、≥3R 比例 **10% → 17%**、中位持有 47 → 87 日。
 前十大贏家全在此類（LITE 2025/5 +90R、BE、PLTR 2023/8、MSTR 2023/10、GME 2020/9）。
+
+**資料長度**：本頁抓 **5 年日線、至少 800 根**才計算。EMA260 是無限記憶平均，資料太短年線會失真——
+例：MAAS 2026-09-14，用 500 根算出年線 11.61（股價 +41% 在其上 → 誤觸發），
+用 800 根以上為 18.31（股價 −11% 在其下 → 正確地不觸發）。看盤軟體用完整歷史，所以會跟短視窗的結果相反。
+副作用：上市未滿約 3.2 年的新股會因資料不足被排除，這與規則一「上市滿一年」的精神一致。
 
 **額度**：修復 ≤6 檔、動能 ≤9 檔，兩者獨立；總曝險合計以規則四為準。
 
