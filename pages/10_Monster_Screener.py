@@ -5,6 +5,82 @@ import time
 import yfinance as yf
 from yfinance import EquityQuery as Q
 
+# ── 全頁字級放大（適合 50 歲以上閱讀）2026-09-15 ────────────────────
+#   與 1_Dashboard.py / 6_WinRate_Matrix.py / 5_Breakout_Screener.py 同一套：
+#   根字級 16px → 20px，本頁所有 rem 一次放大 1.25 倍。
+#   ⚠️ st.data_editor（可編輯表格）是 canvas 繪製，字級不吃 CSS，
+#      需在專案根目錄 .streamlit/config.toml 設 [theme] baseFontSize = 20。
+#      唯讀表格已改用 big_table() 的 HTML 表格，字級才放得大。
+st.markdown("""
+<style>
+  html { font-size: 20px; }
+  body, .stApp, [data-testid="stAppViewContainer"] { font-size: 1rem; line-height: 1.65; }
+  [data-testid="stMarkdownContainer"] p  { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] li { font-size: 1rem; line-height: 1.7; }
+  [data-testid="stMarkdownContainer"] h1 { font-size: 2.1rem; }
+  [data-testid="stMarkdownContainer"] h2 { font-size: 1.75rem; }
+  [data-testid="stMarkdownContainer"] h3 { font-size: 1.4rem; }
+  [data-testid="stMarkdownContainer"] h4 { font-size: 1.25rem; }
+  [data-testid="stMarkdownContainer"] h5 { font-size: 1.1rem; }
+  [data-testid="stMetricValue"] { font-size: 1.85rem !important; }
+  [data-testid="stMetricLabel"] p { font-size: 0.98rem !important; }
+  [data-testid="stMetricDelta"], [data-testid="stMetricDelta"] div { font-size: 0.95rem !important; }
+  [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label { font-size: 1rem !important; }
+  [data-testid="stCaptionContainer"] p { font-size: 0.92rem !important; }
+  [data-testid="stCheckbox"] label p, [data-testid="stRadio"] label p { font-size: 1rem !important; }
+  [data-testid="stAlert"] p { font-size: 1rem; }
+  .stButton button, .stDownloadButton button { font-size: 1rem; padding: 0.5rem 0.9rem; }
+  .stButton button p { font-size: 1rem; }
+  .stTextInput input, .stNumberInput input, .stDateInput input,
+  [data-baseweb="select"] div, [data-baseweb="tag"] span, [data-baseweb="tab"] p { font-size: 1rem; }
+  [data-testid="stExpander"] summary p, details summary { font-size: 1.08rem; font-weight: 600; }
+  [data-testid="stSidebar"] * { font-size: 1rem; }
+  [data-testid="stSidebarNav"] a span, [data-testid="stSidebarNavLink"] span { font-size: 1.02rem; }
+  .block-container { padding-top: 1.2rem; padding-bottom: 1rem; }
+
+  /* 唯讀表格（big_table）：取代 st.dataframe，字級才能跟著放大 */
+  .bigtbl-wrap { overflow: auto; border: 1px solid #1e293b; border-radius: 8px; }
+  table.bigtbl { border-collapse: collapse; width: max-content; min-width: 100%; }
+  table.bigtbl th {
+    position: sticky; top: 0; z-index: 2; background: #0f172a; color: #64748b;
+    font-size: 0.88rem; font-weight: 600; text-align: right; white-space: nowrap;
+    padding: 10px 14px; border-bottom: 1px solid #1e293b;
+  }
+  table.bigtbl td {
+    font-size: 1rem; color: #cbd5e1; text-align: right; white-space: nowrap;
+    padding: 9px 14px; border-bottom: 1px solid #16202f;
+  }
+  table.bigtbl th.l, table.bigtbl td.l { text-align: left; }
+  table.bigtbl td.code { font-weight: 700; color: #e2e8f0; font-size: 1.08rem; }
+  table.bigtbl tr:hover td { background: #131c2b; }
+</style>
+""", unsafe_allow_html=True)
+
+
+def big_table(df, height=520, show_index=True, fmt=None, left=()):
+    """大字級唯讀表格：st.dataframe 是 canvas 繪製、字級吃不到 CSS，改輸出 HTML 表格。
+    fmt：{欄名: "{:,.0f}"} 明確指定格式；未指定的浮點欄自動套千分位。
+    left：靠左對齊的欄名集合（文字欄）；index 一律靠左並加粗。"""
+    d = df.copy()
+    fmt = fmt or {}
+    for c in d.columns:
+        if c in fmt:
+            d[c] = d[c].map(lambda v, f=fmt[c]: "—" if pd.isna(v) else f.format(v))
+        elif pd.api.types.is_float_dtype(d[c]):
+            d[c] = d[c].map(lambda v: "—" if pd.isna(v)
+                            else (f"{v:,.0f}" if abs(v - round(v)) < 1e-9 else f"{v:,.2f}"))
+    head = (f'<th class="l">{d.index.name or ""}</th>' if show_index else "")
+    head += "".join(f'<th class="{"l" if c in left else ""}">{c}</th>' for c in d.columns)
+    body = ""
+    for i, row in d.iterrows():
+        tds = f'<td class="l code">{i}</td>' if show_index else ""
+        tds += "".join(f'<td class="{"l" if c in left else ""}">'
+                       f'{"" if pd.isna(row[c]) else row[c]}</td>' for c in d.columns)
+        body += f"<tr>{tds}</tr>"
+    st.markdown(f'<div class="bigtbl-wrap" style="max-height:{height}px">'
+                f'<table class="bigtbl"><thead><tr>{head}</tr></thead>'
+                f'<tbody>{body}</tbody></table></div>', unsafe_allow_html=True)
+
 # ═══════════════════════════════════════════════════════════════════
 # 🦖 怪物股選股器（順勢交易系統 規則一＋規則二）
 #   宇宙：美股普通股、市值 > $1B、過去半年漲幅 > 150%、上市滿一年、剔除能源／礦業金屬／生技製藥／加密貨幣相關
@@ -163,7 +239,7 @@ col_title, col_refresh = st.columns([5, 1])
 with col_title:
     st.markdown("## 🦖 怪物股選股器")
     st.markdown(
-        "<span style='color:#64748b;font-size:0.78rem'>"
+        "<span style='color:#64748b;font-size:0.9rem'>"
         "宇宙＝市值 > $1B、半年漲幅 > 150%、上市滿一年、非能源／礦業／生技／加密　｜　觸發＝今日創 63 日新高　｜　"
         "許可＝領頭股綠燈且壓力否決未成立　｜　資料每日快取"
         "</span>", unsafe_allow_html=True)
@@ -207,7 +283,7 @@ PX = fetch_prices(tickers)
 prog.progress(100, text=f"價格資料完成：{len(PX)} 檔")
 prog.empty()
 cov = sum(1 for t in univ["t"] if t in PX) / max(len(univ), 1)
-st.markdown(f"<span style='color:#475569;font-size:0.72rem'>篩選器候選 {len(univ)} 檔｜取得價格 {sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜資料截至 {max((PX[t].index[-1] for t in PX), default='—')}</span>",
+st.markdown(f"<span style='color:#475569;font-size:0.9rem'>篩選器候選 {len(univ)} 檔｜取得價格 {sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜資料截至 {max((PX[t].index[-1] for t in PX), default='—')}</span>",
             unsafe_allow_html=True)
 if cov < 0.6:
     st.warning(f"⚠️ 只取得 {cov*100:.0f}% 候選股的價格，很可能被 Yahoo 暫時限流——名單會不完整。請等 1～2 分鐘後按「🔄 重新掃描」。")
@@ -319,9 +395,11 @@ def order(df_):
 mon = order(pd.DataFrame(rows))
 st.markdown(f"#### 🦖 怪物股宇宙：{len(mon)} 檔（半年 > {mom_th}%）　🔔 觸發 {int((mon['觸發']=='🔔').sum()) if len(mon) else 0} 檔")
 if len(mon):
-    st.dataframe(mon.set_index("代碼"), use_container_width=True, height=min(60 + 35 * len(mon), 600))
+    big_table(mon.set_index("代碼"), height=min(72 + 46 * len(mon), 680),
+              left={"名稱", "帶", "觸發", "停損日", "產業"},
+              fmt={"市值B": "{:,.1f}", "價": "{:,.2f}", "停損": "{:,.2f}"})
     st.markdown(
-        "<div style='color:#334155;font-size:0.68rem'>"
+        "<div style='color:#334155;font-size:0.9rem'>"
         "停損＝最近已確認擺盪低點（前後 3 日最低、低於現價 5% 以上），距離上限 25%；太近（<8%）的停損請改看更前一個結構低點——"
         "股數 = R ÷（現價 − 停損），為系統規則之計算示例。🔔 僅表示當日收盤創 63 日新高，為客觀條件標記，不構成任何投資建議。"
         "</div>", unsafe_allow_html=True)
@@ -329,10 +407,10 @@ else:
     st.markdown("<span style='color:#64748b'>目前沒有合格的怪物股——這在慢牛年很正常，不是系統壞了。</span>", unsafe_allow_html=True)
 
 if excluded:
-    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:8px'>剔除（能源／礦業金屬／生技製藥／加密迷因）：{'、'.join(excluded)}</div>",
+    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:8px'>剔除（能源／礦業金屬／生技製藥／加密迷因）：{'、'.join(excluded)}</div>",
                 unsafe_allow_html=True)
 if excluded_ipo:
-    st.markdown(f"<div style='color:#475569;font-size:0.72rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
+    st.markdown(f"<div style='color:#475569;font-size:0.9rem;margin-top:4px'>上市未滿一年剔除（括號＝可用交易日；若為分拆／重新上市的老公司，請加進上方例外欄）：{'、'.join(excluded_ipo)}</div>",
                 unsafe_allow_html=True)
 
 with st.expander("📖 規則與依據"):
