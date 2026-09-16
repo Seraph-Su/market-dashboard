@@ -91,6 +91,12 @@ def fetch_data():
     else:
         close['CME'] = float('nan')
     close = close.dropna(how='all')
+    # ── 以 SPY 為錨（2026-09-16 修）──────────────────────────────
+    # Yahoo 偶爾會先放出當日「有量沒價」的空殼列：ETF／個股 Close = NaN 但 Volume 有值，
+    # 而指數（^VIX）已經有值 → 那一列不會被 dropna(how='all') 丟掉，
+    # SPY 等全變 NaN → 所有比值指標變 NaN → _safe() 轉成 0.0，看起來像「不更新」。
+    # 只保留 SPY 有收盤價的列，其餘零星缺值向前填補；as_of 會誠實顯示最後一個完整交易日。
+    close = close[close['SPY'].notna()].ffill()
     sector_etfs = ['XLK','XLF','XLV','XLE','XLI','XLB','XLU','XLP','XLY']
     def s60(series):
         vals = series.iloc[-60:].tolist()
