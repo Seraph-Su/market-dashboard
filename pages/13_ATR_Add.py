@@ -83,7 +83,7 @@ def big_table(df, height=520, show_index=True, fmt=None, left=()):
 # ═══════════════════════════════════════════════════════════════════
 # 🎯 ATR 加碼計算器（A＋T 自動檢測＋加碼比例）
 #   取代舊的「EMA 季線計算器」與「ATR 乖離計算器」兩頁。
-#   A 回季線：距季線 −3%～+6% 且 ATR5 < ATR14 且閘門開 → 0.5R
+#   A 回季線：距季線 −3%～+6% 且閘門開 → 0.5R（2026-09-16 移除 ATR5<ATR14 與急擴張否決：兩引擎 2.8 萬筆回測顯示無貢獻）
 #   T 機械　：收盤 ≥ 上次進場價 + 2×ATR14 → 0.5R（只套怪物股與修復龍頭）
 #   加碼單停損：加碼價 − 3×ATR14（初始停損，不追蹤；之後只跟基本倉結構停損上移）
 #   一律收盤判定，隔日開盤市價進。加碼比例欄位用來控制單股名目與總曝險。
@@ -249,7 +249,7 @@ def metrics_of(df: pd.DataFrame) -> dict:
 st.markdown("## 🎯 ATR 加碼計算器（A＋T 自動檢測）")
 st.markdown(
     "<span style='color:#64748b;font-size:0.9rem'>"
-    "輸入代碼與進場成本，每天自動檢測兩條加碼規則：<b>A 回季線</b>（距季線 −3%～+6% 且 ATR5 < ATR14）與 "
+    "輸入代碼與進場成本，每天自動檢測兩條加碼規則：<b>A 回季線</b>（距季線 −3%～+6%）與 "
     "<b>T 機械</b>（收盤 ≥ 上次進場價 + 2×ATR14，只套怪物股與修復龍頭，且 ATR% ≤7%）。"
     "加碼單初始停損＝加碼價 − 3×ATR14，之後不追蹤、只跟基本倉結構停損上移。"
     "一律<b>收盤</b>判定、隔日開盤市價進。"
@@ -268,8 +268,6 @@ with st.sidebar:
     stop_n = st.select_slider("加碼單初始停損（×ATR14）", options=[2.0, 2.5, 3.0, 3.5, 4.0], value=3.0)
     a_lo = st.number_input("A 距季線下限 %", value=-3.0, step=0.5) / 100
     a_hi = st.number_input("A 距季線上限 %", value=6.0, step=0.5) / 100
-    a_ratio = st.number_input("A 需 ATR5/ATR14 <", value=1.0, step=0.05)
-    a_veto = st.number_input("急擴張否決（比值 ≥）", value=1.3, step=0.05)
     atr_max = st.number_input("T 波動上限：ATR% >", value=7.0, step=0.5,
                               help="回測：ATR% >7% 的加碼 EV −0.31R；設 7% 上限後年化 4.71%→5.30%、每筆加碼 EV +0.053R→+0.125R。基本倉不受此限。") / 100
 st.markdown("#### 持倉")
@@ -391,8 +389,7 @@ for _, x in edited.iterrows():
     vol_ok = (atr / px) <= atr_max
     t_fire = t_today and t_ok_kind and allow and vol_ok
     a_pos = a_lo <= m["dev60"] <= a_hi
-    a_atr = ratio < a_ratio
-    a_fire = a_pos and a_atr and allow
+    a_fire = a_pos and allow          # ATR 濾網已移除（見規則說明）
     # 加碼比例
     add_sh = int(add_r * r_usd / (stop_n * atr)) if atr > 0 else 0
     cap_pct = cap_monster if kind == "怪物股" else cap_normal
@@ -409,8 +406,7 @@ for _, x in edited.iterrows():
                      半年=f"{m['r126']*100:+.0f}%" if not np.isnan(m["r126"]) else "—",
                      距季線=f"{m['dev60']*100:+.1f}%", 乖離百分位=f"{m['dev_pct']:.0f}",
                      **{"ATR5/14": f"{ratio:.2f}", "ATR%": f"{atr/px*100:.1f}%"},
-                     A條件=("✅ 成立" if a_fire else ("位置✓ ATR✗" if a_pos and not a_atr else
-                                                    ("位置✗" if not a_pos else "閘門✗"))),
+                     A條件=("✅ 成立" if a_fire else ("位置✗" if not a_pos else "閘門✗")),
                      T起算價=round(ref, 2), T下一觸發=round(nxt, 2), 距觸發=f"{(nxt/px-1)*100:+.1f}%",
                      T狀態=("🔔 今日觸發" if t_today else "未觸發") + ("" if t_ok_kind else "（類型不適用）")
                            + ("" if vol_ok else f"（ATR {atr/px*100:.1f}% >{atr_max*100:g}%，不加碼）"),
@@ -419,8 +415,7 @@ for _, x in edited.iterrows():
                      目前名目=f"{now_notional:,.0f}", 目前占比=f"{now_notional/acct*100:.1f}%",
                      加碼後占比=f"{after_notional/acct*100:.1f}%",
                      上限=f"{cap_pct*100:.0f}%" + ("　⛔ 已滿" if room_sh == 0 else ""),
-                     備註=("波動過大，T 不加" if not vol_ok else
-                           ("近季線但 ATR 急擴張" if (a_pos and ratio >= a_veto) else ""))))
+                     備註=("波動過大，T 不加" if not vol_ok else "")))
     details[t] = dict(hist=hist, ep=ep, ed=str(ed_ts.date()), m=m,
                       sw=swing_low(df, px), add_sh=add_sh, kind=kind)
 if missing:
@@ -506,16 +501,14 @@ if qt:
         k4.metric(f"加碼停損（−{stop_n:g}ATR）", f"{m['px'] - stop_n*m['atr']:.2f}",
                   f"加碼 {sh} 股＝${sh*m['px']:,.0f}", delta_color="off")
         cap_pct = cap_monster if q_kind == "怪物股" else cap_normal
-        a_pos = a_lo <= m["dev60"] <= a_hi; a_atr = m["ratio"] < a_ratio
+        a_pos = a_lo <= m["dev60"] <= a_hi
         st.markdown(
             f"<div style='font-size:0.9rem;line-height:1.9'>"
             f"月線 {m['e20']:.2f}（{m['dev20']*100:+.1f}%）｜季線 {m['e60']:.2f}（{m['dev60']*100:+.1f}%）｜"
             f"年線 {m['e260']:.2f}（{m['dev260']*100:+.1f}%）｜多頭排列 "
             f"{'✅' if m['px'] > m['e20'] > m['e60'] > m['e260'] else '✗'}<br>"
             f"A 條件：位置 {'✓' if a_pos else '✗'}（需 {a_lo*100:+.0f}%～{a_hi*100:+.0f}%）　"
-            f"ATR 收縮 {'✓' if a_atr else '✗'}（需 <{a_ratio:g}）　閘門 {'✓' if allow else '✗'}　→ "
-            f"<b>{'成立' if (a_pos and a_atr and allow) else '不成立'}</b>"
-            f"{'（近季線但 ATR 急擴張，不加）' if (a_pos and m['ratio'] >= a_veto) else ''}<br>"
+            f"閘門 {'✓' if allow else '✗'}　→ <b>{'成立' if (a_pos and allow) else '不成立'}</b><br>"
             f"T 條件：需要進場價才能算觸發鏈——若持有請加到上表。單股名目上限 {cap_pct*100:.0f}% = "
             f"${acct*cap_pct:,.0f}（約 {int(acct*cap_pct/m['px'])} 股）<br>"
             f"基本倉參考：前波支撐 {sw:.2f}（{sw_dt}）→ 1R 股數 {base_sh} 股、名目 ${base_sh*m['px']:,.0f}"
@@ -526,9 +519,8 @@ csv = st.session_state.add_pos.to_csv(index=False).encode("utf-8-sig")
 st.download_button("⬇️ 下載監控清單 CSV（備份用）", csv, "加碼監控清單.csv", "text/csv")
 with st.expander("📖 規則與依據"):
     st.markdown(f"""
-**A 回季線加碼**：距季線 {a_lo*100:+.0f}%～{a_hi*100:+.0f}% 且 ATR5/ATR14 < {a_ratio:g} 且閘門開 → 加 {add_r:g}R。
-比值 ≥ {a_veto:g} 時即使位置對也不加。十檔怪物上 27 筆只被掃 6 筆；但怪物股很少回季線（在季線附近的日子 2～8%），
-修復股常觸發（92%）。
+**A 回季線加碼**：距季線 {a_lo*100:+.0f}%～{a_hi*100:+.0f}% 且閘門開 → 加 {add_r:g}R。
+怪物股很少回季線（在季線附近的日子 2～8%），修復股常觸發（每筆基本倉平均 1.9 次）。
 
 **T 機械加碼**：收盤 ≥ 上次進場價 + {step_n:g}×ATR14 → 加 {add_r:g}R。**只套怪物股（半年 ≥150%）與修復龍頭，且 ATR% ≤ {atr_max*100:g}%**
 （波動上限，2026-09-14 新增：ATR% 7～10% 的加碼 EV −0.31R、>10% 為 −0.50R；設限後年化 4.71%→5.30%、每筆加碼 EV 翻 2.4 倍。基本倉不受此限——高波動股的基本倉 EV 反而最高）。
