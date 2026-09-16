@@ -139,27 +139,45 @@ def sync_from_exposure(cur: pd.DataFrame) -> pd.DataFrame:
                      shares,
                      float(old["上次加碼價"]) if old is not None else 0.0])
     return pd.concat([pd.DataFrame(rows, columns=COLS), blank_row()], ignore_index=True) if rows else cur
-@st.cache_data(ttl=3600, show_spinner=False)
-def top8_by_cap() -> tuple:
+# 同公司雙股別合併（與大盤壓力儀表板一致）
+_SHARE_CLASS = {"GOOG": "GOOGL", "BRK-A": "BRK-B"}
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_sp500_members() -> set:
+    import requests
+    from io import StringIO
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"}
+    resp = requests.get("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+                        headers=headers, timeout=30)
+    resp.raise_for_status()
+    df = pd.read_html(StringIO(resp.text))[0]
+    return set(df["Symbol"].str.replace(".", "-", regex=False).tolist())
+@st.cache_data(ttl=86400, show_spinner=False)
+def top8_by_cap(n: int = 8) -> tuple:
+    """S&P 500 市值前 n 大（合併雙股別、排除非成分股）。
+    ⚠️ 必須與『大盤壓力儀表板』的 fetch_leader_list 完全相同，否則兩頁燈號會不一致：
+    門檻 $2000 億（非 $3000 億）、且要過 S&P 500 成分股濾網（排除 TSM 等外國發行人）。
+    雲端 IP 打不到 Yahoo screener 時自動退回備援名單（與儀表板同一份）。"""
     try:
-        r = yf.screen(Q("and", [Q("eq", ["region", "us"]), Q("gt", ["intradaymarketcap", 3e11])]),
-                      size=30, sortField="intradaymarketcap", sortAsc=False)
+        r = yf.screen(Q("and", [Q("eq", ["region", "us"]), Q("gt", ["intradaymarketcap", 2e11])]),
+                      size=25, sortField="intradaymarketcap", sortAsc=False)
+        try:
+            members = fetch_sp500_members()
+        except Exception:
+            members = None
         seen, out = set(), []
         for x in r.get("quotes", []):
-            if x.get("quoteType") != "EQUITY":
+            sym = x.get("symbol", "")
+            if not sym or "." in sym:
                 continue
-            base = "GOOGL" if x["symbol"] == "GOOG" else x["symbol"]
-            if base in seen or x["symbol"] == "BRK-A":
+            sym = _SHARE_CLASS.get(sym, sym)
+            if sym in seen:
                 continue
-            seen.add(base); out.append(x["symbol"])
-            if len(out) == 8:
+            if members is not None and sym not in members:
+                continue
+            seen.add(sym); out.append(sym)
+            if len(out) >= n:
                 break
-        for t in TOP8_FALLBACK:
-            if len(out) >= 8:
-                break
-            if t not in out:
-                out.append(t)
-        return tuple(out[:8])
+        return tuple(out) if len(out) >= 6 else tuple(TOP8_FALLBACK)
     except Exception:
         return tuple(TOP8_FALLBACK)
 @st.cache_data(ttl=1800, show_spinner=False)
@@ -297,15 +315,37 @@ with st.spinner("下載價格資料…"):
 if "SPY" not in PX:
     st.error("抓不到大盤資料（可能被 Yahoo 限流），請稍後重新整理。")
     st.stop()
-# ── 閘門 ──
-n_above = n_prev = have = 0
+# ── 閘門（判定與大盤壓力儀表板完全一致，2026-09-16 同步）──
+#   紅＝2% 緩衝後仍 ≤4 檔站上季線；黃＝無緩衝 ≤4（惡化黃＝10 日均近兩週下滑 ≥0.5 檔，開門；修復黃＝關門）；其餘綠
+n_above = n_buf = have = 0
+_above_cols = {}
 for t in top8 + [x for x in TOP8_FALLBACK if x not in top8]:
     if have >= 8 or t not in PX:
         continue
     c = PX[t]["Close"]; e = c.ewm(span=60, adjust=False).mean()
+    if len(c) < 80:
+        continue
     have += 1
-    n_above += int(c.iloc[-1] > e.iloc[-1]); n_prev += int(c.iloc[-11] > e.iloc[-11])
-light = "綠" if n_above >= 5 else ("紅" if n_above <= 3 else ("惡化黃" if n_prev > n_above else "修復黃"))
+    dist = float(c.iloc[-1] / e.iloc[-1] - 1) * 100
+    n_above += int(dist > 0)          # 無緩衝
+    n_buf += int(dist > -2.0)         # 2% 緩衝
+    _above_cols[t] = (c > e)
+delta10 = 0.0
+try:
+    _h_ma10 = pd.DataFrame(_above_cols).sum(axis=1).rolling(10).mean()
+    if len(_h_ma10.dropna()) > 11:
+        delta10 = float(_h_ma10.iloc[-1] - _h_ma10.iloc[-11])
+except Exception:
+    pass
+if have >= 6:
+    if n_buf <= 4:
+        light = "紅"
+    elif n_above <= 4:
+        light = "惡化黃" if delta10 <= -0.5 else "修復黃"
+    else:
+        light = "綠"
+else:
+    light = "資料不足"
 cme10 = float((PX["CME"]["Close"] / PX["SPY"]["Close"]).pct_change(10).iloc[-1] * 100) if "CME" in PX else np.nan
 xl20 = float((PX["XLP"]["Close"] / PX["XLY"]["Close"]).pct_change(20).iloc[-1] * 100) if "XLP" in PX and "XLY" in PX else np.nan
 sig1 = (cme10 >= 5) and (xl20 > 1)
@@ -313,7 +353,9 @@ allow = light in ("綠", "惡化黃") and not sig1
 asof = PX["SPY"]["Close"].index[-1].date()
 g1, g2, g3, g4 = st.columns(4)
 g1.metric("領頭股燈號", f"{n_above}/{have}", light, delta_color="off",
-          help="≥5 綠、4 黃（惡化黃開門／修復黃關門）、≤3 紅")
+          help=f"S&P 500 市值前八大：{', '.join(top8)}（與大盤壓力儀表板同一份名單與判定）。"
+               f"紅＝2% 緩衝後仍 ≤4／黃＝無緩衝 ≤4（惡化黃＝10 日均近兩週下滑 ≥0.5 檔，開門；修復黃＝關門）／其餘為綠。"
+               f"目前：無緩衝 {n_above}/{have}、2% 緩衝 {n_buf}/{have}、方向 {delta10:+.1f}。")
 g2.metric("CME/SPY 10 日", f"{cme10:+.1f}%", "否決燈 · 需雙亮", delta_color="off")
 g3.metric("XLP/XLY 20 日", f"{xl20:+.1f}%", "單燈不否決", delta_color="off")
 g4.metric("加碼許可", "✅ 是" if allow else "⛔ 否",
