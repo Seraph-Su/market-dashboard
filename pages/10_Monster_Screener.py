@@ -267,9 +267,10 @@ def fetch_prices(tickers: tuple, period: str = "1y") -> dict:   # cache_data 每
             continue
         for t in ch:
             try:
-                d = raw[t] if len(ch) > 1 else raw
-                if isinstance(d.columns, pd.MultiIndex):
-                    d.columns = d.columns.get_level_values(0)
+                if isinstance(raw.columns, pd.MultiIndex):     # 單檔批次也是雙層欄位，不能取 level 0
+                    d = raw[t] if t in raw.columns.get_level_values(0) else raw.xs(t, axis=1, level=1)
+                else:
+                    d = raw
                 d = d[["Open", "High", "Low", "Close"]].dropna(how="all")
                 if len(d) >= 130:
                     out[t] = d
