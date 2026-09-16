@@ -191,9 +191,12 @@ def fetch(tickers: tuple) -> dict:
                           progress=False, threads=False, group_by="ticker")
         for t in tickers:
             try:
-                d = raw[t] if len(tickers) > 1 else raw
-                if isinstance(d.columns, pd.MultiIndex):
-                    d.columns = d.columns.get_level_values(0)
+                # group_by="ticker" 時，就算只有一檔，欄位也是 (代碼, 欄位) 雙層；
+                # 舊寫法對單檔取 level 0 會拿到代碼名而不是 Open/Close → 單檔快查永遠「抓不到資料」。
+                if isinstance(raw.columns, pd.MultiIndex):
+                    d = raw[t] if t in raw.columns.get_level_values(0) else raw.xs(t, axis=1, level=1)
+                else:
+                    d = raw
                 d = d[["Open", "High", "Low", "Close"]].dropna(how="all").ffill()
                 if len(d) >= 130:
                     out[t] = d
