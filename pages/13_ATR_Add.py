@@ -478,46 +478,61 @@ for t, dd in details.items():
         else:
             st.markdown("<span style='color:#64748b;font-size:0.9rem'>進場後尚無 T 觸發。</span>",
                         unsafe_allow_html=True)
-# ── 單檔快查（不必是持倉）──
+# ── 單檔快查（不必是持倉）：只回答「A 規則符不符合、T 規則符不符合」──
 st.markdown("---")
-st.markdown("#### 🔍 單檔快查（均線／乖離／ATR／加碼股數）")
-q1, q2, q3 = st.columns([1, 1, 2])
+st.markdown("#### 🔍 單檔快查")
+q1, q2, q3 = st.columns([1, 1, 1])
 with q1:
     qt = st.text_input("代碼", value="").strip().upper()
 with q2:
-    q_kind = st.selectbox("類型（決定名目上限）", ["一般", "怪物股", "修復龍頭"])
+    q_kind = st.selectbox("類型", ["一般", "怪物股", "修復龍頭"],
+                          help="T 機械加碼只套用在怪物股與修復龍頭；一般動能股只看 A。")
+with q3:
+    q_ref = st.number_input("進場價／上次加碼價（T 用）", min_value=0.0, value=0.0, step=0.01, format="%.2f",
+                            help="T 的觸發是「收盤 ≥ 上次進場價 + 2×ATR14」，需要一個起算價。填 0 則 T 不判定。")
 if qt:
     qpx = fetch((qt,))
     if qt not in qpx:
         st.warning(f"抓不到 {qt} 的資料。")
     else:
-        m = metrics_of(qpx[qt]); sw, sw_dt = swing_low(qpx[qt], m["px"])
-        sh = int(add_r * r_usd / (stop_n * m["atr"])) if m["atr"] > 0 else 0
-        base_sh = int(r_usd / (m["px"] - sw)) if (not np.isnan(sw) and m["px"] > sw) else 0
-        k1, k2, k3, k4 = st.columns(4)
-        k1.metric("收盤", f"{m['px']:.2f}", f"半年 {m['r126']*100:+.0f}%" if not np.isnan(m["r126"]) else "—",
-                  delta_color="off")
-        k2.metric("距季線", f"{m['dev60']*100:+.1f}%", f"季線 {m['e60']:.2f}（百分位 {m['dev_pct']:.0f}）",
-                  delta_color="off")
-        k3.metric("ATR14", f"{m['atr']:.2f}", f"{m['atr']/m['px']*100:.1f}%　ATR5/14 {m['ratio']:.2f}",
-                  delta_color="off")
-        k4.metric(f"加碼停損（−{stop_n:g}ATR）", f"{m['px'] - stop_n*m['atr']:.2f}",
-                  f"加碼 {sh} 股＝${sh*m['px']:,.0f}", delta_color="off")
-        cap_pct = cap_monster if q_kind == "怪物股" else cap_normal
+        m = metrics_of(qpx[qt])
+        px, atr = m["px"], m["atr"]
+        # A：距季線 −3%～+6% 且閘門開
         a_pos = a_lo <= m["dev60"] <= a_hi
-        st.markdown(
-            f"<div style='font-size:0.9rem;line-height:1.9'>"
-            f"月線 {m['e20']:.2f}（{m['dev20']*100:+.1f}%）｜季線 {m['e60']:.2f}（{m['dev60']*100:+.1f}%）｜"
-            f"年線 {m['e260']:.2f}（{m['dev260']*100:+.1f}%）｜多頭排列 "
-            f"{'✅' if m['px'] > m['e20'] > m['e60'] > m['e260'] else '✗'}<br>"
-            f"A 條件：位置 {'✓' if a_pos else '✗'}（需 {a_lo*100:+.0f}%～{a_hi*100:+.0f}%）　"
-            f"閘門 {'✓' if allow else '✗'}　→ <b>{'成立' if (a_pos and allow) else '不成立'}</b><br>"
-            f"T 條件：需要進場價才能算觸發鏈——若持有請加到上表。單股名目上限 {cap_pct*100:.0f}% = "
-            f"${acct*cap_pct:,.0f}（約 {int(acct*cap_pct/m['px'])} 股）<br>"
-            f"基本倉參考：前波支撐 {sw:.2f}（{sw_dt}）→ 1R 股數 {base_sh} 股、名目 ${base_sh*m['px']:,.0f}"
-            f"</div>" if not np.isnan(sw) else
-            f"<div style='font-size:0.9rem'>近 120 日無合格擺盪低點，基本倉停損請看更前面的結構。</div>",
-            unsafe_allow_html=True)
+        a_ok = a_pos and allow
+        a_why = (f"距季線 {m['dev60']*100:+.1f}%（需 {a_lo*100:+.0f}%～{a_hi*100:+.0f}%）"
+                 + ("" if a_pos else " ✗") + "　｜　閘門 " + ("開" if allow else "關 ✗"))
+        # T：收盤 ≥ 起算價 + step×ATR14，只套怪物股／修復龍頭，ATR% ≤ 上限，閘門開
+        t_kind_ok = q_kind in ("怪物股", "修復龍頭")
+        vol_ok = (atr / px) <= atr_max if px > 0 else False
+        if q_ref <= 0:
+            t_state, t_why = "need", "請填進場價或上次加碼價才能判定"
+        else:
+            trig = q_ref + step_n * atr
+            t_hit = px >= trig
+            t_ok = t_hit and t_kind_ok and vol_ok and allow
+            t_state = "ok" if t_ok else "no"
+            parts = [f"收盤 {px:.2f} vs 觸發價 {trig:.2f}（{q_ref:.2f} + {step_n:g}×ATR {atr:.2f}）" + ("" if t_hit else " ✗")]
+            if not t_kind_ok:
+                parts.append("類型「一般」不適用 T ✗")
+            parts.append(f"ATR% {atr/px*100:.1f}%（需 ≤{atr_max*100:g}%）" + ("" if vol_ok else " ✗"))
+            parts.append("閘門 " + ("開" if allow else "關 ✗"))
+            t_why = "　｜　".join(parts)
+        def _card(title, state, why):
+            col = {"ok": ("#052e16", "#4ade80", "✅ 符合"), "no": ("#1f1215", "#f87171", "❌ 不符合"),
+                   "need": ("#111827", "#94a3b8", "⚪ 待填")}[state]
+            return (f"<div style='background:{col[0]};border:1px solid {col[1]}33;border-radius:10px;"
+                    f"padding:14px 18px;margin-bottom:10px'>"
+                    f"<div style='display:flex;justify-content:space-between;align-items:center'>"
+                    f"<span style='font-size:1.15rem;font-weight:700;color:#e2e8f0'>{title}</span>"
+                    f"<span style='font-size:1.3rem;font-weight:800;color:{col[1]}'>{col[2]}</span></div>"
+                    f"<div style='color:#94a3b8;font-size:0.95rem;margin-top:6px'>{why}</div></div>")
+        st.markdown(_card("A 回季線加碼", "ok" if a_ok else "no", a_why), unsafe_allow_html=True)
+        st.markdown(_card("T 機械加碼", t_state, t_why), unsafe_allow_html=True)
+        sh = int(add_r * r_usd / (stop_n * atr)) if atr > 0 else 0
+        st.markdown(f"<div style='color:#64748b;font-size:0.9rem'>若加碼：{sh} 股（{add_r:g}R ÷ {stop_n:g}×ATR）＝ "
+                    f"${sh*px:,.0f}，初始停損 {px - stop_n*atr:.2f}　｜　收盤 {px:.2f}、季線 {m['e60']:.2f}、"
+                    f"ATR14 {atr:.2f}</div>", unsafe_allow_html=True)
 csv = st.session_state.add_pos.to_csv(index=False).encode("utf-8-sig")
 st.download_button("⬇️ 下載監控清單 CSV（備份用）", csv, "加碼監控清單.csv", "text/csv")
 with st.expander("📖 規則與依據"):
