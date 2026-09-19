@@ -439,7 +439,10 @@ PX = fetch_prices(tickers)
 prog.progress(100, text=f"價格資料完成：{len(PX)} 檔")
 prog.empty()
 cov = sum(1 for t in univ["t"] if t in PX) / max(len(univ), 1)
-st.markdown(f"<span style='color:#475569;font-size:0.9rem'>篩選器候選 {len(univ)} 檔｜取得價格 {sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜資料截至 {max((PX[t].index[-1] for t in PX), default='—')}</span>",
+_last = max((PX[t].index[-1] for t in PX), default=None)
+_last_s = _last.strftime("%Y-%m-%d") if _last is not None else "—"
+st.markdown(f"<span style='color:#475569;font-size:0.9rem'>名單來源：{univ_note}｜候選 {len(univ)} 檔｜取得價格 "
+            f"{sum(1 for t in univ['t'] if t in PX)} 檔（{cov*100:.0f}%）｜價格資料截至最後交易日 {_last_s}</span>",
             unsafe_allow_html=True)
 if cov < 0.6:
     st.warning(f"⚠️ 只取得 {cov*100:.0f}% 候選股的價格，很可能被 Yahoo 暫時限流——名單會不完整。請等 1～2 分鐘後按「🔄 重新掃描」。")
