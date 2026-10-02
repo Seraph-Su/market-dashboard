@@ -348,13 +348,54 @@ def atr14(df: pd.DataFrame) -> pd.Series:
     return tr.rolling(14).mean()
 
 
+def swing_struct(df, px: float, min_bars: int = 5, min_depth: float = 0.05,
+                 lookback: int = 250) -> tuple:
+    """結構性前波支撐（2026-10-03 取代「前後 3 日最低」）。
+
+    定義：支撐＝『前一波高點』與『後來創的新高』之間的最低點，只在創新高的那一天確認。
+    兩個高點相隔 < min_bars 根、或期間回檔 < min_depth，就不算一個波段，支撐不更新。
+
+    回測（1,388 檔 ≥$5B、2015–2026，怪物股引擎）：
+      前後 3 日最低（舊）  年化 4.73%  maxDD −24.1%  報酬/回撤 0.20  中位持有 28 日
+      結構 5 根 / 5%（新）  年化 14.52% maxDD −27.6%  報酬/回撤 0.53  中位持有 49 日
+    舊定義會被每個小凹推著上移停損，在高波動的怪物股上不斷被洗出場。
+    間隔放大到 10、15 根反而更差（10.1%／8.7%），不要再往上調。
+
+    回傳 (停損價, 形成日期)；距離上限 25%，找不到結構時退回 −20%。
+    """
+    h = df["High"].values
+    l = df["Low"].values
+    idx = df.index
+    n = len(h)
+    start = max(0, n - lookback)
+    peak = -float("inf"); peak_i = -1
+    trough = float("inf"); trough_i = -1
+    sup = None; sup_i = None
+    for i in range(start, n):
+        hi = h[i]
+        if hi != hi:
+            continue
+        if hi > peak:
+            if peak_i >= 0 and trough_i > peak_i:
+                if (peak - trough) / peak >= min_depth and (i - peak_i) >= min_bars:
+                    sup, sup_i = trough, trough_i
+            peak, peak_i = hi, i
+            trough, trough_i = float("inf"), -1
+        else:
+            lo_ = l[i]
+            if lo_ == lo_ and lo_ < trough:
+                trough, trough_i = lo_, i
+    if sup is None or sup >= px * 0.95:
+        return None, None
+    return float(sup), idx[sup_i].date()
+
+
 def swing_stop(df: pd.DataFrame, px: float) -> tuple:
-    """最近已確認擺盪低點（前後 3 日最低、低於現價 5% 以上），距離上限 25%。回傳 (停損, 日期或 None)。"""
-    lo = df["Low"]
-    for i in range(len(lo) - 4, max(len(lo) - 120, 3), -1):
-        if lo.iloc[i] == lo.iloc[i - 3:i + 4].min() and lo.iloc[i] < px * 0.95:
-            return max(float(lo.iloc[i]), px * 0.75), lo.index[i].date()
-    return px * 0.80, None
+    """基本倉停損：結構性前波支撐，距離上限 25%；找不到結構時退回 −20%。"""
+    sup, dt = swing_struct(df, px)
+    if sup is None:
+        return px * 0.80, None
+    return max(sup, px * 0.75), dt
 
 
 
