@@ -1,241 +1,251 @@
 {
- "built_at": "2026-10-08T02:53:04",
+ "built_at": "2026-10-09T03:03:39",
  "min_cap_b": 1.0,
  "min_52w": 50.0,
  "rows": [
   {
    "t": "TSM",
-   "cap": 2449.053,
+   "cap": 2375.353,
    "name": "Taiwan Semiconductor Manufactur"
   },
   {
    "t": "MU",
-   "cap": 1228.78,
+   "cap": 1169.871,
    "name": "Micron Technology, Inc."
   },
   {
    "t": "AMD",
-   "cap": 1054.35,
+   "cap": 1013.245,
    "name": "Advanced Micro Devices, Inc."
   },
   {
+   "t": "XOM",
+   "cap": 692.857,
+   "name": "ExxonMobil Holdings Corporation"
+  },
+  {
    "t": "ASML",
-   "cap": 693.285,
+   "cap": 679.776,
    "name": "ASML Holding N.V. - New York Re"
   },
   {
    "t": "INTC",
-   "cap": 597.964,
+   "cap": 566.036,
    "name": "Intel Corporation"
   },
   {
    "t": "CSCO",
-   "cap": 462.82,
+   "cap": 452.964,
    "name": "Cisco Systems, Inc."
   },
   {
    "t": "AMAT",
-   "cap": 413.187,
+   "cap": 404.393,
    "name": "Applied Materials, Inc."
   },
   {
    "t": "LRCX",
-   "cap": 412.357,
+   "cap": 401.194,
    "name": "Lam Research Corporation"
   },
   {
    "t": "CAT",
-   "cap": 374.097,
+   "cap": 365.984,
    "name": "Caterpillar, Inc."
   },
   {
    "t": "DELL",
-   "cap": 368.11,
+   "cap": 365.306,
    "name": "Dell Technologies Inc."
   },
   {
    "t": "MRK",
-   "cap": 352.287,
+   "cap": 351.276,
    "name": "Merck & Company, Inc."
   },
   {
    "t": "PANW",
-   "cap": 331.756,
+   "cap": 325.973,
    "name": "Palo Alto Networks, Inc."
   },
   {
    "t": "ARM",
-   "cap": 314.387,
+   "cap": 294.009,
    "name": "Arm Holdings plc"
   },
   {
    "t": "CRWD",
-   "cap": 271.793,
+   "cap": 269.305,
    "name": "CrowdStrike Holdings, Inc."
   },
   {
    "t": "GEV",
-   "cap": 265.559,
+   "cap": 266.16,
    "name": "GE Vernova Inc."
   },
   {
    "t": "TXN",
-   "cap": 263.91,
+   "cap": 263.198,
    "name": "Texas Instruments Incorporated"
   },
   {
    "t": "KLAC",
-   "cap": 256.864,
+   "cap": 256.721,
    "name": "KLA Corporation"
   },
   {
-   "t": "MRVL",
-   "cap": 255.843,
-   "name": "Marvell Technology, Inc."
-  },
-  {
    "t": "MUFG",
-   "cap": 254.943,
+   "cap": 253.03,
    "name": "Mitsubishi UFJ Financial Group,"
   },
   {
+   "t": "MRVL",
+   "cap": 246.838,
+   "name": "Marvell Technology, Inc."
+  },
+  {
    "t": "SNDK",
-   "cap": 247.802,
+   "cap": 232.611,
    "name": "Sandisk Corporation"
   },
   {
    "t": "BHP",
-   "cap": 216.585,
+   "cap": 215.593,
    "name": "BHP Group Limited"
   },
   {
    "t": "ADI",
-   "cap": 198.711,
+   "cap": 196.7,
    "name": "Analog Devices, Inc."
   },
   {
    "t": "STX",
-   "cap": 183.636,
+   "cap": 176.19,
    "name": "Seagate Technology Holdings PLC"
   },
   {
    "t": "SCCO",
-   "cap": 169.35,
+   "cap": 167.737,
    "name": "Southern Copper Corporation"
   },
   {
-   "t": "SMFG",
-   "cap": 159.315,
-   "name": "Sumitomo Mitsui Financial Group"
+   "t": "COP",
+   "cap": 161.207,
+   "name": "ConocoPhillips"
   },
   {
    "t": "PBR",
-   "cap": 154.6,
+   "cap": 159.111,
+   "name": "Petroleo Brasileiro S.A. Petrob"
+  },
+  {
+   "t": "SMFG",
+   "cap": 158.75,
+   "name": "Sumitomo Mitsui Financial Group"
+  },
+  {
+   "t": "PBR-A",
+   "cap": 151.582,
    "name": "Petroleo Brasileiro S.A. Petrob"
   },
   {
    "t": "WDC",
-   "cap": 151.758,
+   "cap": 147.225,
    "name": "Western Digital Corporation"
   },
   {
-   "t": "PBR-A",
-   "cap": 148.295,
-   "name": "Petroleo Brasileiro S.A. Petrob"
-  },
-  {
-   "t": "GLW",
-   "cap": 140.622,
-   "name": "Corning Incorporated"
-  },
-  {
    "t": "FTNT",
-   "cap": 138.877,
+   "cap": 138.745,
    "name": "Fortinet, Inc."
   },
   {
-   "t": "MFG",
-   "cap": 130.35,
-   "name": "Mizuho Financial Group, Inc. Sp"
+   "t": "GLW",
+   "cap": 131.646,
+   "name": "Corning Incorporated"
   },
   {
    "t": "MPC",
-   "cap": 124.198,
+   "cap": 130.117,
    "name": "Marathon Petroleum Corporation"
   },
   {
-   "t": "NET",
-   "cap": 122.125,
-   "name": "Cloudflare, Inc."
+   "t": "MFG",
+   "cap": 129.139,
+   "name": "Mizuho Financial Group, Inc. Sp"
   },
   {
    "t": "VLO",
-   "cap": 122.11,
+   "cap": 127.782,
    "name": "Valero Energy Corporation"
   },
   {
+   "t": "NET",
+   "cap": 121.74,
+   "name": "Cloudflare, Inc."
+  },
+  {
    "t": "PSX",
-   "cap": 108.902,
+   "cap": 112.903,
    "name": "Phillips 66"
   },
   {
-   "t": "ITUB",
-   "cap": 107.353,
-   "name": "Itau Unibanco Banco Holding SA"
-  },
-  {
    "t": "PWR",
-   "cap": 105.401,
+   "cap": 103.035,
    "name": "Quanta Services, Inc."
   },
   {
    "t": "FCX",
-   "cap": 103.192,
+   "cap": 102.158,
    "name": "Freeport-McMoRan, Inc."
   },
   {
-   "t": "ASX",
-   "cap": 100.618,
-   "name": "ASE Technology Holding Co., Ltd"
-  },
-  {
-   "t": "LITE",
-   "cap": 99.663,
-   "name": "Lumentum Holdings Inc."
-  },
-  {
    "t": "EQNR",
-   "cap": 98.579,
+   "cap": 101.707,
    "name": "Equinor ASA"
   },
   {
+   "t": "CNQ",
+   "cap": 101.117,
+   "name": "Canadian Natural Resources Limi"
+  },
+  {
+   "t": "ASX",
+   "cap": 99.518,
+   "name": "ASE Technology Holding Co., Ltd"
+  },
+  {
    "t": "DDOG",
-   "cap": 97.431,
+   "cap": 98.315,
    "name": "Datadog, Inc."
   },
   {
+   "t": "LITE",
+   "cap": 94.985,
+   "name": "Lumentum Holdings Inc."
+  },
+  {
    "t": "HPE",
-   "cap": 95.697,
+   "cap": 94.25,
    "name": "Hewlett Packard Enterprise Comp"
   },
   {
-   "t": "VRT",
-   "cap": 94.896,
-   "name": "Vertiv Holdings, LLC"
-  },
-  {
-   "t": "BE",
-   "cap": 85.793,
-   "name": "Bloom Energy Corporation"
-  },
-  {
    "t": "SU",
-   "cap": 80.456,
+   "cap": 83.727,
    "name": "Suncor Energy  Inc."
   },
   {
+   "t": "BE",
+   "cap": 80.353,
+   "name": "Bloom Energy Corporation"
+  },
+  {
+   "t": "E",
+   "cap": 79.644,
+   "name": "ENI S.p.A."
+  },
+  {
    "t": "MRNA",
-   "cap": 78.442,
+   "cap": 78.649,
    "name": "Moderna, Inc."
   },
   {
@@ -244,449 +254,479 @@
    "name": "Warner Bros. Discovery, Inc. - "
   },
   {
-   "t": "E",
-   "cap": 77.379,
-   "name": "ENI S.p.A."
-  },
-  {
    "t": "SLB",
-   "cap": 71.18,
+   "cap": 72.693,
    "name": "SLB Limited"
   },
   {
-   "t": "MPWR",
-   "cap": 70.077,
-   "name": "Monolithic Power Systems, Inc."
+   "t": "ROST",
+   "cap": 72.24,
+   "name": "Ross Stores, Inc."
   },
   {
    "t": "TGT",
-   "cap": 68.562,
+   "cap": 70.307,
    "name": "Target Corporation"
   },
   {
-   "t": "ALAB",
-   "cap": 66.315,
-   "name": "Astera Labs, Inc."
+   "t": "FDX",
+   "cap": 69.044,
+   "name": "FedEx Corporation"
   },
   {
-   "t": "COHR",
-   "cap": 65.518,
-   "name": "Coherent Corp."
+   "t": "MPWR",
+   "cap": 67.316,
+   "name": "Monolithic Power Systems, Inc."
   },
   {
    "t": "KEYS",
-   "cap": 64.935,
+   "cap": 63.786,
    "name": "Keysight Technologies Inc."
   },
   {
-   "t": "NBIS",
-   "cap": 64.47,
-   "name": "Nebius Group N.V."
-  },
-  {
    "t": "TER",
-   "cap": 64.378,
+   "cap": 62.336,
    "name": "Teradyne, Inc."
   },
   {
-   "t": "CIEN",
-   "cap": 63.31,
-   "name": "Ciena Corporation"
-  },
-  {
-   "t": "FIX",
-   "cap": 61.286,
-   "name": "Comfort Systems USA, Inc."
-  },
-  {
    "t": "TRGP",
-   "cap": 60.89,
+   "cap": 61.861,
    "name": "Targa Resources, Inc."
   },
   {
-   "t": "NOK",
-   "cap": 59.458,
-   "name": "Nokia Corporation Sponsored"
+   "t": "CIEN",
+   "cap": 60.401,
+   "name": "Ciena Corporation"
   },
   {
-   "t": "UMC",
-   "cap": 58.459,
-   "name": "United Microelectronics Corpora"
+   "t": "ALAB",
+   "cap": 60.208,
+   "name": "Astera Labs, Inc."
   },
   {
-   "t": "NTRA",
-   "cap": 57.018,
-   "name": "Natera, Inc."
+   "t": "FIX",
+   "cap": 60.055,
+   "name": "Comfort Systems USA, Inc."
+  },
+  {
+   "t": "NBIS",
+   "cap": 59.729,
+   "name": "Nebius Group N.V."
+  },
+  {
+   "t": "COHR",
+   "cap": 59.21,
+   "name": "Coherent Corp."
   },
   {
    "t": "CVE",
-   "cap": 56.489,
+   "cap": 58.075,
    "name": "Cenovus Energy Inc"
   },
   {
+   "t": "UMC",
+   "cap": 57.23,
+   "name": "United Microelectronics Corpora"
+  },
+  {
+   "t": "NOK",
+   "cap": 56.77,
+   "name": "Nokia Corporation Sponsored"
+  },
+  {
+   "t": "NTRA",
+   "cap": 56.33,
+   "name": "Natera, Inc."
+  },
+  {
    "t": "NUE",
-   "cap": 55.911,
+   "cap": 55.843,
    "name": "Nucor Corporation"
   },
   {
+   "t": "CAH",
+   "cap": 55.333,
+   "name": "Cardinal Health, Inc."
+  },
+  {
+   "t": "DVN",
+   "cap": 53.812,
+   "name": "Devon Energy Corporation"
+  },
+  {
    "t": "P",
-   "cap": 50.87,
+   "cap": 50.174,
    "name": "Everpure, Inc."
   },
   {
+   "t": "ABEV",
+   "cap": 49.179,
+   "name": "Ambev S.A."
+  },
+  {
    "t": "STM",
-   "cap": 50.32,
+   "cap": 47.212,
    "name": "STMicroelectronics N.V."
   },
   {
-   "t": "STT",
-   "cap": 47.85,
-   "name": "State Street Corporation"
-  },
-  {
    "t": "MT",
-   "cap": 46.892,
+   "cap": 46.125,
    "name": "Arcelor Mittal NY Registry Shar"
   },
   {
-   "t": "NTAP",
-   "cap": 46.31,
-   "name": "NetApp, Inc."
-  },
-  {
    "t": "TEVA",
-   "cap": 45.695,
+   "cap": 45.777,
    "name": "Teva Pharmaceutical Industries "
   },
   {
-   "t": "FLEX",
-   "cap": 44.091,
-   "name": "Flex Ltd."
+   "t": "NTAP",
+   "cap": 45.383,
+   "name": "NetApp, Inc."
   },
   {
    "t": "KB",
-   "cap": 43.793,
+   "cap": 42.849,
    "name": "KB Financial Group Inc"
   },
   {
-   "t": "RVMD",
-   "cap": 43.054,
-   "name": "Revolution Medicines, Inc."
+   "t": "FLEX",
+   "cap": 42.392,
+   "name": "Flex Ltd."
   },
   {
    "t": "TWLO",
-   "cap": 41.926,
+   "cap": 42.351,
    "name": "Twilio Inc."
   },
   {
+   "t": "RVMD",
+   "cap": 40.321,
+   "name": "Revolution Medicines, Inc."
+  },
+  {
    "t": "ILMN",
-   "cap": 40.432,
+   "cap": 39.95,
    "name": "Illumina, Inc."
   },
   {
+   "t": "CRDO",
+   "cap": 39.819,
+   "name": "Credo Technology Group Holding "
+  },
+  {
+   "t": "IX",
+   "cap": 39.497,
+   "name": "ORIX Corporation"
+  },
+  {
    "t": "OKTA",
-   "cap": 38.111,
+   "cap": 38.497,
    "name": "Okta, Inc."
   },
   {
    "t": "SHG",
-   "cap": 36.308,
+   "cap": 35.494,
    "name": "Shinhan Financial Group Co Ltd"
   },
   {
    "t": "EC",
-   "cap": 34.189,
+   "cap": 34.826,
    "name": "Ecopetrol S.A."
   },
   {
    "t": "STLD",
-   "cap": 33.552,
+   "cap": 33.563,
    "name": "Steel Dynamics, Inc."
   },
   {
-   "t": "ON",
-   "cap": 32.123,
-   "name": "ON Semiconductor Corporation"
-  },
-  {
    "t": "CNC",
-   "cap": 32.105,
+   "cap": 31.882,
    "name": "Centene Corporation"
   },
   {
    "t": "TECK",
-   "cap": 32.08,
+   "cap": 31.801,
    "name": "Teck Resources Ltd"
   },
   {
    "t": "JBL",
-   "cap": 31.381,
+   "cap": 31.348,
    "name": "Jabil Inc."
   },
   {
-   "t": "TSEM",
-   "cap": 28.06,
-   "name": "Tower Semiconductor Ltd."
+   "t": "ON",
+   "cap": 30.916,
+   "name": "ON Semiconductor Corporation"
   },
   {
    "t": "TS",
-   "cap": 28.058,
+   "cap": 28.568,
    "name": "Tenaris S.A."
   },
   {
-   "t": "NVT",
-   "cap": 27.163,
-   "name": "nVent Electric plc"
-  },
-  {
    "t": "FTI",
-   "cap": 26.824,
+   "cap": 27.306,
    "name": "TechnipFMC plc"
   },
   {
+   "t": "NVT",
+   "cap": 26.577,
+   "name": "nVent Electric plc"
+  },
+  {
    "t": "SN",
-   "cap": 26.208,
+   "cap": 26.163,
    "name": "SharkNinja, Inc."
   },
   {
+   "t": "TSEM",
+   "cap": 25.856,
+   "name": "Tower Semiconductor Ltd."
+  },
+  {
    "t": "ATI",
-   "cap": 25.762,
+   "cap": 25.618,
    "name": "ATI Inc."
   },
   {
-   "t": "MTSI",
-   "cap": 25.654,
-   "name": "MACOM Technology Solutions Hold"
-  },
-  {
-   "t": "ENTG",
-   "cap": 25.414,
-   "name": "Entegris, Inc."
-  },
-  {
-   "t": "RPRX",
-   "cap": 32.798,
-   "name": "Royalty Pharma plc"
-  },
-  {
-   "t": "ROIV",
-   "cap": 25.101,
-   "name": "Roivant Sciences Ltd."
-  },
-  {
    "t": "EXPD",
-   "cap": 24.809,
+   "cap": 25.18,
    "name": "Expeditors International of Was"
   },
   {
-   "t": "PS",
-   "cap": 23.46,
-   "name": "Pershing Square Inc."
+   "t": "RPRX",
+   "cap": 32.48,
+   "name": "Royalty Pharma plc"
+  },
+  {
+   "t": "ENTG",
+   "cap": 24.783,
+   "name": "Entegris, Inc."
+  },
+  {
+   "t": "ROIV",
+   "cap": 24.711,
+   "name": "Roivant Sciences Ltd."
+  },
+  {
+   "t": "MTSI",
+   "cap": 24.607,
+   "name": "MACOM Technology Solutions Hold"
   },
   {
    "t": "ROKU",
-   "cap": 22.681,
+   "cap": 22.842,
    "name": "Roku, Inc."
   },
   {
-   "t": "GH",
-   "cap": 22.589,
-   "name": "Guardant Health, Inc."
-  },
-  {
    "t": "CIB",
-   "cap": 22.129,
+   "cap": 22.218,
    "name": "Grupo Cibest S.A."
   },
   {
-   "t": "SNX",
-   "cap": 21.661,
-   "name": "TD SYNNEX Corporation"
+   "t": "GH",
+   "cap": 22.218,
+   "name": "Guardant Health, Inc."
   },
   {
-   "t": "JBHT",
-   "cap": 20.909,
-   "name": "J.B. Hunt Transport Services, I"
+   "t": "PS",
+   "cap": 21.776,
+   "name": "Pershing Square Inc."
   },
   {
    "t": "DINO",
-   "cap": 20.557,
+   "cap": 21.462,
    "name": "HF Sinclair Corporation"
   },
   {
+   "t": "JBHT",
+   "cap": 21.452,
+   "name": "J.B. Hunt Transport Services, I"
+  },
+  {
+   "t": "SNX",
+   "cap": 21.337,
+   "name": "TD SYNNEX Corporation"
+  },
+  {
    "t": "VTRS",
-   "cap": 20.089,
+   "cap": 20.031,
    "name": "Viatris Inc."
   },
   {
-   "t": "SITM",
-   "cap": 19.925,
-   "name": "SiTime Corporation"
-  },
-  {
    "t": "YPF",
-   "cap": 19.4,
+   "cap": 19.565,
    "name": "YPF Sociedad Anonima"
   },
   {
+   "t": "SITM",
+   "cap": 19.323,
+   "name": "SiTime Corporation"
+  },
+  {
    "t": "CRS",
-   "cap": 19.386,
+   "cap": 19.184,
    "name": "Carpenter Technology Corporatio"
   },
   {
-   "t": "LSCC",
-   "cap": 18.605,
-   "name": "Lattice Semiconductor Corporati"
-  },
-  {
    "t": "PR",
-   "cap": 18.569,
+   "cap": 19.13,
    "name": "Permian Resources Corporation"
   },
   {
-   "t": "MKSI",
-   "cap": 18.47,
-   "name": "MKS Inc."
-  },
-  {
    "t": "SQM",
-   "cap": 18.455,
+   "cap": 18.429,
    "name": "Sociedad Quimica y Minera S.A."
   },
   {
+   "t": "LSCC",
+   "cap": 17.751,
+   "name": "Lattice Semiconductor Corporati"
+  },
+  {
+   "t": "MKSI",
+   "cap": 17.606,
+   "name": "MKS Inc."
+  },
+  {
+   "t": "OVV",
+   "cap": 17.528,
+   "name": "Ovintiv Inc. (DE)"
+  },
+  {
    "t": "SMTC",
-   "cap": 18.085,
+   "cap": 17.498,
    "name": "Semtech Corporation"
   },
   {
    "t": "WCC",
-   "cap": 17.842,
+   "cap": 17.345,
    "name": "WESCO International, Inc."
   },
   {
+   "t": "PAA",
+   "cap": 17.23,
+   "name": "Plains All American Pipeline, L"
+  },
+  {
    "t": "RVTY",
-   "cap": 17.14,
+   "cap": 16.979,
    "name": "Revvity, Inc."
   },
   {
-   "t": "OVV",
-   "cap": 16.994,
-   "name": "Ovintiv Inc. (DE)"
-  },
-  {
-   "t": "STRL",
-   "cap": 16.338,
-   "name": "Sterling Infrastructure, Inc."
-  },
-  {
    "t": "APA",
-   "cap": 15.349,
+   "cap": 15.93,
    "name": "APA Corporation"
   },
   {
-   "t": "TIGO",
-   "cap": 15.223,
-   "name": "Millicom International Cellular"
-  },
-  {
-   "t": "JAZZ",
-   "cap": 15.008,
-   "name": "Jazz Pharmaceuticals plc"
+   "t": "STRL",
+   "cap": 15.857,
+   "name": "Sterling Infrastructure, Inc."
   },
   {
    "t": "XP",
-   "cap": 14.985,
+   "cap": 15.33,
    "name": "XP Inc."
   },
   {
-   "t": "DOCN",
-   "cap": 14.966,
-   "name": "DigitalOcean Holdings, Inc."
-  },
-  {
-   "t": "ONTO",
-   "cap": 14.938,
-   "name": "Onto Innovation Inc."
+   "t": "TIGO",
+   "cap": 14.75,
+   "name": "Millicom International Cellular"
   },
   {
    "t": "EXEL",
-   "cap": 14.48,
+   "cap": 14.624,
    "name": "Exelixis, Inc."
   },
   {
+   "t": "DOCN",
+   "cap": 14.568,
+   "name": "DigitalOcean Holdings, Inc."
+  },
+  {
+   "t": "JAZZ",
+   "cap": 14.44,
+   "name": "Jazz Pharmaceuticals plc"
+  },
+  {
+   "t": "ONTO",
+   "cap": 14.363,
+   "name": "Onto Innovation Inc."
+  },
+  {
    "t": "CRL",
-   "cap": 14.465,
+   "cap": 14.354,
    "name": "Charles River Laboratories Inte"
   },
   {
    "t": "SKM",
-   "cap": 13.655,
+   "cap": 13.048,
    "name": "SK Telecom Co., Ltd."
   },
   {
-   "t": "TTMI",
-   "cap": 13.506,
-   "name": "TTM Technologies, Inc."
-  },
-  {
-   "t": "VICR",
-   "cap": 13.038,
-   "name": "Vicor Corporation"
-  },
-  {
-   "t": "AMKR",
-   "cap": 12.987,
-   "name": "Amkor Technology, Inc."
-  },
-  {
-   "t": "BTSG",
-   "cap": 12.624,
-   "name": "BrightSpring Health Services, I"
-  },
-  {
-   "t": "HALO",
-   "cap": 12.574,
-   "name": "Halozyme Therapeutics, Inc."
+   "t": "CORT",
+   "cap": 12.814,
+   "name": "Corcept Therapeutics Incorporat"
   },
   {
    "t": "COKE",
-   "cap": 12.517,
+   "cap": 12.771,
    "name": "Coca-Cola Consolidated, Inc."
   },
   {
    "t": "IESC",
-   "cap": 12.306,
+   "cap": 12.74,
    "name": "IES Holdings, Inc."
   },
   {
-   "t": "FROG",
-   "cap": 12.102,
-   "name": "JFrog Ltd."
+   "t": "AMKR",
+   "cap": 12.671,
+   "name": "Amkor Technology, Inc."
+  },
+  {
+   "t": "BTSG",
+   "cap": 12.596,
+   "name": "BrightSpring Health Services, I"
   },
   {
    "t": "FRO",
-   "cap": 11.812,
+   "cap": 12.525,
    "name": "Frontline Plc"
   },
   {
+   "t": "HALO",
+   "cap": 12.467,
+   "name": "Halozyme Therapeutics, Inc."
+  },
+  {
+   "t": "TTMI",
+   "cap": 12.378,
+   "name": "TTM Technologies, Inc."
+  },
+  {
+   "t": "VICR",
+   "cap": 12.095,
+   "name": "Vicor Corporation"
+  },
+  {
+   "t": "FROG",
+   "cap": 11.991,
+   "name": "JFrog Ltd."
+  },
+  {
+   "t": "FIVE",
+   "cap": 11.546,
+   "name": "Five Below, Inc."
+  },
+  {
    "t": "ARW",
-   "cap": 11.81,
+   "cap": 11.543,
    "name": "Arrow Electronics, Inc."
   },
   {
-   "t": "SANM",
-   "cap": 11.76,
-   "name": "Sanmina Corporation"
-  },
-  {
-   "t": "AEIS",
-   "cap": 11.705,
-   "name": "Advanced Energy Industries, Inc"
-  },
-  {
-   "t": "HBM",
-   "cap": 11.49,
-   "name": "Hudbay Minerals Inc."
+   "t": "MOG-A",
+   "cap": 11.494,
+   "name": "Moog Inc."
   },
   {
    "t": "MOG-B",
@@ -694,239 +734,279 @@
    "name": "Moog Inc."
   },
   {
-   "t": "MOG-A",
-   "cap": 11.414,
-   "name": "Moog Inc."
+   "t": "AEIS",
+   "cap": 11.384,
+   "name": "Advanced Energy Industries, Inc"
+  },
+  {
+   "t": "SANM",
+   "cap": 11.281,
+   "name": "Sanmina Corporation"
+  },
+  {
+   "t": "HBM",
+   "cap": 11.277,
+   "name": "Hudbay Minerals Inc."
   },
   {
    "t": "VIAV",
-   "cap": 11.379,
+   "cap": 10.843,
    "name": "Viavi Solutions Inc."
   },
   {
    "t": "LFUS",
-   "cap": 11.042,
+   "cap": 10.802,
    "name": "Littelfuse, Inc."
   },
   {
-   "t": "HUT",
-   "cap": 11.007,
-   "name": "Hut 8 Corp."
-  },
-  {
-   "t": "FORM",
-   "cap": 10.921,
-   "name": "FormFactor, Inc."
-  },
-  {
    "t": "GSAT",
-   "cap": 10.841,
+   "cap": 10.782,
    "name": "Globalstar, Inc."
   },
   {
-   "t": "AAOI",
-   "cap": 10.404,
-   "name": "Applied Optoelectronics, Inc."
-  },
-  {
-   "t": "ELPC",
-   "cap": 10.364,
-   "name": "Companhia Paranaense de Energia"
-  },
-  {
-   "t": "IBRX",
-   "cap": 10.333,
-   "name": "ImmunityBio, Inc."
-  },
-  {
-   "t": "TWST",
-   "cap": 10.32,
-   "name": "Twist Bioscience Corporation"
-  },
-  {
-   "t": "OSCR",
-   "cap": 10.158,
-   "name": "Oscar Health, Inc."
-  },
-  {
-   "t": "GKOS",
-   "cap": 10.156,
-   "name": "Glaukos Corporation"
-  },
-  {
-   "t": "PCVX",
-   "cap": 9.964,
-   "name": "Vaxcyte, Inc."
+   "t": "FORM",
+   "cap": 10.713,
+   "name": "FormFactor, Inc."
   },
   {
    "t": "PBF",
-   "cap": 9.919,
+   "cap": 10.59,
    "name": "PBF Energy Inc."
   },
   {
+   "t": "KNX",
+   "cap": 10.587,
+   "name": "Knight-Swift Transportation Hol"
+  },
+  {
+   "t": "IBRX",
+   "cap": 10.503,
+   "name": "ImmunityBio, Inc."
+  },
+  {
+   "t": "ELPC",
+   "cap": 10.438,
+   "name": "Companhia Paranaense de Energia"
+  },
+  {
+   "t": "OSCR",
+   "cap": 10.216,
+   "name": "Oscar Health, Inc."
+  },
+  {
+   "t": "TWST",
+   "cap": 10.081,
+   "name": "Twist Bioscience Corporation"
+  },
+  {
    "t": "TXG",
-   "cap": 9.915,
+   "cap": 10.069,
    "name": "10x Genomics, Inc."
   },
   {
-   "t": "GGB",
-   "cap": 9.848,
-   "name": "Gerdau S.A."
-  },
-  {
-   "t": "VSAT",
-   "cap": 9.763,
-   "name": "ViaSat, Inc."
-  },
-  {
-   "t": "MSGS",
-   "cap": 9.752,
-   "name": "Madison Square Garden Sports Co"
-  },
-  {
    "t": "AMG",
-   "cap": 9.752,
+   "cap": 10.008,
    "name": "Affiliated Managers Group, Inc."
   },
   {
-   "t": "MXL",
-   "cap": 9.737,
-   "name": "MaxLinear, Inc"
-  },
-  {
-   "t": "SIMO",
-   "cap": 9.69,
-   "name": "Silicon Motion Technology Corpo"
-  },
-  {
-   "t": "KRYS",
-   "cap": 9.607,
-   "name": "Krystal Biotech, Inc."
-  },
-  {
    "t": "DAR",
-   "cap": 9.471,
+   "cap": 9.823,
    "name": "Darling Ingredients Inc."
   },
   {
-   "t": "ENLT",
-   "cap": 9.245,
-   "name": "Enlight Renewable Energy Ltd."
+   "t": "HUT",
+   "cap": 9.81,
+   "name": "Hut 8 Corp."
   },
   {
-   "t": "PTGX",
-   "cap": 9.119,
-   "name": "Protagonist Therapeutics, Inc."
+   "t": "MSGS",
+   "cap": 9.805,
+   "name": "Madison Square Garden Sports Co"
   },
   {
    "t": "SSL",
-   "cap": 9.103,
+   "cap": 9.705,
    "name": "Sasol Ltd."
   },
   {
-   "t": "BRKR",
-   "cap": 9.099,
-   "name": "Bruker Corporation"
+   "t": "KRYS",
+   "cap": 9.688,
+   "name": "Krystal Biotech, Inc."
+  },
+  {
+   "t": "PCVX",
+   "cap": 9.675,
+   "name": "Vaxcyte, Inc."
+  },
+  {
+   "t": "GGB",
+   "cap": 9.652,
+   "name": "Gerdau S.A."
+  },
+  {
+   "t": "GKOS",
+   "cap": 9.514,
+   "name": "Glaukos Corporation"
+  },
+  {
+   "t": "ENLT",
+   "cap": 9.389,
+   "name": "Enlight Renewable Energy Ltd."
+  },
+  {
+   "t": "VSAT",
+   "cap": 9.286,
+   "name": "ViaSat, Inc."
+  },
+  {
+   "t": "PTGX",
+   "cap": 9.053,
+   "name": "Protagonist Therapeutics, Inc."
   },
   {
    "t": "LTH",
-   "cap": 9.05,
+   "cap": 9.001,
    "name": "Life Time Group Holdings, Inc."
   },
   {
+   "t": "AAOI",
+   "cap": 8.992,
+   "name": "Applied Optoelectronics, Inc."
+  },
+  {
    "t": "KYMR",
-   "cap": 8.913,
+   "cap": 8.991,
    "name": "Kymera Therapeutics, Inc."
   },
   {
+   "t": "SIMO",
+   "cap": 8.88,
+   "name": "Silicon Motion Technology Corpo"
+  },
+  {
+   "t": "BRKR",
+   "cap": 8.825,
+   "name": "Bruker Corporation"
+  },
+  {
+   "t": "SM",
+   "cap": 8.82,
+   "name": "SM Energy Company"
+  },
+  {
    "t": "ARWR",
-   "cap": 8.684,
+   "cap": 8.58,
    "name": "Arrowhead Pharmaceuticals, Inc."
   },
   {
-   "t": "AVT",
-   "cap": 8.415,
-   "name": "Avnet, Inc."
-  },
-  {
-   "t": "ZETA",
-   "cap": 8.41,
-   "name": "Zeta Global Holdings Corp."
+   "t": "MXL",
+   "cap": 8.498,
+   "name": "MaxLinear, Inc"
   },
   {
    "t": "UGP",
-   "cap": 8.248,
+   "cap": 8.301,
    "name": "Ultrapar Participacoes S.A. (Ne"
   },
   {
+   "t": "ZETA",
+   "cap": 8.233,
+   "name": "Zeta Global Holdings Corp."
+  },
+  {
+   "t": "AVT",
+   "cap": 8.187,
+   "name": "Avnet, Inc."
+  },
+  {
+   "t": "TGTX",
+   "cap": 8.165,
+   "name": "TG Therapeutics, Inc."
+  },
+  {
+   "t": "EAT",
+   "cap": 7.966,
+   "name": "Brinker International, Inc."
+  },
+  {
    "t": "RAL",
-   "cap": 8.067,
+   "cap": 7.951,
    "name": "Ralliant Corporation"
   },
   {
    "t": "TKR",
-   "cap": 7.963,
+   "cap": 7.923,
    "name": "Timken Company (The)"
   },
   {
    "t": "HNGE",
-   "cap": 7.897,
+   "cap": 7.908,
    "name": "Hinge Health, Inc."
   },
   {
-   "t": "PRAX",
-   "cap": 7.762,
-   "name": "Praxis Precision Medicines, Inc"
-  },
-  {
-   "t": "EAT",
-   "cap": 7.761,
-   "name": "Brinker International, Inc."
-  },
-  {
-   "t": "SLAB",
-   "cap": 7.406,
-   "name": "Silicon Laboratories, Inc."
-  },
-  {
-   "t": "KEX",
-   "cap": 7.253,
-   "name": "Kirby Corporation"
+   "t": "CHRD",
+   "cap": 7.786,
+   "name": "Chord Energy Corporation"
   },
   {
    "t": "VIST",
-   "cap": 7.238,
+   "cap": 7.429,
    "name": "Vista Energy S.A.B. de C.V."
   },
   {
-   "t": "POWL",
-   "cap": 7.204,
-   "name": "Powell Industries, Inc."
-  },
-  {
-   "t": "ACA",
-   "cap": 7.189,
-   "name": "Arcosa, Inc."
+   "t": "SLAB",
+   "cap": 7.399,
+   "name": "Silicon Laboratories, Inc."
   },
   {
    "t": "SYRE",
-   "cap": 7.129,
+   "cap": 7.374,
    "name": "Spyre Therapeutics, Inc."
   },
   {
+   "t": "PRAX",
+   "cap": 7.358,
+   "name": "Praxis Precision Medicines, Inc"
+  },
+  {
+   "t": "KEX",
+   "cap": 7.292,
+   "name": "Kirby Corporation"
+  },
+  {
+   "t": "ACA",
+   "cap": 7.194,
+   "name": "Arcosa, Inc."
+  },
+  {
    "t": "PLXS",
-   "cap": 7.105,
+   "cap": 6.966,
    "name": "Plexus Corp."
   },
   {
-   "t": "VCTR",
-   "cap": 6.88,
-   "name": "Victory Capital Holdings, Inc. "
+   "t": "PACS",
+   "cap": 6.924,
+   "name": "PACS Group, Inc."
   },
   {
    "t": "AUGO",
-   "cap": 6.876,
+   "cap": 6.916,
    "name": "Aura Minerals Inc."
+  },
+  {
+   "t": "VSXY",
+   "cap": 6.908,
+   "name": "Victorias Secret & Co."
+  },
+  {
+   "t": "POWL",
+   "cap": 6.896,
+   "name": "Powell Industries, Inc."
+  },
+  {
+   "t": "VCTR",
+   "cap": 6.872,
+   "name": "Victory Capital Holdings, Inc. "
   },
   {
    "t": "AMRX",
@@ -934,1154 +1014,1179 @@
    "name": "Amneal Pharmaceuticals, Inc."
   },
   {
-   "t": "VSXY",
-   "cap": 6.843,
-   "name": "Victorias Secret & Co."
-  },
-  {
-   "t": "PACS",
-   "cap": 6.839,
-   "name": "PACS Group, Inc."
-  },
-  {
-   "t": "QLYS",
-   "cap": 6.737,
-   "name": "Qualys, Inc."
-  },
-  {
-   "t": "SSRM",
-   "cap": 6.678,
-   "name": "SSR Mining Inc."
-  },
-  {
    "t": "MATX",
-   "cap": 6.666,
+   "cap": 6.812,
    "name": "Matson, Inc."
   },
   {
-   "t": "IMVT",
-   "cap": 6.618,
-   "name": "Immunovant, Inc."
+   "t": "NOV",
+   "cap": 6.77,
+   "name": "NOV Inc."
   },
   {
-   "t": "ENS",
-   "cap": 6.582,
-   "name": "EnerSys"
-  },
-  {
-   "t": "LNTH",
-   "cap": 6.542,
-   "name": "Lantheus Holdings, Inc."
+   "t": "QLYS",
+   "cap": 6.707,
+   "name": "Qualys, Inc."
   },
   {
    "t": "RUSHB",
-   "cap": 6.452,
+   "cap": 6.552,
    "name": "Rush Enterprises, Inc."
   },
   {
-   "t": "ECG",
-   "cap": 6.393,
-   "name": "Everus Construction Group, Inc."
-  },
-  {
    "t": "RNG",
-   "cap": 6.392,
+   "cap": 6.543,
    "name": "Ringcentral, Inc."
   },
   {
+   "t": "LNTH",
+   "cap": 6.538,
+   "name": "Lantheus Holdings, Inc."
+  },
+  {
+   "t": "ENS",
+   "cap": 6.467,
+   "name": "EnerSys"
+  },
+  {
    "t": "TBBB",
-   "cap": 6.391,
+   "cap": 6.398,
    "name": "BBB Foods Inc."
   },
   {
+   "t": "IMVT",
+   "cap": 6.25,
+   "name": "Immunovant, Inc."
+  },
+  {
+   "t": "RIG",
+   "cap": 6.188,
+   "name": "Transocean Ltd (Switzerland)"
+  },
+  {
+   "t": "KNSA",
+   "cap": 6.144,
+   "name": "Kiniksa Pharmaceuticals Interna"
+  },
+  {
    "t": "BLTE",
-   "cap": 6.286,
+   "cap": 6.142,
    "name": "Belite Bio, Inc"
   },
   {
    "t": "XMTR",
-   "cap": 6.179,
+   "cap": 6.104,
    "name": "Xometry, Inc."
   },
   {
-   "t": "KNSA",
-   "cap": 6.083,
-   "name": "Kiniksa Pharmaceuticals Interna"
-  },
-  {
-   "t": "MTRN",
-   "cap": 6.057,
-   "name": "Materion Corporation"
-  },
-  {
-   "t": "RIG",
-   "cap": 6.02,
-   "name": "Transocean Ltd (Switzerland)"
-  },
-  {
-   "t": "GRAL",
-   "cap": 5.936,
-   "name": "GRAIL, Inc."
-  },
-  {
-   "t": "ANF",
-   "cap": 5.917,
-   "name": "Abercrombie & Fitch Company"
-  },
-  {
-   "t": "IOVA",
-   "cap": 5.85,
-   "name": "Iovance Biotherapeutics, Inc."
-  },
-  {
-   "t": "LGND",
-   "cap": 5.846,
-   "name": "Ligand Pharmaceuticals Incorpor"
-  },
-  {
-   "t": "INSW",
-   "cap": 5.792,
-   "name": "International Seaways, Inc."
-  },
-  {
    "t": "CMBT",
-   "cap": 5.789,
+   "cap": 6.038,
    "name": "CMB.TECH NV"
   },
   {
+   "t": "INSW",
+   "cap": 6.034,
+   "name": "International Seaways, Inc."
+  },
+  {
+   "t": "IOVA",
+   "cap": 6.029,
+   "name": "Iovance Biotherapeutics, Inc."
+  },
+  {
+   "t": "ANF",
+   "cap": 6.001,
+   "name": "Abercrombie & Fitch Company"
+  },
+  {
    "t": "CVI",
-   "cap": 5.768,
+   "cap": 5.986,
    "name": "CVR Energy Inc."
   },
   {
    "t": "KOD",
-   "cap": 5.724,
+   "cap": 5.924,
    "name": "Kodiak Sciences Inc"
   },
   {
+   "t": "GRAL",
+   "cap": 5.923,
+   "name": "GRAIL, Inc."
+  },
+  {
+   "t": "LGND",
+   "cap": 5.881,
+   "name": "Ligand Pharmaceuticals Incorpor"
+  },
+  {
    "t": "VAL",
-   "cap": 5.683,
+   "cap": 5.83,
    "name": "Valaris Limited"
   },
   {
-   "t": "AGX",
-   "cap": 5.674,
-   "name": "Argan, Inc."
-  },
-  {
-   "t": "VSH",
-   "cap": 5.655,
-   "name": "Vishay Intertechnology, Inc."
-  },
-  {
    "t": "HAFN",
-   "cap": 5.53,
+   "cap": 5.808,
    "name": "Hafnia Limited"
   },
   {
-   "t": "KGS",
-   "cap": 5.524,
-   "name": "Kodiak Gas Services, Inc."
+   "t": "MTRN",
+   "cap": 5.773,
+   "name": "Materion Corporation"
+  },
+  {
+   "t": "CROX",
+   "cap": 5.602,
+   "name": "Crocs, Inc."
+  },
+  {
+   "t": "AGX",
+   "cap": 5.593,
+   "name": "Argan, Inc."
+  },
+  {
+   "t": "HAE",
+   "cap": 5.436,
+   "name": "Haemonetics Corporation"
   },
   {
    "t": "MAAS",
-   "cap": 5.484,
+   "cap": 5.435,
    "name": "Maase Inc."
   },
   {
+   "t": "KGS",
+   "cap": 5.416,
+   "name": "Kodiak Gas Services, Inc."
+  },
+  {
+   "t": "ERAS",
+   "cap": 5.407,
+   "name": "Erasca, Inc."
+  },
+  {
    "t": "CAKE",
-   "cap": 5.324,
+   "cap": 5.32,
    "name": "The Cheesecake Factory Incorpor"
   },
   {
-   "t": "ORKA",
-   "cap": 5.264,
-   "name": "Oruka Therapeutics, Inc."
+   "t": "VEON",
+   "cap": 5.307,
+   "name": "VEON Ltd."
   },
   {
-   "t": "AXTI",
-   "cap": 5.232,
-   "name": "AXT Inc"
+   "t": "VSH",
+   "cap": 5.301,
+   "name": "Vishay Intertechnology, Inc."
   },
   {
-   "t": "COGT",
-   "cap": 5.23,
-   "name": "Cogent Biosciences, Inc."
-  },
-  {
-   "t": "VIRT",
-   "cap": 5.193,
-   "name": "Virtu Financial, Inc."
+   "t": "MANE",
+   "cap": 5.291,
+   "name": "Veradermics, Incorporated"
   },
   {
    "t": "PAGP",
-   "cap": 6.107,
+   "cap": 6.191,
    "name": "Plains GP Holdings, L.P."
   },
   {
+   "t": "COGT",
+   "cap": 5.22,
+   "name": "Cogent Biosciences, Inc."
+  },
+  {
+   "t": "OUT",
+   "cap": 5.21,
+   "name": "OUTFRONT Media Inc."
+  },
+  {
+   "t": "ORKA",
+   "cap": 5.117,
+   "name": "Oruka Therapeutics, Inc."
+  },
+  {
+   "t": "VIRT",
+   "cap": 5.105,
+   "name": "Virtu Financial, Inc."
+  },
+  {
+   "t": "CLMT",
+   "cap": 5.076,
+   "name": "Calumet, Inc"
+  },
+  {
    "t": "BB",
-   "cap": 5.148,
+   "cap": 5.066,
    "name": "BlackBerry Limited"
   },
   {
    "t": "IRDM",
-   "cap": 5.125,
+   "cap": 5.04,
    "name": "Iridium Communications Inc"
   },
   {
-   "t": "OUT",
-   "cap": 5.096,
-   "name": "OUTFRONT Media Inc."
+   "t": "RELY",
+   "cap": 4.979,
+   "name": "Remitly Global, Inc."
   },
   {
    "t": "ACMR",
-   "cap": 5.068,
+   "cap": 4.931,
    "name": "ACM Research, Inc."
   },
   {
    "t": "TVTX",
-   "cap": 5.037,
+   "cap": 4.905,
    "name": "Travere Therapeutics, Inc."
   },
   {
-   "t": "SEI",
-   "cap": 7.694,
-   "name": "Solaris Energy Infrastructure, "
-  },
-  {
-   "t": "KLIC",
-   "cap": 4.969,
-   "name": "Kulicke and Soffa Industries, I"
-  },
-  {
-   "t": "CLMT",
-   "cap": 4.948,
-   "name": "Calumet, Inc"
-  },
-  {
-   "t": "ERAS",
-   "cap": 4.939,
-   "name": "Erasca, Inc."
-  },
-  {
    "t": "MYRG",
-   "cap": 4.874,
+   "cap": 4.839,
    "name": "MYR Group, Inc."
   },
   {
+   "t": "SEI",
+   "cap": 7.354,
+   "name": "Solaris Energy Infrastructure, "
+  },
+  {
    "t": "GTX",
-   "cap": 4.825,
+   "cap": 4.802,
    "name": "Garrett Motion Inc."
   },
   {
-   "t": "DNTH",
-   "cap": 4.748,
-   "name": "Dianthus Therapeutics, Inc."
-  },
-  {
-   "t": "SYNA",
-   "cap": 4.743,
-   "name": "Synaptics Incorporated"
-  },
-  {
-   "t": "DFTX",
-   "cap": 4.715,
-   "name": "Definium Therapeutics, Inc."
-  },
-  {
-   "t": "RXO",
-   "cap": 4.678,
-   "name": "RXO, Inc."
-  },
-  {
    "t": "MEOH",
-   "cap": 4.674,
+   "cap": 4.8,
    "name": "Methanex Corporation"
   },
   {
-   "t": "CON",
-   "cap": 4.642,
-   "name": "Concentra Group Holdings Parent"
+   "t": "RXO",
+   "cap": 4.772,
+   "name": "RXO, Inc."
   },
   {
-   "t": "MANE",
-   "cap": 4.636,
-   "name": "Veradermics, Incorporated"
+   "t": "KLIC",
+   "cap": 4.758,
+   "name": "Kulicke and Soffa Industries, I"
   },
   {
-   "t": "DIOD",
-   "cap": 4.635,
-   "name": "Diodes Incorporated"
+   "t": "NSIT",
+   "cap": 4.736,
+   "name": "Insight Enterprises, Inc."
   },
   {
-   "t": "HAE",
-   "cap": 4.628,
-   "name": "Haemonetics Corporation"
+   "t": "SYNA",
+   "cap": 4.728,
+   "name": "Synaptics Incorporated"
+  },
+  {
+   "t": "AXTI",
+   "cap": 4.699,
+   "name": "AXT Inc"
+  },
+  {
+   "t": "UNF",
+   "cap": 4.695,
+   "name": "Unifirst Corporation"
   },
   {
    "t": "DK",
-   "cap": 4.621,
+   "cap": 4.69,
    "name": "Delek US Holdings, Inc."
   },
   {
+   "t": "CON",
+   "cap": 4.668,
+   "name": "Concentra Group Holdings Parent"
+  },
+  {
+   "t": "DNTH",
+   "cap": 4.611,
+   "name": "Dianthus Therapeutics, Inc."
+  },
+  {
+   "t": "DFTX",
+   "cap": 4.593,
+   "name": "Definium Therapeutics, Inc."
+  },
+  {
    "t": "LFST",
-   "cap": 4.604,
+   "cap": 4.585,
    "name": "LifeStance Health Group, Inc."
   },
   {
    "t": "ENVA",
-   "cap": 4.584,
+   "cap": 4.546,
    "name": "Enova International, Inc."
   },
   {
-   "t": "UNF",
-   "cap": 4.563,
-   "name": "Unifirst Corporation"
-  },
-  {
    "t": "CHEF",
-   "cap": 4.529,
+   "cap": 4.545,
    "name": "The Chefs' Warehouse, Inc."
   },
   {
-   "t": "CRGY",
-   "cap": 5.299,
-   "name": "Crescent Energy Company"
-  },
-  {
-   "t": "WHD",
-   "cap": 4.4,
-   "name": "Cactus, Inc. Class A Common Sto"
-  },
-  {
    "t": "DAVE",
-   "cap": 4.398,
+   "cap": 4.508,
    "name": "Dave Inc."
   },
   {
    "t": "OII",
-   "cap": 4.349,
+   "cap": 4.437,
    "name": "Oceaneering International, Inc."
   },
   {
-   "t": "PARR",
-   "cap": 4.315,
-   "name": "Par Pacific Holdings, Inc. Comm"
-  },
-  {
-   "t": "EWTX",
-   "cap": 4.297,
-   "name": "Edgewise Therapeutics, Inc."
-  },
-  {
-   "t": "PTEN",
-   "cap": 4.283,
-   "name": "Patterson-UTI Energy, Inc."
-  },
-  {
-   "t": "ACLS",
-   "cap": 4.274,
-   "name": "Axcelis Technologies, Inc."
+   "t": "DIOD",
+   "cap": 4.432,
+   "name": "Diodes Incorporated"
   },
   {
    "t": "STNG",
-   "cap": 4.232,
+   "cap": 4.415,
    "name": "Scorpio Tankers Inc."
   },
   {
-   "t": "ADPT",
-   "cap": 4.194,
-   "name": "Adaptive Biotechnologies Corpor"
+   "t": "WHD",
+   "cap": 4.409,
+   "name": "Cactus, Inc. Class A Common Sto"
   },
   {
-   "t": "ABCL",
-   "cap": 4.158,
-   "name": "AbCellera Biologics Inc."
+   "t": "PARR",
+   "cap": 4.391,
+   "name": "Par Pacific Holdings, Inc. Comm"
   },
   {
-   "t": "TDW",
-   "cap": 4.15,
-   "name": "Tidewater Inc."
+   "t": "PTEN",
+   "cap": 4.378,
+   "name": "Patterson-UTI Energy, Inc."
+  },
+  {
+   "t": "KNTK",
+   "cap": 9.206,
+   "name": "Kinetik Holdings Inc."
+  },
+  {
+   "t": "CRGY",
+   "cap": 5.118,
+   "name": "Crescent Energy Company"
   },
   {
    "t": "CGAU",
-   "cap": 4.137,
+   "cap": 4.268,
    "name": "Centerra Gold Inc."
   },
   {
-   "t": "GEF-B",
-   "cap": 4.128,
-   "name": "Greif, Inc. Corporation"
+   "t": "EWTX",
+   "cap": 4.261,
+   "name": "Edgewise Therapeutics, Inc."
   },
   {
-   "t": "LGN",
-   "cap": 8.765,
-   "name": "Legence Corp."
+   "t": "TDW",
+   "cap": 4.214,
+   "name": "Tidewater Inc."
   },
   {
-   "t": "FSLY",
-   "cap": 4.027,
-   "name": "Fastly, Inc."
+   "t": "ADPT",
+   "cap": 4.164,
+   "name": "Adaptive Biotechnologies Corpor"
   },
   {
-   "t": "GEO",
-   "cap": 4.017,
-   "name": "Geo Group Inc (The) REIT"
+   "t": "HTFL",
+   "cap": 4.142,
+   "name": "Heartflow, Inc."
+  },
+  {
+   "t": "ACLS",
+   "cap": 4.122,
+   "name": "Axcelis Technologies, Inc."
   },
   {
    "t": "TRMD",
-   "cap": 3.995,
+   "cap": 4.115,
    "name": "TORM plc"
   },
   {
-   "t": "HP",
-   "cap": 3.962,
-   "name": "Helmerich & Payne, Inc."
+   "t": "GEF-B",
+   "cap": 4.089,
+   "name": "Greif, Inc. Corporation"
   },
   {
-   "t": "RLAY",
-   "cap": 3.934,
-   "name": "Relay Therapeutics, Inc."
+   "t": "GEO",
+   "cap": 4.075,
+   "name": "Geo Group Inc (The) REIT"
   },
   {
-   "t": "MSGE",
-   "cap": 3.879,
-   "name": "Madison Square Garden Entertain"
-  },
-  {
-   "t": "BWLP",
-   "cap": 3.87,
-   "name": "BW LPG Limited"
-  },
-  {
-   "t": "ERO",
-   "cap": 3.836,
-   "name": "Ero Copper Corp."
+   "t": "FSLY",
+   "cap": 4.029,
+   "name": "Fastly, Inc."
   },
   {
    "t": "DHT",
-   "cap": 3.823,
+   "cap": 4.02,
    "name": "DHT Holdings, Inc."
   },
   {
+   "t": "HP",
+   "cap": 4.017,
+   "name": "Helmerich & Payne, Inc."
+  },
+  {
+   "t": "BWLP",
+   "cap": 3.996,
+   "name": "BW LPG Limited"
+  },
+  {
+   "t": "LGN",
+   "cap": 8.469,
+   "name": "Legence Corp."
+  },
+  {
    "t": "SKE",
-   "cap": 3.823,
+   "cap": 3.941,
    "name": "Skeena Resources Limited"
   },
   {
    "t": "SPHR",
-   "cap": 3.815,
+   "cap": 3.924,
    "name": "Sphere Entertainment Co."
   },
   {
-   "t": "AYA",
-   "cap": 3.765,
-   "name": "Aya Gold & Silver Inc."
+   "t": "ABCL",
+   "cap": 3.895,
+   "name": "AbCellera Biologics Inc."
   },
   {
    "t": "BFH",
-   "cap": 3.751,
+   "cap": 3.87,
    "name": "Bread Financial Holdings, Inc."
   },
   {
-   "t": "PENG",
-   "cap": 3.721,
-   "name": "Penguin Solutions, Inc."
+   "t": "MSGE",
+   "cap": 3.863,
+   "name": "Madison Square Garden Entertain"
+  },
+  {
+   "t": "RLAY",
+   "cap": 3.815,
+   "name": "Relay Therapeutics, Inc."
   },
   {
    "t": "TNGX",
-   "cap": 3.681,
+   "cap": 3.806,
    "name": "Tango Therapeutics, Inc."
   },
   {
-   "t": "ZIM",
-   "cap": 3.614,
-   "name": "ZIM Integrated Shipping Service"
+   "t": "AYA",
+   "cap": 3.791,
+   "name": "Aya Gold & Silver Inc."
   },
   {
-   "t": "BELFB",
-   "cap": 3.563,
-   "name": "Bel Fuse Inc."
-  },
-  {
-   "t": "VAC",
-   "cap": 3.545,
-   "name": "Marriott Vacations Worldwide Co"
+   "t": "ERO",
+   "cap": 3.753,
+   "name": "Ero Copper Corp."
   },
   {
    "t": "TNK",
-   "cap": 3.542,
+   "cap": 3.698,
    "name": "Teekay Tankers Ltd."
   },
   {
-   "t": "WT",
-   "cap": 3.541,
-   "name": "WisdomTree, Inc."
-  },
-  {
-   "t": "ARIS",
-   "cap": 3.516,
-   "name": "Aris Mining Corporation"
-  },
-  {
-   "t": "PLSE",
-   "cap": 3.501,
-   "name": "Pulse Biosciences, Inc"
-  },
-  {
-   "t": "ALM",
-   "cap": 3.491,
-   "name": "Almonty Industries Inc."
-  },
-  {
-   "t": "NHC",
-   "cap": 3.464,
-   "name": "National HealthCare Corporation"
-  },
-  {
-   "t": "SBLK",
-   "cap": 3.446,
-   "name": "Star Bulk Carriers Corp."
-  },
-  {
-   "t": "CSTM",
-   "cap": 3.445,
-   "name": "Constellium SE"
-  },
-  {
-   "t": "AMLX",
-   "cap": 3.443,
-   "name": "Amylyx Pharmaceuticals, Inc."
-  },
-  {
    "t": "ECO",
-   "cap": 3.437,
+   "cap": 3.687,
    "name": "Okeanis Eco Tankers Corp."
   },
   {
+   "t": "PENG",
+   "cap": 3.667,
+   "name": "Penguin Solutions, Inc."
+  },
+  {
+   "t": "ZIM",
+   "cap": 3.647,
+   "name": "ZIM Integrated Shipping Service"
+  },
+  {
+   "t": "VAC",
+   "cap": 3.584,
+   "name": "Marriott Vacations Worldwide Co"
+  },
+  {
+   "t": "PLSE",
+   "cap": 3.565,
+   "name": "Pulse Biosciences, Inc"
+  },
+  {
+   "t": "SBLK",
+   "cap": 3.537,
+   "name": "Star Bulk Carriers Corp."
+  },
+  {
+   "t": "NHC",
+   "cap": 3.526,
+   "name": "National HealthCare Corporation"
+  },
+  {
+   "t": "BELFB",
+   "cap": 3.502,
+   "name": "Bel Fuse Inc."
+  },
+  {
+   "t": "CSTM",
+   "cap": 3.47,
+   "name": "Constellium SE"
+  },
+  {
+   "t": "ARIS",
+   "cap": 3.46,
+   "name": "Aris Mining Corporation"
+  },
+  {
+   "t": "WT",
+   "cap": 3.436,
+   "name": "WisdomTree, Inc."
+  },
+  {
+   "t": "AMLX",
+   "cap": 3.414,
+   "name": "Amylyx Pharmaceuticals, Inc."
+  },
+  {
    "t": "LION",
-   "cap": 3.365,
+   "cap": 3.356,
    "name": "Lionsgate Studios Corp"
   },
   {
-   "t": "COHU",
-   "cap": 3.351,
-   "name": "Cohu, Inc."
-  },
-  {
-   "t": "AAMI",
-   "cap": 3.285,
-   "name": "Acadian Asset Management Inc."
-  },
-  {
-   "t": "VECO",
-   "cap": 3.267,
-   "name": "Veeco Instruments Inc."
-  },
-  {
-   "t": "PURR",
-   "cap": 3.264,
-   "name": "Hyperliquid Strategies Inc"
-  },
-  {
-   "t": "CDNA",
-   "cap": 3.261,
-   "name": "CareDx, Inc."
-  },
-  {
-   "t": "KN",
-   "cap": 3.252,
-   "name": "Knowles Corporation"
-  },
-  {
-   "t": "UCTT",
-   "cap": 3.234,
-   "name": "Ultra Clean Holdings, Inc."
-  },
-  {
-   "t": "VGNT",
-   "cap": 3.208,
-   "name": "Versigent PLC"
-  },
-  {
    "t": "BTE",
-   "cap": 3.202,
+   "cap": 3.314,
    "name": "Baytex Energy Corp"
   },
   {
-   "t": "LBRT",
-   "cap": 3.168,
-   "name": "Liberty Energy Inc."
+   "t": "AAMI",
+   "cap": 3.311,
+   "name": "Acadian Asset Management Inc."
+  },
+  {
+   "t": "COHU",
+   "cap": 3.237,
+   "name": "Cohu, Inc."
   },
   {
    "t": "CXW",
-   "cap": 3.147,
+   "cap": 3.235,
    "name": "CoreCivic, Inc."
   },
   {
+   "t": "CDNA",
+   "cap": 3.218,
+   "name": "CareDx, Inc."
+  },
+  {
+   "t": "ATKR",
+   "cap": 3.203,
+   "name": "Atkore Inc."
+  },
+  {
+   "t": "KN",
+   "cap": 3.172,
+   "name": "Knowles Corporation"
+  },
+  {
+   "t": "PURR",
+   "cap": 3.144,
+   "name": "Hyperliquid Strategies Inc"
+  },
+  {
+   "t": "VECO",
+   "cap": 3.14,
+   "name": "Veeco Instruments Inc."
+  },
+  {
+   "t": "DAN",
+   "cap": 3.122,
+   "name": "Dana Incorporated"
+  },
+  {
+   "t": "LBRT",
+   "cap": 3.076,
+   "name": "Liberty Energy Inc."
+  },
+  {
+   "t": "UCTT",
+   "cap": 3.06,
+   "name": "Ultra Clean Holdings, Inc."
+  },
+  {
    "t": "TGB",
-   "cap": 3.119,
+   "cap": 3.042,
    "name": "Trekor Metals Limited"
   },
   {
    "t": "RCUS",
-   "cap": 3.084,
+   "cap": 2.997,
    "name": "Arcus Biosciences, Inc."
   },
   {
    "t": "ELVN",
-   "cap": 3.03,
+   "cap": 2.977,
    "name": "Enliven Therapeutics, Inc."
   },
   {
-   "t": "DAN",
-   "cap": 3.014,
-   "name": "Dana Incorporated"
-  },
-  {
-   "t": "BHE",
-   "cap": 2.99,
-   "name": "Benchmark Electronics, Inc."
-  },
-  {
-   "t": "AEHR",
-   "cap": 2.919,
-   "name": "Aehr Test Systems"
-  },
-  {
-   "t": "NTCT",
-   "cap": 2.913,
-   "name": "NetScout Systems, Inc."
-  },
-  {
    "t": "CLBK",
-   "cap": 2.911,
+   "cap": 2.968,
    "name": "Columbia Financial, Inc."
   },
   {
-   "t": "EFXT",
-   "cap": 2.893,
-   "name": "Enerflex Ltd"
-  },
-  {
-   "t": "CHRN",
-   "cap": 2.879,
-   "name": "ChronoScale Holdings Corporatio"
-  },
-  {
    "t": "SLDE",
-   "cap": 2.877,
+   "cap": 2.955,
    "name": "Slide Insurance Holdings, Inc."
   },
   {
-   "t": "BELFA",
-   "cap": 2.863,
-   "name": "Bel Fuse Inc."
+   "t": "EFXT",
+   "cap": 2.932,
+   "name": "Enerflex Ltd"
   },
   {
-   "t": "DGII",
-   "cap": 2.854,
-   "name": "Digi International Inc."
+   "t": "BHE",
+   "cap": 2.915,
+   "name": "Benchmark Electronics, Inc."
   },
   {
    "t": "ARCB",
-   "cap": 2.836,
+   "cap": 2.905,
    "name": "ArcBest Corporation"
   },
   {
-   "t": "IMAX",
-   "cap": 2.822,
-   "name": "Imax Corporation"
+   "t": "NTCT",
+   "cap": 2.857,
+   "name": "NetScout Systems, Inc."
   },
   {
-   "t": "DXPE",
-   "cap": 2.791,
-   "name": "DXP Enterprises, Inc."
+   "t": "SDRL",
+   "cap": 2.853,
+   "name": "Seadrill Limited"
+  },
+  {
+   "t": "AEHR",
+   "cap": 2.848,
+   "name": "Aehr Test Systems"
+  },
+  {
+   "t": "DGII",
+   "cap": 2.843,
+   "name": "Digi International Inc."
   },
   {
    "t": "TALO",
-   "cap": 2.782,
+   "cap": 2.83,
    "name": "Talos Energy, Inc."
   },
   {
+   "t": "BELFA",
+   "cap": 2.818,
+   "name": "Bel Fuse Inc."
+  },
+  {
+   "t": "IMAX",
+   "cap": 2.814,
+   "name": "Imax Corporation"
+  },
+  {
    "t": "ATRO",
-   "cap": 2.78,
+   "cap": 2.772,
    "name": "Astronics Corporation"
   },
   {
-   "t": "ROG",
-   "cap": 2.751,
-   "name": "Rogers Corporation"
+   "t": "CHRN",
+   "cap": 2.771,
+   "name": "ChronoScale Holdings Corporatio"
   },
   {
-   "t": "IMOS",
-   "cap": 2.733,
-   "name": "ChipMOS TECHNOLOGIES INC."
+   "t": "DXPE",
+   "cap": 2.771,
+   "name": "DXP Enterprises, Inc."
   },
   {
    "t": "PGEN",
-   "cap": 2.7,
+   "cap": 2.721,
    "name": "Precigen, Inc."
   },
   {
-   "t": "MBX",
-   "cap": 2.627,
-   "name": "MBX Biosciences, Inc."
-  },
-  {
    "t": "NMM",
-   "cap": 2.626,
+   "cap": 2.661,
    "name": "Navios Maritime Partners LP"
   },
   {
+   "t": "ADEA",
+   "cap": 2.659,
+   "name": "Adeia Inc."
+  },
+  {
+   "t": "ROG",
+   "cap": 2.647,
+   "name": "Rogers Corporation"
+  },
+  {
    "t": "GRDN",
-   "cap": 2.577,
+   "cap": 2.635,
    "name": "Guardian Pharmacy Services, Inc"
   },
   {
-   "t": "NEOG",
-   "cap": 2.547,
-   "name": "Neogen Corporation"
+   "t": "FIVN",
+   "cap": 2.627,
+   "name": "Five9, Inc."
+  },
+  {
+   "t": "IMOS",
+   "cap": 2.625,
+   "name": "ChipMOS TECHNOLOGIES INC."
   },
   {
    "t": "LB",
-   "cap": 6.715,
+   "cap": 6.851,
    "name": "LandBridge Company LLC"
   },
   {
    "t": "DRH",
-   "cap": 2.537,
+   "cap": 2.588,
    "name": "Diamondrock Hospitality Company"
   },
   {
-   "t": "FIVN",
-   "cap": 2.524,
-   "name": "Five9, Inc."
+   "t": "MBX",
+   "cap": 2.565,
+   "name": "MBX Biosciences, Inc."
+  },
+  {
+   "t": "NEOG",
+   "cap": 2.554,
+   "name": "Neogen Corporation"
   },
   {
    "t": "DCO",
-   "cap": 2.502,
+   "cap": 2.541,
    "name": "Ducommun Incorporated"
   },
   {
    "t": "WTTR",
-   "cap": 2.759,
+   "cap": 2.798,
    "name": "Select Water Solutions, Inc."
   },
   {
-   "t": "KALU",
-   "cap": 2.489,
-   "name": "Kaiser Aluminum Corporation"
-  },
-  {
-   "t": "CALY",
-   "cap": 2.483,
-   "name": "Callaway Golf Company"
-  },
-  {
-   "t": "KMT",
-   "cap": 2.465,
-   "name": "Kennametal Inc."
-  },
-  {
-   "t": "HIMX",
-   "cap": 2.458,
-   "name": "Himax Technologies, Inc."
-  },
-  {
-   "t": "CLOV",
-   "cap": 2.422,
-   "name": "Clover Health Investments, Corp"
-  },
-  {
    "t": "LPG",
-   "cap": 2.405,
+   "cap": 2.491,
    "name": "Dorian LPG Ltd."
   },
   {
-   "t": "NESR",
-   "cap": 2.383,
-   "name": "National Energy Services Reunit"
-  },
-  {
-   "t": "NRIX",
-   "cap": 2.359,
-   "name": "Nurix Therapeutics, Inc."
-  },
-  {
    "t": "FIGS",
-   "cap": 2.336,
+   "cap": 2.489,
    "name": "FIGS, Inc."
   },
   {
-   "t": "CNXN",
-   "cap": 2.321,
-   "name": "PC Connection, Inc."
+   "t": "CALY",
+   "cap": 2.476,
+   "name": "Callaway Golf Company"
+  },
+  {
+   "t": "KALU",
+   "cap": 2.448,
+   "name": "Kaiser Aluminum Corporation"
+  },
+  {
+   "t": "CLOV",
+   "cap": 2.433,
+   "name": "Clover Health Investments, Corp"
+  },
+  {
+   "t": "KMT",
+   "cap": 2.422,
+   "name": "Kennametal Inc."
+  },
+  {
+   "t": "NESR",
+   "cap": 2.344,
+   "name": "National Energy Services Reunit"
   },
   {
    "t": "LIND",
-   "cap": 2.297,
+   "cap": 2.332,
    "name": "Lindblad Expeditions Holdings I"
   },
   {
-   "t": "SLS",
-   "cap": 2.284,
-   "name": "SELLAS Life Sciences Group, Inc"
+   "t": "PBI",
+   "cap": 2.328,
+   "name": "Pitney Bowes Inc."
   },
   {
-   "t": "ICHR",
-   "cap": 2.28,
-   "name": "Ichor Holdings"
-  },
-  {
-   "t": "UFPT",
-   "cap": 2.269,
-   "name": "UFP Technologies, Inc."
-  },
-  {
-   "t": "MBIN",
-   "cap": 2.266,
-   "name": "Merchants Bancorp"
-  },
-  {
-   "t": "PDFS",
-   "cap": 2.245,
-   "name": "PDF Solutions, Inc."
-  },
-  {
-   "t": "ANDE",
-   "cap": 2.24,
-   "name": "The Andersons, Inc."
+   "t": "HIMX",
+   "cap": 2.313,
+   "name": "Himax Technologies, Inc."
   },
   {
    "t": "LIFE",
-   "cap": 2.232,
+   "cap": 2.309,
    "name": "Ethos Technologies Inc."
   },
   {
-   "t": "PRLB",
-   "cap": 2.231,
-   "name": "Proto Labs, Inc."
+   "t": "NRIX",
+   "cap": 2.305,
+   "name": "Nurix Therapeutics, Inc."
+  },
+  {
+   "t": "CNXN",
+   "cap": 2.294,
+   "name": "PC Connection, Inc."
+  },
+  {
+   "t": "MBIN",
+   "cap": 2.288,
+   "name": "Merchants Bancorp"
   },
   {
    "t": "SVM",
-   "cap": 2.221,
+   "cap": 2.281,
    "name": "Silvercorp Metals Inc."
   },
   {
-   "t": "BFLY",
-   "cap": 2.202,
-   "name": "Butterfly Network, Inc."
+   "t": "SLS",
+   "cap": 2.274,
+   "name": "SELLAS Life Sciences Group, Inc"
   },
   {
-   "t": "CTOS",
-   "cap": 2.148,
-   "name": "Custom Truck One Source, Inc."
+   "t": "ANDE",
+   "cap": 2.26,
+   "name": "The Andersons, Inc."
   },
   {
-   "t": "STGW",
-   "cap": 2.115,
-   "name": "Stagwell Inc."
+   "t": "PRLB",
+   "cap": 2.206,
+   "name": "Proto Labs, Inc."
   },
   {
-   "t": "AXGN",
-   "cap": 2.115,
-   "name": "AxoGen, Inc."
+   "t": "ICHR",
+   "cap": 2.203,
+   "name": "Ichor Holdings"
   },
   {
-   "t": "PEB",
-   "cap": 2.111,
-   "name": "Pebblebrook Hotel Trust"
-  },
-  {
-   "t": "ECPG",
-   "cap": 2.105,
-   "name": "Encore Capital Group Inc"
+   "t": "PDFS",
+   "cap": 2.203,
+   "name": "PDF Solutions, Inc."
   },
   {
    "t": "BVC",
-   "cap": 2.099,
+   "cap": 2.171,
    "name": "BitVentures Limited"
   },
   {
+   "t": "PEB",
+   "cap": 2.142,
+   "name": "Pebblebrook Hotel Trust"
+  },
+  {
+   "t": "STGW",
+   "cap": 2.142,
+   "name": "Stagwell Inc."
+  },
+  {
+   "t": "BFLY",
+   "cap": 2.138,
+   "name": "Butterfly Network, Inc."
+  },
+  {
    "t": "MD",
-   "cap": 2.099,
+   "cap": 2.132,
    "name": "Pediatrix Medical Group, Inc."
   },
   {
-   "t": "ATEN",
-   "cap": 2.07,
-   "name": "A10 Networks, Inc."
+   "t": "CTOS",
+   "cap": 2.132,
+   "name": "Custom Truck One Source, Inc."
+  },
+  {
+   "t": "AXGN",
+   "cap": 2.123,
+   "name": "AxoGen, Inc."
+  },
+  {
+   "t": "ECPG",
+   "cap": 2.122,
+   "name": "Encore Capital Group Inc"
   },
   {
    "t": "NEO",
-   "cap": 2.052,
+   "cap": 2.058,
    "name": "NeoGenomics, Inc."
   },
   {
+   "t": "ATEN",
+   "cap": 2.03,
+   "name": "A10 Networks, Inc."
+  },
+  {
    "t": "GCT",
-   "cap": 1.998,
+   "cap": 2.015,
    "name": "GigaCloud Technology Inc"
   },
   {
    "t": "IDT",
-   "cap": 1.992,
+   "cap": 2.003,
    "name": "IDT Corporation"
   },
   {
-   "t": "URGN",
-   "cap": 1.989,
-   "name": "UroGen Pharma Ltd."
-  },
-  {
-   "t": "PLPC",
-   "cap": 1.978,
-   "name": "Preformed Line Products Company"
-  },
-  {
    "t": "DAO",
-   "cap": 1.974,
+   "cap": 1.968,
    "name": "Youdao, Inc."
   },
   {
-   "t": "GRC",
-   "cap": 1.96,
-   "name": "Gorman-Rupp Company (The)"
-  },
-  {
-   "t": "FTRE",
-   "cap": 1.955,
-   "name": "Fortrea Holdings Inc."
-  },
-  {
-   "t": "VIR",
-   "cap": 1.949,
-   "name": "Vir Biotechnology, Inc."
-  },
-  {
-   "t": "ALNT",
-   "cap": 1.926,
-   "name": "Allient Inc."
+   "t": "PLPC",
+   "cap": 1.942,
+   "name": "Preformed Line Products Company"
   },
   {
    "t": "TOP",
-   "cap": 1.917,
+   "cap": 1.937,
    "name": "TOP Financial Group Limited"
   },
   {
-   "t": "ZYME",
-   "cap": 1.904,
-   "name": "Zymeworks Inc."
+   "t": "FTRE",
+   "cap": 1.937,
+   "name": "Fortrea Holdings Inc."
   },
   {
-   "t": "ESTA",
-   "cap": 1.903,
-   "name": "Establishment Labs Holdings Inc"
+   "t": "GRC",
+   "cap": 1.929,
+   "name": "Gorman-Rupp Company (The)"
   },
   {
-   "t": "PVLA",
-   "cap": 1.882,
-   "name": "Palvella Therapeutics, Inc."
+   "t": "ZD",
+   "cap": 1.917,
+   "name": "Ziff Davis, Inc."
   },
   {
    "t": "EZPW",
-   "cap": 1.87,
+   "cap": 1.915,
    "name": "EZCORP, Inc."
   },
   {
-   "t": "BAND",
-   "cap": 1.849,
-   "name": "Bandwidth Inc."
+   "t": "CEPU",
+   "cap": 1.898,
+   "name": "Central Puerto S.A."
   },
   {
-   "t": "VSTS",
-   "cap": 1.842,
-   "name": "Vestis Corporation"
+   "t": "PVLA",
+   "cap": 1.892,
+   "name": "Palvella Therapeutics, Inc."
+  },
+  {
+   "t": "VIR",
+   "cap": 1.882,
+   "name": "Vir Biotechnology, Inc."
   },
   {
    "t": "SFL",
-   "cap": 1.842,
+   "cap": 1.88,
    "name": "SFL Corporation Ltd"
   },
   {
+   "t": "VSTS",
+   "cap": 1.85,
+   "name": "Vestis Corporation"
+  },
+  {
+   "t": "ALNT",
+   "cap": 1.846,
+   "name": "Allient Inc."
+  },
+  {
    "t": "DHC",
-   "cap": 1.821,
+   "cap": 1.828,
    "name": "Diversified Healthcare Trust"
   },
   {
    "t": "XNCR",
-   "cap": 1.804,
+   "cap": 1.822,
    "name": "Xencor, Inc."
   },
   {
-   "t": "TH",
-   "cap": 1.788,
-   "name": "Target Hospitality Corp."
-  },
-  {
-   "t": "LILA",
-   "cap": 1.745,
-   "name": "Liberty Latin America Ltd."
-  },
-  {
    "t": "NAT",
-   "cap": 1.738,
+   "cap": 1.817,
    "name": "Nordic American Tankers Limited"
   },
   {
-   "t": "LILAK",
-   "cap": 1.734,
-   "name": "Liberty Latin America Ltd."
+   "t": "VET",
+   "cap": 1.812,
+   "name": "Vermilion Energy Inc."
   },
   {
-   "t": "FRNM",
-   "cap": 1.722,
-   "name": "Freenome, Inc."
+   "t": "URGN",
+   "cap": 1.808,
+   "name": "UroGen Pharma Ltd."
   },
   {
-   "t": "PSNL",
-   "cap": 1.709,
-   "name": "Personalis, Inc."
+   "t": "ESTA",
+   "cap": 1.806,
+   "name": "Establishment Labs Holdings Inc"
   },
   {
-   "t": "RLJ",
-   "cap": 1.705,
-   "name": "RLJ Lodging Trust"
+   "t": "TH",
+   "cap": 1.795,
+   "name": "Target Hospitality Corp."
+  },
+  {
+   "t": "SPB",
+   "cap": 1.784,
+   "name": "Spectrum Brands Holdings, Inc."
   },
   {
    "t": "SEPN",
-   "cap": 1.68,
+   "cap": 1.722,
    "name": "Septerna, Inc."
   },
   {
+   "t": "LILA",
+   "cap": 1.718,
+   "name": "Liberty Latin America Ltd."
+  },
+  {
+   "t": "PSNL",
+   "cap": 1.715,
+   "name": "Personalis, Inc."
+  },
+  {
+   "t": "LILAK",
+   "cap": 1.708,
+   "name": "Liberty Latin America Ltd."
+  },
+  {
+   "t": "RLJ",
+   "cap": 1.715,
+   "name": "RLJ Lodging Trust"
+  },
+  {
    "t": "HYMC",
-   "cap": 1.674,
+   "cap": 1.697,
    "name": "Hycroft Mining Holding Corporat"
   },
   {
+   "t": "BAND",
+   "cap": 1.672,
+   "name": "Bandwidth Inc."
+  },
+  {
    "t": "NEXA",
-   "cap": 1.669,
+   "cap": 1.657,
    "name": "Nexa Resources S.A."
   },
   {
    "t": "CTS",
-   "cap": 1.665,
+   "cap": 1.637,
    "name": "CTS Corporation"
   },
   {
-   "t": "CMPS",
-   "cap": 1.619,
-   "name": "COMPASS Pathways Plc - American"
-  },
-  {
-   "t": "SHAZ",
-   "cap": 1.615,
-   "name": "SharonAI Holdings, Inc."
-  },
-  {
-   "t": "OBK",
-   "cap": 1.614,
-   "name": "Origin Bancorp, Inc."
-  },
-  {
-   "t": "ATEX",
-   "cap": 1.592,
-   "name": "Anterix Inc."
-  },
-  {
-   "t": "ABSI",
-   "cap": 1.582,
-   "name": "Absci Corporation"
-  },
-  {
-   "t": "ETON",
-   "cap": 1.569,
-   "name": "Eton Pharmaceuticals, Inc."
-  },
-  {
    "t": "PBT",
-   "cap": 1.566,
+   "cap": 1.624,
    "name": "Permian Basin Royalty Trust"
   },
   {
+   "t": "OBK",
+   "cap": 1.619,
+   "name": "Origin Bancorp, Inc."
+  },
+  {
    "t": "KOS",
-   "cap": 1.542,
+   "cap": 1.602,
    "name": "Kosmos Energy Ltd."
   },
   {
+   "t": "CMPS",
+   "cap": 1.588,
+   "name": "COMPASS Pathways Plc - American"
+  },
+  {
+   "t": "ETON",
+   "cap": 1.565,
+   "name": "Eton Pharmaceuticals, Inc."
+  },
+  {
+   "t": "TEN",
+   "cap": 1.562,
+   "name": "Tsakos Energy Navigation Ltd"
+  },
+  {
+   "t": "ABSI",
+   "cap": 1.534,
+   "name": "Absci Corporation"
+  },
+  {
+   "t": "KRSA",
+   "cap": 1.526,
+   "name": "Korsana Biosciences, Inc."
+  },
+  {
    "t": "SAFT",
-   "cap": 1.525,
+   "cap": 1.526,
    "name": "Safety Insurance Group, Inc."
   },
   {
    "t": "CBL",
-   "cap": 1.502,
+   "cap": 1.524,
    "name": "CBL & Associates Properties, In"
   },
   {
-   "t": "TEN",
-   "cap": 1.5,
-   "name": "Tsakos Energy Navigation Ltd"
-  },
-  {
-   "t": "AMBQ",
-   "cap": 1.499,
-   "name": "Ambiq Micro, Inc."
-  },
-  {
-   "t": "CRSR",
-   "cap": 1.47,
-   "name": "Corsair Gaming, Inc."
-  },
-  {
-   "t": "FCEL",
-   "cap": 1.468,
-   "name": "FuelCell Energy, Inc."
-  },
-  {
-   "t": "NUTX",
-   "cap": 1.459,
-   "name": "Nutex Health Inc."
-  },
-  {
    "t": "NVGS",
-   "cap": 1.449,
+   "cap": 1.506,
    "name": "Navigator Holdings Ltd."
   },
   {
-   "t": "GHRS",
-   "cap": 1.446,
-   "name": "GH Research PLC"
+   "t": "ATEX",
+   "cap": 1.499,
+   "name": "Anterix Inc."
   },
   {
-   "t": "KRSA",
-   "cap": 1.441,
-   "name": "Korsana Biosciences, Inc."
-  },
-  {
-   "t": "PRSU",
-   "cap": 1.441,
-   "name": "Pursuit Attractions and Hospita"
-  },
-  {
-   "t": "AGL",
-   "cap": 1.439,
-   "name": "agilon health, inc."
-  },
-  {
-   "t": "ATLC",
-   "cap": 1.436,
-   "name": "Atlanticus Holdings Corporation"
+   "t": "PCRX",
+   "cap": 1.451,
+   "name": "Pacira BioSciences, Inc."
   },
   {
    "t": "UFCS",
-   "cap": 1.415,
+   "cap": 1.45,
    "name": "United Fire Group, Inc"
   },
   {
-   "t": "AMN",
-   "cap": 1.415,
-   "name": "AMN Healthcare Services Inc"
+   "t": "AMBQ",
+   "cap": 1.424,
+   "name": "Ambiq Micro, Inc."
+  },
+  {
+   "t": "AGL",
+   "cap": 1.423,
+   "name": "agilon health, inc."
+  },
+  {
+   "t": "BORR",
+   "cap": 1.422,
+   "name": "Borr Drilling Limited"
+  },
+  {
+   "t": "CRSR",
+   "cap": 1.416,
+   "name": "Corsair Gaming, Inc."
+  },
+  {
+   "t": "AMAL",
+   "cap": 1.411,
+   "name": "Amalgamated Financial Corp."
+  },
+  {
+   "t": "PNTG",
+   "cap": 1.41,
+   "name": "The Pennant Group, Inc."
+  },
+  {
+   "t": "NUTX",
+   "cap": 1.404,
+   "name": "Nutex Health Inc."
+  },
+  {
+   "t": "GHRS",
+   "cap": 1.404,
+   "name": "GH Research PLC"
   },
   {
    "t": "MGRT",
@@ -2089,59 +2194,74 @@
    "name": "Mega Fortune Company Limited"
   },
   {
-   "t": "ULCC",
-   "cap": 1.397,
-   "name": "Frontier Group Holdings, Inc."
-  },
-  {
-   "t": "AMAL",
-   "cap": 1.394,
-   "name": "Amalgamated Financial Corp."
+   "t": "ATLC",
+   "cap": 1.392,
+   "name": "Atlanticus Holdings Corporation"
   },
   {
    "t": "TMP",
-   "cap": 1.392,
+   "cap": 1.389,
    "name": "Tompkins Financial Corporation"
   },
   {
-   "t": "PNTG",
-   "cap": 1.384,
-   "name": "The Pennant Group, Inc."
-  },
-  {
-   "t": "INBX",
-   "cap": 1.374,
-   "name": "Inhibrx Biosciences, Inc."
-  },
-  {
-   "t": "ANAB",
-   "cap": 1.365,
-   "name": "AnaptysBio, Inc."
-  },
-  {
    "t": "OMER",
-   "cap": 1.357,
+   "cap": 1.384,
    "name": "Omeros Corporation"
   },
   {
-   "t": "BORR",
-   "cap": 1.327,
-   "name": "Borr Drilling Limited"
+   "t": "ANAB",
+   "cap": 1.381,
+   "name": "AnaptysBio, Inc."
   },
   {
-   "t": "DRTS",
-   "cap": 1.318,
-   "name": "Alpha Tau Medical Ltd."
+   "t": "FCEL",
+   "cap": 1.379,
+   "name": "FuelCell Energy, Inc."
+  },
+  {
+   "t": "AMN",
+   "cap": 1.373,
+   "name": "AMN Healthcare Services Inc"
+  },
+  {
+   "t": "INBX",
+   "cap": 1.365,
+   "name": "Inhibrx Biosciences, Inc."
+  },
+  {
+   "t": "ULCC",
+   "cap": 1.365,
+   "name": "Frontier Group Holdings, Inc."
+  },
+  {
+   "t": "TK",
+   "cap": 1.348,
+   "name": "Teekay Corporation Ltd."
+  },
+  {
+   "t": "IAUX",
+   "cap": 1.333,
+   "name": "i-80 Gold Corp."
   },
   {
    "t": "LQDT",
-   "cap": 1.294,
+   "cap": 1.32,
    "name": "Liquidity Services, Inc."
   },
   {
    "t": "APPS",
-   "cap": 1.294,
+   "cap": 1.312,
    "name": "Digital Turbine, Inc."
+  },
+  {
+   "t": "UVE",
+   "cap": 1.307,
+   "name": "UNIVERSAL INSURANCE HOLDINGS IN"
+  },
+  {
+   "t": "DRTS",
+   "cap": 1.295,
+   "name": "Alpha Tau Medical Ltd."
   },
   {
    "t": "HBT",
@@ -2149,54 +2269,64 @@
    "name": "HBT Financial, Inc."
   },
   {
-   "t": "TK",
-   "cap": 1.292,
-   "name": "Teekay Corporation Ltd."
-  },
-  {
-   "t": "IAUX",
-   "cap": 1.29,
-   "name": "i-80 Gold Corp."
-  },
-  {
-   "t": "OPY",
-   "cap": 1.266,
-   "name": "Oppenheimer Holdings, Inc."
-  },
-  {
-   "t": "BJRI",
-   "cap": 1.262,
-   "name": "BJ's Restaurants, Inc."
-  },
-  {
-   "t": "INNV",
-   "cap": 1.246,
-   "name": "InnovAge Holding Corp."
-  },
-  {
-   "t": "REPL",
-   "cap": 1.244,
-   "name": "Replimune Group, Inc."
-  },
-  {
-   "t": "QMCO",
-   "cap": 1.224,
-   "name": "Quantum Corporation"
-  },
-  {
-   "t": "CCO",
-   "cap": 1.222,
-   "name": "Clear Channel Outdoor Holdings,"
-  },
-  {
    "t": "ASIC",
-   "cap": 1.221,
+   "cap": 1.291,
    "name": "Ategrity Specialty Insurance Co"
   },
   {
+   "t": "RDVT",
+   "cap": 1.282,
+   "name": "Red Violet, Inc."
+  },
+  {
+   "t": "DMRA",
+   "cap": 1.269,
+   "name": "Damora Therapeutics, Inc."
+  },
+  {
+   "t": "BJRI",
+   "cap": 1.267,
+   "name": "BJ's Restaurants, Inc."
+  },
+  {
+   "t": "OPY",
+   "cap": 1.247,
+   "name": "Oppenheimer Holdings, Inc."
+  },
+  {
+   "t": "INNV",
+   "cap": 1.243,
+   "name": "InnovAge Holding Corp."
+  },
+  {
    "t": "NBR",
-   "cap": 1.217,
+   "cap": 1.239,
    "name": "Nabors Industries Ltd."
+  },
+  {
+   "t": "CCO",
+   "cap": 1.237,
+   "name": "Clear Channel Outdoor Holdings,"
+  },
+  {
+   "t": "REPL",
+   "cap": 1.229,
+   "name": "Replimune Group, Inc."
+  },
+  {
+   "t": "GOLD",
+   "cap": 1.212,
+   "name": "Gold.com, Inc."
+  },
+  {
+   "t": "GNK",
+   "cap": 1.212,
+   "name": "Genco Shipping & Trading Limite"
+  },
+  {
+   "t": "SENEA",
+   "cap": 1.199,
+   "name": "Seneca Foods Corp."
   },
   {
    "t": "SENEB",
@@ -2204,109 +2334,99 @@
    "name": "Seneca Foods Corp."
   },
   {
-   "t": "GOLD",
-   "cap": 1.184,
-   "name": "Gold.com, Inc."
-  },
-  {
-   "t": "GNK",
-   "cap": 1.181,
-   "name": "Genco Shipping & Trading Limite"
-  },
-  {
-   "t": "SENEA",
-   "cap": 1.162,
-   "name": "Seneca Foods Corp."
+   "t": "NEWP",
+   "cap": 1.16,
+   "name": "New Pacific Metals Corp."
   },
   {
    "t": "HZO",
-   "cap": 1.159,
+   "cap": 1.158,
    "name": "MarineMax, Inc.  (FL)"
   },
   {
    "t": "MYE",
-   "cap": 1.156,
+   "cap": 1.154,
    "name": "Myers Industries, Inc."
   },
   {
-   "t": "AIP",
+   "t": "QMCO",
    "cap": 1.15,
-   "name": "Arteris, Inc."
-  },
-  {
-   "t": "NEWP",
-   "cap": 1.147,
-   "name": "New Pacific Metals Corp."
-  },
-  {
-   "t": "PUMP",
-   "cap": 1.14,
-   "name": "ProPetro Holding Corp."
-  },
-  {
-   "t": "AMTB",
-   "cap": 1.124,
-   "name": "Amerant Bancorp Inc."
-  },
-  {
-   "t": "MRVI",
-   "cap": 2.752,
-   "name": "Maravai LifeSciences Holdings, "
-  },
-  {
-   "t": "LBRX",
-   "cap": 1.102,
-   "name": "LB Pharmaceuticals Inc"
+   "name": "Quantum Corporation"
   },
   {
    "t": "TRAX",
-   "cap": 1.093,
+   "cap": 1.144,
    "name": "First Tracks Biotherapeutics, I"
   },
   {
-   "t": "GPRE",
-   "cap": 1.075,
-   "name": "Green Plains, Inc."
+   "t": "AMTB",
+   "cap": 1.138,
+   "name": "Amerant Bancorp Inc."
+  },
+  {
+   "t": "AIP",
+   "cap": 1.123,
+   "name": "Arteris, Inc."
+  },
+  {
+   "t": "LBRX",
+   "cap": 1.116,
+   "name": "LB Pharmaceuticals Inc"
+  },
+  {
+   "t": "PUMP",
+   "cap": 1.11,
+   "name": "ProPetro Holding Corp."
+  },
+  {
+   "t": "SGML",
+   "cap": 1.076,
+   "name": "Sigma Lithium Corporation"
+  },
+  {
+   "t": "MRVI",
+   "cap": 2.67,
+   "name": "Maravai LifeSciences Holdings, "
   },
   {
    "t": "KRT",
-   "cap": 1.064,
+   "cap": 1.072,
    "name": "Karat Packaging Inc."
   },
   {
    "t": "RSKD",
-   "cap": 1.063,
+   "cap": 1.062,
    "name": "Riskified Ltd."
   },
   {
    "t": "PDS",
-   "cap": 1.052,
+   "cap": 1.061,
    "name": "Precision Drilling Corporation"
   },
   {
+   "t": "GPRE",
+   "cap": 1.056,
+   "name": "Green Plains, Inc."
+  },
+  {
    "t": "CPAC",
-   "cap": 1.046,
+   "cap": 1.049,
    "name": "Cementos Pacasmayo S.A.A."
   },
   {
-   "t": "TDAY",
-   "cap": 1.037,
-   "name": "USA TODAY Co., Inc."
-  },
-  {
    "t": "ANDG",
-   "cap": 1.026,
+   "cap": 1.043,
    "name": "Andersen Group Inc."
   },
   {
-   "t": "FTK",
-   "cap": 1.016,
-   "name": "Flotek Industries, Inc."
+   "t": "TDAY",
+   "cap": 1.026,
+   "name": "USA TODAY Co., Inc."
   },
   {
-   "t": "VPG",
-   "cap": 1.002,
-   "name": "Vishay Precision Group, Inc."
+   "t": "SB",
+   "cap": 1.004,
+   "name": "Safe Bulkers, Inc"
   }
  ]
 }
