@@ -49,6 +49,7 @@ st.markdown("""
   .desc-text  { color: #64748b; font-size: 0.9rem; margin-top: 4px; line-height: 1.4; }
   .lift-tag   { color: #475569; font-size: 0.9rem; }
   .combo-active  { background:#1e1b4b; border:1px solid #4f46e5; border-radius:8px; padding:10px 14px; margin-bottom:6px; }
+  .combo-recent  { background:#1c1500; border:1px solid #d97706; border-radius:8px; padding:10px 14px; margin-bottom:6px; }
   .combo-inactive{ background:#111827; border:1px solid #1e293b; border-radius:8px; padding:10px 14px; margin-bottom:6px; opacity:0.6; }
   .uvxy-warn  { background:#451a03; border:1px solid #d97706; border-radius:8px; padding:10px 14px; color:#fcd34d; font-size:0.9rem; }
   .uvxy-ok    { background:#111827; border:1px solid #1e293b; border-radius:8px; padding:10px 14px; color:#475569; font-size:0.9rem; }
@@ -154,6 +155,7 @@ def fetch_data():
         'vix_ma20_val':     _safe(vix_ma20.iloc[-1]),
         'spy_dist_hi':      _safe(spy_dist_hi.iloc[-1]),
         # Series
+        'dates60':        [str(x.date()) for x in close.index[-60:]],
         'cme_series':     s60(cme_s),
         'hyg_iei_series': s60(hyg_iei_s),
         'iwm_series':     s60(iwm_s),
@@ -416,6 +418,31 @@ combo1 = cme_triggered and st_iwm != 'green'                    # CME + 小型�
 combo2 = cme_triggered and st_xlp in ('yellow','red')           # 訊號1：CME + 防禦輪動 → 壓力否決
 combo3 = cme_triggered and st_iwm != 'green' and st_xlp in ('yellow','red')
 
+# ── 近半月觸發紀錄（2026-10-13）──
+#   CME＋IWM 這類組合常常只亮一天就消失，沒注意就錯過。逐日回算最近 15 個日曆天，
+#   有亮過就標「近半月曾觸發」並列出日期。只是提醒，不改變否決邏輯（否決仍只看今天）。
+RECENT_DAYS = 15
+def _combo_history(days=RECENT_DAYS):
+    out = {1: [], 2: [], 3: []}
+    dts = D.get('dates60') or []
+    if not dts:
+        return out
+    last = pd.Timestamp(dts[-1])
+    for i, ds in enumerate(dts):
+        if (last - pd.Timestamp(ds)).days > days:
+            continue
+        c, iw, xp = D['cme_series'][i], D['iwm_series'][i], D['xlp_series'][i]
+        if c is None or iw is None or xp is None:
+            continue
+        ct = status('cme', c) in ('yellow', 'red')
+        iw_on = status('iwm', iw) != 'green'
+        xp_on = status('xlp', xp) in ('yellow', 'red')
+        if ct and iw_on: out[1].append(ds)
+        if ct and xp_on: out[2].append(ds)
+        if ct and iw_on and xp_on: out[3].append(ds)
+    return out
+COMBO_HIST = _combo_history()
+
 # ── 整體燈號：否決邏輯，不數燈 ──
 # 紅 = 任一 AND 組合成立（否決新倉）；黃 = 只有單燈亮（情境警示，不否決）；綠 = 全無
 core_statuses = [st_cme, st_xlp, st_iwm]
@@ -454,22 +481,38 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 # ── Combo panel ──────────────────────────────────────────────────
-st.markdown('<div class="section-hdr">關鍵信號組合</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="section-hdr">關鍵信號組合（含近 {RECENT_DAYS} 天觸發紀錄）</div>', unsafe_allow_html=True)
 combos = [
     (combo1, "66.7%", "3.08x", "CME +5~8%  ＋  IWM/SPY 60日 <−5%", "最強組合，下跌>5%機率 66.7%（n=45）；Permutation test p<0.001，95% CI 52~79%"),
     (combo2, "54.3%", "2.50x", "CME +5~8%  ＋  防禦輪動 XLP/XLY >1%", "樣本最充足組合（n=129），超過五成下跌機率"),
     (combo3, "46.2%", "3.05x", "CME +5~8%  ＋  IWM/SPY 60日 <−3%  ＋  防禦輪動 XLP/XLY >1%", "三核心同步觸發，下跌>5%機率 46.2%（n=39，2016後）；Permutation test p<0.001，95% CI 32~61%"),
 ]
-for active, prob, lift, title, desc in combos:
-    cls = "combo-active" if active else "combo-inactive"
-    badge = '<span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:0.9rem;font-weight:700">觸發中</span>' if active else '<span style="background:#1e293b;color:#475569;padding:2px 8px;border-radius:10px;font-size:0.9rem">未觸發</span>'
+for k, (active, prob, lift, title, desc) in enumerate(combos, start=1):
+    hist = COMBO_HIST.get(k, [])
+    recent = (not active) and len(hist) > 0
+    if active:
+        cls, pc, tc, dc = "combo-active", "#a5b4fc", "#c7d2fe", "#818cf8"
+        badge = '<span style="background:#312e81;color:#a5b4fc;padding:2px 8px;border-radius:10px;font-size:0.9rem;font-weight:700">觸發中</span>'
+    elif recent:
+        cls, pc, tc, dc = "combo-recent", "#fbbf24", "#fde68a", "#d6a54a"
+        badge = '<span style="background:#451a03;color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:0.9rem;font-weight:700">近半月曾觸發</span>'
+    else:
+        cls, pc, tc, dc = "combo-inactive", "#475569", "#475569", "#334155"
+        badge = '<span style="background:#1e293b;color:#475569;padding:2px 8px;border-radius:10px;font-size:0.9rem">未觸發</span>'
+    if hist:
+        _d = "、".join(pd.Timestamp(x).strftime("%m/%d") for x in hist)
+        hist_line = (f'<div style="font-size:0.9rem;color:{pc};margin-top:4px;font-weight:600">'
+                     f'近 {RECENT_DAYS} 天觸發 {len(hist)} 天：{_d}</div>')
+    else:
+        hist_line = ""
     st.markdown(f"""
     <div class="{cls}">
       <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:1.21rem;font-weight:700;color:{'#a5b4fc' if active else '#475569'};width:50px">{prob}</span>
+        <span style="font-size:1.21rem;font-weight:700;color:{pc};width:50px">{prob}</span>
         <div style="flex:1">
-          <div style="font-size:0.9rem;font-weight:600;color:{'#c7d2fe' if active else '#475569'}">{title}</div>
-          <div style="font-size:0.9rem;color:{'#818cf8' if active else '#334155'};margin-top:2px">{desc}</div>
+          <div style="font-size:0.9rem;font-weight:600;color:{tc}">{title}</div>
+          <div style="font-size:0.9rem;color:{dc};margin-top:2px">{desc}</div>
+          {hist_line}
         </div>
         {badge}
       </div>
