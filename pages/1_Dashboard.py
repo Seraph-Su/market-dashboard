@@ -505,19 +505,14 @@ for k, (active, prob, lift, title, desc) in enumerate(combos, start=1):
                      f'近 {RECENT_DAYS} 天觸發 {len(hist)} 天：{_d}</div>')
     else:
         hist_line = ""
-    st.markdown(f"""
-    <div class="{cls}">
-      <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:1.21rem;font-weight:700;color:{pc};width:50px">{prob}</span>
-        <div style="flex:1">
-          <div style="font-size:0.9rem;font-weight:600;color:{tc}">{title}</div>
-          <div style="font-size:0.9rem;color:{dc};margin-top:2px">{desc}</div>
-          {hist_line}
-        </div>
-        {badge}
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # 單行 HTML：Markdown 遇到空行或 4 格縮排會把後面的 HTML 當成程式碼區塊印出來
+    _html = (f'<div class="{cls}"><div style="display:flex;align-items:center;gap:12px">'
+             f'<span style="font-size:1.21rem;font-weight:700;color:{pc};width:50px">{prob}</span>'
+             f'<div style="flex:1">'
+             f'<div style="font-size:0.9rem;font-weight:600;color:{tc}">{title}</div>'
+             f'<div style="font-size:0.9rem;color:{dc};margin-top:2px">{desc}</div>'
+             f'{hist_line}</div>{badge}</div></div>')
+    st.markdown(_html, unsafe_allow_html=True)
 st.markdown("<div style='margin-bottom:10px'></div>", unsafe_allow_html=True)
 # ── Core indicators ───────────────────────────────────────────────
 st.markdown('<div class="section-hdr">核心預警指標（否決燈 · 需 AND 組合才否決）</div>', unsafe_allow_html=True)
