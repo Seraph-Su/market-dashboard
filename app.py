@@ -8,6 +8,7 @@ home = st.Page("pages/00_Home.py", title="首頁｜每日三分鐘", icon="🏠"
 timing = [
     st.Page("pages/1_Dashboard.py",       title="大盤壓力儀表板", icon="📊"),
     st.Page("pages/6_WinRate_Matrix.py",  title="四大指數勝率矩陣", icon="🎯"),
+    st.Page("pages/14_TQQQ_DipBuy.py",    title="TQQQ 分批低接回測", icon="🪜"),
 ]
 picking = [
     st.Page("pages/5_Breakout_Screener.py", title="均線收斂突破選股", icon="📡"),
