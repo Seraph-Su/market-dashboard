@@ -243,11 +243,24 @@ def fetch_leaders(leaders: tuple):
     h_ma10 = h_all.rolling(10).mean()
     # 方向：10日均線近兩週（10個交易日）的變化量
     delta10 = float(h_ma10.iloc[-1] - h_ma10.iloc[-11]) if len(h_ma10.dropna()) > 11 else 0.0
+    # 近 250 日逐日燈號（用來回算「連續關門」天數與 2000 年式的結構性分歧）
+    h2_all = pd.DataFrame({t: close[t].dropna() > close[t].dropna().ewm(span=60, adjust=False).mean() * 0.98
+                           for t in above0_cols}).sum(axis=1)
+    _d10s = h_ma10 - h_ma10.shift(10)
+    _hist = []
+    for d in h_all.index[-250:]:
+        n0, n2v, dd = h_all.get(d), h2_all.get(d), _d10s.get(d)
+        if n0 is None or n2v is None:
+            continue
+        lt = 'red' if n2v <= 4 else ('yellow' if n0 <= 4 else 'green')
+        op = (lt == 'green') or (lt == 'yellow' and (dd is not None and dd == dd and dd <= -0.5))
+        _hist.append({"d": str(d.date()), "open": bool(op), "light": lt})
     return {
         "detail": detail, "h0": int(h0), "h2": int(h2), "n": len(detail),
         "series": [int(x) for x in h_all.iloc[-60:].tolist()],
         "ma_series": [round(float(x), 2) for x in h_ma10.iloc[-60:].tolist()],
         "delta10": round(delta10, 2),
+        "hist": _hist,
     }
 # ── Status functions ──────────────────────────────────────────────
 def status(key, val):
@@ -770,6 +783,58 @@ if ldr_status is not None and L is not None:
     </div>""", unsafe_allow_html=True)
 else:
     st.markdown('<div class="uvxy-ok">領頭股資料未載入，無法合成進場許可；請以壓力否決與個股觸發判斷。</div>',
+                unsafe_allow_html=True)
+
+# ── 廣度分歧觀察（2026-11-04 新增：純觀察，不改變任何進場規則）──
+#   問題意識：燈號只看八大權值股。若 AI 泡沫破裂、八大持續崩而市場其餘部分仍健康，
+#   燈號會長期關門而錯過輪動。歷史檢查（2000-03~2003-03 網路泡沫，以當時八大重建燈號）：
+#     開門比例 40%、最長連續關門 102 個交易日（約 5 個月，不是三年）；
+#     同期建商股（TOL/LEN/DHI/PHM/NVR/KBH）修復觸發 33 次，只有 8 次（24%）被擋，
+#     且被擋的 8 次有 6 次事後是虧損；NVR +13.4R、LEN +7.8R 等大贏家全在開門日觸發。
+#   回測也顯示把等權指數加進閘門（OR／AND／取代）年化 6.4~7.9%，全在雜訊內。
+#   結論：不改規則，只在這裡顯示指標，真的出現結構性分歧時由人判斷。
+st.markdown('<div class="section-hdr">廣度分歧觀察（純觀察 · 不影響進場規則）</div>', unsafe_allow_html=True)
+try:
+    _rsp = D.get('rsp_spy_60d')
+    _hist = (L or {}).get('hist') or []
+    # 連續關門天數（從最後一天往回數）
+    _streak = 0
+    for h in reversed(_hist):
+        if h['open']:
+            break
+        _streak += 1
+    _closed_60 = sum(1 for h in _hist[-60:] if not h['open'])
+    _n60 = max(len(_hist[-60:]), 1)
+    # 分歧：燈號關門，但等權相對大盤 60 日沒有走弱
+    _diverge = (_streak > 0) and (_rsp is not None) and (_rsp > -3)
+    _sc = "#f87171" if _streak >= 60 else ("#fbbf24" if _streak >= 20 else "#4ade80")
+    _dc = "#fbbf24" if _diverge else "#475569"
+    b1, b2, b3 = st.columns(3)
+    b1.metric("連續關門天數", f"{_streak} 日",
+              "2000–2003 網路泡沫最長 102 日" if _streak < 102 else "已超過 2000–2003 的紀錄",
+              delta_color="off")
+    b2.metric("近 60 日關門比例", f"{_closed_60 / _n60 * 100:.0f}%",
+              "2000–2003 泡沫期為 60%", delta_color="off")
+    b3.metric("等權 RSP/SPY 60 日", f"{_rsp:+.1f}%" if _rsp is not None else "—",
+              "> −3% 代表廣度仍健康", delta_color="off")
+    if _diverge and _streak >= 20:
+        _msg = (f"⚠️ <b>疑似結構性分歧</b>：燈號已連續關門 {_streak} 日，但等權指數相對大盤 60 日為 "
+                f"{_rsp:+.1f}%，廣度並未同步走弱。這是 2000–2003 式的輪動形狀——八大崩、其餘類股照漲。"
+                f"規則不會自動放行；請自行以質化判斷是否有系統外的例外處理，並記錄在兩套帳裡。")
+        _bg, _bd, _fg = "#1c1500", "#d97706", "#fde68a"
+    elif _diverge:
+        _msg = (f"燈號關門 {_streak} 日，等權相對大盤 {_rsp:+.1f}%（未走弱）。短期分歧很常見"
+                f"（2015 年以來佔所有關門日 36%），回測顯示這類日子之後市場表現略優於平均，"
+                f"但不足以改規則。連續關門達 20 日以上才值得特別留意。")
+        _bg, _bd, _fg = "#111827", "#1e293b", "#94a3b8"
+    else:
+        _msg = ("目前沒有廣度分歧：燈號與等權指數方向一致。此區塊只在「燈號關門但等權仍健康」時才有意義。")
+        _bg, _bd, _fg = "#111827", "#1e293b", "#475569"
+    st.markdown(f"<div style='background:{_bg};border:1px solid {_bd};border-radius:8px;"
+                f"padding:10px 16px;color:{_fg};font-size:0.9rem;line-height:1.7'>{_msg}</div>",
+                unsafe_allow_html=True)
+except Exception as _e:
+    st.markdown(f'<div class="uvxy-ok">廣度分歧觀察載入失敗（{_e}），不影響其他指標。</div>',
                 unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────────
