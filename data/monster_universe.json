@@ -1,11 +1,11 @@
 {
- "built_at": "2026-11-26T05:24:53",
+ "built_at": "2026-11-27T05:18:35",
  "min_cap_b": 1.0,
  "min_52w": 50.0,
  "rows": [
   {
    "t": "MU",
-   "cap": 680.268,
+   "cap": 682.379,
    "name": "Micron Technology, Inc."
   },
   {
@@ -129,26 +129,6 @@
    "name": "Humana Inc."
   },
   {
-   "t": "TEVA",
-   "cap": 46.51,
-   "name": "Teva Pharmaceutical Industries "
-  },
-  {
-   "t": "BE",
-   "cap": 45.203,
-   "name": "Bloom Energy Corporation"
-  },
-  {
-   "t": "VIK",
-   "cap": 43.897,
-   "name": "Viking Holdings Ltd"
-  },
-  {
-   "t": "LITE",
-   "cap": 43.219,
-   "name": "Lumentum Holdings Inc."
-  },
-  {
    "t": "RVMD",
    "cap": 37.996,
    "name": "Revolution Medicines, Inc."
@@ -229,6 +209,11 @@
    "name": "Entegris, Inc."
   },
   {
+   "t": "KYMR",
+   "cap": 17.161,
+   "name": "Kymera Therapeutics, Inc."
+  },
+  {
    "t": "EXEL",
    "cap": 16.41,
    "name": "Exelixis, Inc."
@@ -255,13 +240,8 @@
   },
   {
    "t": "ARMK",
-   "cap": 15.238,
+   "cap": 15.226,
    "name": "Aramark"
-  },
-  {
-   "t": "KYMR",
-   "cap": 14.835,
-   "name": "Kymera Therapeutics, Inc."
   },
   {
    "t": "DINO",
@@ -324,6 +304,11 @@
    "name": "Krystal Biotech, Inc."
   },
   {
+   "t": "TTC",
+   "cap": 10.027,
+   "name": "Toro Company (The)"
+  },
+  {
    "t": "SYRE",
    "cap": 9.721,
    "name": "Spyre Therapeutics, Inc."
@@ -349,11 +334,6 @@
    "name": "Arrow Electronics, Inc."
   },
   {
-   "t": "PTGX",
-   "cap": 8.668,
-   "name": "Protagonist Therapeutics, Inc."
-  },
-  {
    "t": "ENLT",
    "cap": 8.593,
    "name": "Enlight Renewable Energy Ltd."
@@ -374,14 +354,9 @@
    "name": "DigitalOcean Holdings, Inc."
   },
   {
-   "t": "PRMB",
-   "cap": 8.388,
-   "name": "Primo Brands Corporation"
-  },
-  {
-   "t": "S",
-   "cap": 8.385,
-   "name": "SentinelOne, Inc."
+   "t": "OSCR",
+   "cap": 8.426,
+   "name": "Oscar Health, Inc."
   },
   {
    "t": "ZETA",
@@ -464,11 +439,6 @@
    "name": "Oruka Therapeutics, Inc."
   },
   {
-   "t": "MIRM",
-   "cap": 7.125,
-   "name": "Mirum Pharmaceuticals, Inc."
-  },
-  {
    "t": "NAVN",
    "cap": 7.06,
    "name": "Navan, Inc."
@@ -487,6 +457,11 @@
    "t": "SM",
    "cap": 6.78,
    "name": "SM Energy Company"
+  },
+  {
+   "t": "VIAV",
+   "cap": 6.696,
+   "name": "Viavi Solutions Inc."
   },
   {
    "t": "LNTH",
@@ -514,6 +489,11 @@
    "name": "Xometry, Inc."
   },
   {
+   "t": "LGND",
+   "cap": 6.154,
+   "name": "Ligand Pharmaceuticals Incorpor"
+  },
+  {
    "t": "AVT",
    "cap": 6.101,
    "name": "Avnet, Inc."
@@ -527,11 +507,6 @@
    "t": "RNG",
    "cap": 5.997,
    "name": "Ringcentral, Inc."
-  },
-  {
-   "t": "VRNS",
-   "cap": 5.698,
-   "name": "Varonis Systems, Inc."
   },
   {
    "t": "MATX",
@@ -549,6 +524,11 @@
    "name": "Erasca, Inc."
   },
   {
+   "t": "VEON",
+   "cap": 5.545,
+   "name": "VEON Ltd."
+  },
+  {
    "t": "LFST",
    "cap": 5.505,
    "name": "LifeStance Health Group, Inc."
@@ -557,6 +537,11 @@
    "t": "CAKE",
    "cap": 5.467,
    "name": "The Cheesecake Factory Incorpor"
+  },
+  {
+   "t": "YOU",
+   "cap": 8.205,
+   "name": "Clear Secure, Inc."
   },
   {
    "t": "CON",
@@ -597,6 +582,11 @@
    "t": "CMBT",
    "cap": 5.142,
    "name": "CMB.TECH NV"
+  },
+  {
+   "t": "TVTX",
+   "cap": 5.134,
+   "name": "Travere Therapeutics, Inc."
   },
   {
    "t": "LQDA",
@@ -674,6 +664,11 @@
    "name": "Iridium Communications Inc"
   },
   {
+   "t": "ASO",
+   "cap": 4.516,
+   "name": "Academy Sports and Outdoors, In"
+  },
+  {
    "t": "KNTK",
    "cap": 9.366,
    "name": "Kinetik Holdings Inc."
@@ -702,6 +697,11 @@
    "t": "TNGX",
    "cap": 4.236,
    "name": "Tango Therapeutics, Inc."
+  },
+  {
+   "t": "COLM",
+   "cap": 4.067,
+   "name": "Columbia Sportswear Company"
   },
   {
    "t": "LION",
@@ -829,11 +829,6 @@
    "name": "TORM plc"
   },
   {
-   "t": "AAOI",
-   "cap": 3.36,
-   "name": "Applied Optoelectronics, Inc."
-  },
-  {
    "t": "GRDN",
    "cap": 3.301,
    "name": "Guardian Pharmacy Services, Inc"
@@ -884,6 +879,11 @@
    "name": "Acadian Asset Management Inc."
   },
   {
+   "t": "CLBK",
+   "cap": 2.935,
+   "name": "Columbia Financial, Inc."
+  },
+  {
    "t": "DRH",
    "cap": 2.945,
    "name": "Diamondrock Hospitality Company"
@@ -902,11 +902,6 @@
    "t": "XNCR",
    "cap": 2.879,
    "name": "Xencor, Inc."
-  },
-  {
-   "t": "AYA",
-   "cap": 2.864,
-   "name": "Aya Gold & Silver Inc."
   },
   {
    "t": "ARCB",
@@ -1059,11 +1054,6 @@
    "name": "Hyperliquid Strategies Inc"
   },
   {
-   "t": "WTTR",
-   "cap": 2.27,
-   "name": "Select Water Solutions, Inc."
-  },
-  {
    "t": "DAO",
    "cap": 2.057,
    "name": "Youdao, Inc."
@@ -1139,6 +1129,11 @@
    "name": "Cricut, Inc."
   },
   {
+   "t": "VIR",
+   "cap": 1.827,
+   "name": "Vir Biotechnology, Inc."
+  },
+  {
    "t": "ULCC",
    "cap": 1.816,
    "name": "Frontier Group Holdings, Inc."
@@ -1147,6 +1142,11 @@
    "t": "COHU",
    "cap": 1.79,
    "name": "Cohu, Inc."
+  },
+  {
+   "t": "DHC",
+   "cap": 1.77,
+   "name": "Diversified Healthcare Trust"
   },
   {
    "t": "LILA",
@@ -1174,9 +1174,19 @@
    "name": "Ziff Davis, Inc."
   },
   {
+   "t": "UPBD",
+   "cap": 1.597,
+   "name": "Upbound Group, Inc."
+  },
+  {
    "t": "CHRN",
    "cap": 1.591,
    "name": "ChronoScale Holdings Corporatio"
+  },
+  {
+   "t": "CBL",
+   "cap": 1.564,
+   "name": "CBL & Associates Properties, In"
   },
   {
    "t": "ABSI",
@@ -1217,11 +1227,6 @@
    "t": "AMAL",
    "cap": 1.431,
    "name": "Amalgamated Financial Corp."
-  },
-  {
-   "t": "PRSU",
-   "cap": 1.396,
-   "name": "Pursuit Attractions and Hospita"
   },
   {
    "t": "TEN",
